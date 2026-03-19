@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gordo Runner</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a12;color:#f0f0f0;font-family:'Courier New',monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;overflow:hidden;user-select:none;}
+h1{font-size:20px;letter-spacing:3px;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;filter:drop-shadow(0 0 8px rgba(255,102,0,0.5));}
+#hud{display:flex;gap:24px;margin-bottom:8px;font-size:13px;}
+.hv{font-size:18px;font-weight:900;display:block;}
+.hl{font-size:10px;color:#555;letter-spacing:2px;text-transform:uppercase;}
+.s-sc{color:#ff6600;}.s-be{color:#00aaff;}.s-wt{color:#ffe600;}
+#cw{position:relative;border-radius:8px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,102,0,0.2),0 0 30px rgba(0,0,0,0.9);}
+canvas{display:block;}
+#ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);gap:10px;transition:opacity .3s;}
+#ov.hidden{opacity:0;pointer-events:none;}
+.ot{font-size:22px;font-weight:900;letter-spacing:3px;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.os{font-size:36px;font-weight:900;color:#ff6600;}
+.osub{font-size:12px;color:#555;letter-spacing:2px;text-align:center;max-width:300px;line-height:1.6;}
+.obtn{background:linear-gradient(135deg,#ff6600,#ff9500);border:none;color:#fff;font-family:'Courier New',monospace;font-size:13px;font-weight:700;padding:11px 26px;border-radius:8px;cursor:pointer;letter-spacing:2px;}
+#ctrl{margin-top:8px;font-size:11px;color:#333;letter-spacing:1px;}
+</style>
+</head>
+<body>
+<h1>🏃 GORDO RUNNER</h1>
+<div id="hud">
+  <div><span class="hv s-sc" id="h-sc">0</span><span class="hl">Score</span></div>
+  <div><span class="hv s-be" id="h-be">0</span><span class="hl">Mejor</span></div>
+  <div><span class="hv s-wt" id="h-wt">💪 GORDÍSIMO</span><span class="hl">Estado</span></div>
+</div>
+<div id="cw">
+  <canvas id="c"></canvas>
+  <div id="ov">
+    <div style="font-size:50px" id="ov-emoji">🏃</div>
+    <div class="ot" id="ov-title">GORDO RUNNER</div>
+    <div class="osub">Saltá la comida chatarra. A medida que avanzás, ¡el gordo adelgaza!</div>
+    <div class="os" id="ov-sc" style="display:none"></div>
+    <button class="obtn" onclick="startGame()">▶ CORRER</button>
+  </div>
+</div>
+<div id="ctrl">ESPACIO / tap para saltar · Doble salto disponible</div>
+
+<script>
+const cv=document.getElementById("c"),ctx=cv.getContext("2d");
+const W=600,H=220;
+cv.width=W;cv.height=H;
+const GROUND=H-30;
+const BEST_KEY="gordorunner_best";
+const getBest=()=>parseInt(localStorage.getItem(BEST_KEY)||"0");
+
+// Estado
+let runner,obstacles,score,speed,loop,started,dead,frame,bgX1,bgX2,clouds;
+let particles=[];
+
+// Obstáculos: comidas chatarra
+const FOODS=["🍕","🍔","🌮","🍩","🍟","🌭","🍦","🧁","🎂","🍿","🥤","🍫","🍬","🍭"];
+// Estados del personaje según score
+const STATES=[
+  {min:0,   label:"💪 GORDÍSIMO", bodyW:44, bodyH:52, color:"#ff8844", belly:true,  bellySize:20},
+  {min:200, label:"😮 MUY GORDO",  bodyW:38, bodyH:48, color:"#ff9955", belly:true,  bellySize:14},
+  {min:500, label:"😊 GORDO",      bodyW:32, bodyH:44, color:"#ffaa66", belly:true,  bellySize:8},
+  {min:900, label:"😎 NORMAL",     bodyW:26, bodyH:40, color:"#ffbb77", belly:false, bellySize:0},
+  {min:1400,label:"🏃 ATLÉTICO",   bodyW:22, bodyH:42, color:"#f4c87a", belly:false, bellySize:0},
+];
+
+function getState(){
+  let s=STATES[0];
+  for(const st of STATES){ if(score>=st.min) s=st; }
+  return s;
+}
+
+// Partículas de sudor/polvo
+function spawnSweat(x,y){
+  for(let i=0;i<3;i++){
+    const a=Math.random()*Math.PI;
+    particles.push({x,y,vx:Math.cos(a)*(1+Math.random()*2),vy:-Math.random()*3,life:1,decay:.06,r:3,color:"rgba(100,200,255,0.7)"});
+  }
+}
+function spawnDust(x,y){
+  for(let i=0;i<4;i++){
+    particles.push({x,y,vx:(Math.random()-0.5)*3,vy:-Math.random()*2,life:1,decay:.05,r:4+Math.random()*3,color:`rgba(200,180,120,${0.3+Math.random()*.3})`});
+  }
+}
+
+function init(){
+  runner={
+    x:70,y:GROUND,w:44,h:52,
+    vy:0,onGround:true,jumps:0,
+    legPhase:0,animFrame:0,
+    prevState:-1,transitionTimer:0
+  };
+  obstacles=[];score=0;speed=4.2;frame=0;dead=false;started=false;particles=[];
+  bgX1=0;bgX2=W;
+  clouds=[
+    {x:80,y:30,w:80,sp:0.4},{x:260,y:50,w:60,sp:0.3},
+    {x:450,y:25,w:100,sp:0.5},{x:550,y:45,w:70,sp:0.35}
+  ];
+  document.getElementById("h-sc").textContent=0;
+  document.getElementById("h-be").textContent=getBest();
+  document.getElementById("h-wt").textContent=STATES[0].label;
+  draw();
+}
+
+function startGame(){
+  init();started=true;dead=false;
+  document.getElementById("ov").classList.add("hidden");
+  document.getElementById("ov-sc").style.display="none";
+  cancelAnimationFrame(loop);
+  let last=0;
+  function frame2(ts){
+    const dt=Math.min((ts-last)/16.67,3);last=ts;
+    if(!dead&&started){update(dt);draw();loop=requestAnimationFrame(frame2);}
+  }
+  loop=requestAnimationFrame(frame2);
+}
+
+function jump(){
+  if(!started){startGame();return;}
+  if(runner.jumps<2){
+    runner.vy=-11+(runner.jumps===1?1.5:0);
+    runner.jumps++;runner.onGround=false;
+    spawnDust(runner.x,runner.y+runner.h/2);
+  }
+}
+
+function update(dt){
+  frame++;
+  const st=getState();
+
+  // Transición de estado
+  if(score>0&&STATES.findIndex(s=>s.label===st.label)!==runner.prevState){
+    runner.prevState=STATES.findIndex(s=>s.label===st.label);
+    runner.transitionTimer=40;
+    // Partículas de celebración al adelgazar
+    for(let i=0;i<12;i++) particles.push({x:runner.x+runner.w/2+Math.random()*40-20,y:runner.y-runner.h/2,vx:(Math.random()-0.5)*4,vy:-2-Math.random()*4,life:1,decay:.03,r:4+Math.random()*4,color:["#ff6600","#ffe600","#39ff14"][Math.floor(Math.random()*3)]});
+  }
+  if(runner.transitionTimer>0) runner.transitionTimer--;
+
+  // Actualizar tamaño del personaje con el estado
+  const targetW=st.bodyW, targetH=st.bodyH;
+  runner.w+=(targetW-runner.w)*0.05;
+  runner.h+=(targetH-runner.h)*0.05;
+
+  // Física
+  runner.vy+=0.65*dt;
+  runner.y+=runner.vy*dt;
+  runner.animFrame+=dt;
+  runner.legPhase+=0.25*dt;
+
+  if(runner.y>=GROUND){runner.y=GROUND;runner.vy=0;runner.onGround=true;runner.jumps=0;if(frame%4===0)spawnDust(runner.x+runner.w/2,GROUND+4);}
+
+  // Sudar si es gordo
+  if(st.bellySize>0&&frame%12===0) spawnSweat(runner.x+runner.w,runner.y-runner.h*0.6);
+
+  // Score
+  score+=0.1*speed/4*dt;
+  speed=Math.min(10,4.2+score*0.004);
+  if(score>getBest()) localStorage.setItem(BEST_KEY,Math.floor(score));
+  document.getElementById("h-sc").textContent=Math.floor(score);
+  document.getElementById("h-be").textContent=getBest();
+  document.getElementById("h-wt").textContent=st.label;
+
+  // Obstáculos
+  const spawnRate=Math.max(60,100-score*0.03);
+  if(frame%Math.floor(spawnRate)===0){
+    const food=FOODS[Math.floor(Math.random()*FOODS.length)];
+    const sz=28+Math.random()*16;
+    const extra=Math.random()<0.3;
+    obstacles.push({x:W+20,y:GROUND-sz+10,w:sz,h:sz,emoji:food,extra});
+    if(extra&&Math.random()<0.4) obstacles.push({x:W+80,y:GROUND-sz*1.4,w:sz*0.8,h:sz*0.8,emoji:FOODS[Math.floor(Math.random()*FOODS.length)]});
+  }
+  for(let i=obstacles.length-1;i>=0;i--){
+    obstacles[i].x-=speed*dt;
+    if(obstacles[i].x<-60){obstacles.splice(i,1);continue;}
+    // Colisión
+    const o=obstacles[i];
+    const margin=6;
+    if(runner.x+margin<o.x+o.w-margin&&runner.x+runner.w-margin>o.x+margin&&runner.y-runner.h+margin<o.y+o.h-margin&&runner.y>o.y+margin){
+      diePlayer();return;
+    }
+  }
+
+  // Partículas
+  particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=0.08*dt;p.life-=p.decay*dt;});
+  particles=particles.filter(p=>p.life>0);
+
+  // BG scroll
+  bgX1-=speed*0.6*dt;bgX2-=speed*0.6*dt;
+  if(bgX1+W<0) bgX1=bgX2+W;
+  if(bgX2+W<0) bgX2=bgX1+W;
+  clouds.forEach(c=>{c.x-=c.sp*dt;if(c.x+c.w<0)c.x=W+c.w;});
+}
+
+function diePlayer(){
+  dead=true;cancelAnimationFrame(loop);
+  setTimeout(()=>{
+    document.getElementById("ov-title").textContent="¡SE CAYÓ!";
+    document.getElementById("ov-emoji").textContent="💀";
+    document.getElementById("ov-sc").style.display="block";
+    document.getElementById("ov-sc").textContent=Math.floor(score)+" pts";
+    document.querySelector(".obtn").textContent="▶ REINTENTAR";
+    document.getElementById("ov").classList.remove("hidden");
+  },600);
+}
+
+function draw(){
+  // Cielo nocturno de ciudad
+  const skyG=ctx.createLinearGradient(0,0,0,H);
+  skyG.addColorStop(0,"#0a0a20");
+  skyG.addColorStop(0.7,"#12122a");
+  skyG.addColorStop(1,"#1a1a10");
+  ctx.fillStyle=skyG;ctx.fillRect(0,0,W,H);
+
+  // Estrellas
+  ctx.fillStyle="rgba(255,255,255,0.6)";
+  for(let i=0;i<20;i++){const sx=(i*173+50)%W,sy=(i*97+10)%(H*0.45);const tw=0.3+Math.sin(frame*.05+i)*.3;ctx.globalAlpha=tw;ctx.fillRect(sx,sy,1.5,1.5);}
+  ctx.globalAlpha=1;
+
+  // Luna
+  ctx.fillStyle="rgba(255,240,180,0.9)";
+  ctx.shadowColor="rgba(255,240,180,0.5)";ctx.shadowBlur=15;
+  ctx.beginPath();ctx.arc(W-60,30,16,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+
+  // Nubes
+  clouds.forEach(c=>{
+    ctx.fillStyle="rgba(40,40,60,0.7)";
+    ctx.beginPath();ctx.ellipse(c.x+c.w/2,c.y,c.w/2,14,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(c.x+c.w*0.3,c.y+4,c.w*0.35,10,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(c.x+c.w*0.7,c.y+4,c.w*0.3,10,0,0,Math.PI*2);ctx.fill();
+  });
+
+  // Ciudad background
+  drawCity(bgX1);drawCity(bgX2);
+
+  // Suelo
+  const grdG=ctx.createLinearGradient(0,GROUND,0,H);
+  grdG.addColorStop(0,"#222230");grdG.addColorStop(1,"#111118");
+  ctx.fillStyle=grdG;ctx.fillRect(0,GROUND,W,H-GROUND);
+  // Líneas de pavimento
+  ctx.strokeStyle="rgba(255,255,255,0.04)";ctx.lineWidth=1;
+  for(let i=0;i<10;i++){const lx=((frame*speed*0.3+i*(W/10))%W);ctx.beginPath();ctx.moveTo(lx,GROUND+8);ctx.lineTo(lx+40,GROUND+8);ctx.stroke();}
+  ctx.strokeStyle="rgba(255,255,255,0.06)";ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,GROUND);ctx.lineTo(W,GROUND);ctx.stroke();
+
+  // Partículas
+  particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2);ctx.fill();});
+  ctx.globalAlpha=1;
+
+  // Obstáculos
+  obstacles.forEach(o=>{
+    ctx.font=`${o.w}px serif`;ctx.textAlign="center";ctx.textBaseline="bottom";
+    ctx.shadowColor="rgba(255,102,0,0.4)";ctx.shadowBlur=8;
+    ctx.fillText(o.emoji,o.x+o.w/2,o.y+o.h);ctx.shadowBlur=0;
+  });
+
+  // Personaje
+  drawRunner();
+}
+
+function drawCity(offX){
+  const buildings=[
+    {x:0,w:50,h:80,windows:[[8,10],[8,26],[8,42],[30,10],[30,26],[30,42]]},
+    {x:55,w:70,h:110,windows:[[8,8],[8,24],[8,40],[8,56],[35,8],[35,24],[35,40],[35,56]]},
+    {x:130,w:40,h:60,windows:[[6,8],[6,22],[22,8],[22,22]]},
+    {x:175,w:80,h:140,windows:[[8,8],[8,24],[8,40],[8,56],[8,72],[40,8],[40,24],[40,40],[40,56],[40,72]]},
+    {x:260,w:55,h:90,windows:[[7,8],[7,24],[7,40],[30,8],[30,24],[30,40]]},
+    {x:320,w:35,h:70,windows:[[5,8],[5,22],[20,8],[20,22]]},
+    {x:360,w:90,h:120,windows:[[8,8],[8,24],[8,40],[8,56],[45,8],[45,24],[45,40],[45,56]]},
+    {x:455,w:60,h:95,windows:[[7,8],[7,24],[7,40],[32,8],[32,24],[32,40]]},
+    {x:520,w:75,h:105,windows:[[8,8],[8,24],[8,40],[8,56],[38,8],[38,24],[38,40]]},
+    {x:600,w:50,h:80,windows:[[8,10],[8,26],[30,10],[30,26]]},
+  ];
+  buildings.forEach(b=>{
+    const bx=offX+b.x, by=GROUND-b.h;
+    // Cuerpo del edificio
+    ctx.fillStyle="#15152a";
+    ctx.fillRect(bx,by,b.w,b.h);
+    // Borde lateral para profundidad
+    ctx.fillStyle="#0d0d1a";
+    ctx.fillRect(bx+b.w-4,by,4,b.h);
+    // Ventanas iluminadas (algunas)
+    b.windows.forEach(([wx,wy],i)=>{
+      const lit=((bx+wx+wy)%7!==0);
+      ctx.fillStyle=lit?"rgba(255,240,150,0.7)":"rgba(20,20,40,0.8)";
+      if(lit){ctx.shadowColor="rgba(255,240,150,0.3)";ctx.shadowBlur=4;}
+      ctx.fillRect(bx+wx,by+wy,10,8);ctx.shadowBlur=0;
+    });
+    // Antena
+    if(b.h>100){ctx.strokeStyle="rgba(255,100,100,0.5)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(bx+b.w/2,by);ctx.lineTo(bx+b.w/2,by-12);ctx.stroke();const blink=Math.floor(frame/30)%2;if(blink){ctx.fillStyle="rgba(255,80,80,0.8)";ctx.beginPath();ctx.arc(bx+b.w/2,by-13,2,0,Math.PI*2);ctx.fill();}}
+  });
+}
+
+function drawRunner(){
+  const st=getState();
+  const x=runner.x, y=runner.y, w=runner.w, h=runner.h;
+  const cx=x+w/2;
+  const isJumping=!runner.onGround;
+  const legAnim=Math.sin(runner.legPhase);
+  const fat=st.bellySize;
+  const col=st.color;
+
+  // Sombra
+  ctx.fillStyle="rgba(0,0,0,0.3)";
+  ctx.beginPath();ctx.ellipse(cx,GROUND+4,w/2+2,5,0,0,Math.PI*2);ctx.fill();
+
+  // Piernas
+  ctx.strokeStyle="#cc6633";ctx.lineWidth=isJumping?fat*0.3+4:fat*0.3+4;ctx.lineCap="round";
+  if(isJumping){
+    // Piernas dobladas en el aire
+    ctx.beginPath();ctx.moveTo(cx-8,y-6);ctx.lineTo(cx-12,y-16);ctx.lineTo(cx-6,y-8);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx+8,y-6);ctx.lineTo(cx+12,y-16);ctx.lineTo(cx+6,y-8);ctx.stroke();
+  } else {
+    // Piernas corriendo
+    const l1=legAnim*10, l2=-legAnim*10;
+    ctx.beginPath();ctx.moveTo(cx-6,y-10);ctx.lineTo(cx-6+l1*0.3,y);ctx.lineTo(cx-6+l1*0.5,y+10);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx+6,y-10);ctx.lineTo(cx+6+l2*0.3,y);ctx.lineTo(cx+6+l2*0.5,y+10);ctx.stroke();
+    // Zapatos
+    ctx.fillStyle="#222";
+    ctx.beginPath();ctx.ellipse(cx-6+l1*0.5,y+12,7,4,0.2,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(cx+6+l2*0.5,y+12,7,4,-0.2,0,Math.PI*2);ctx.fill();
+  }
+
+  // Cuerpo
+  ctx.fillStyle=col;
+  ctx.shadowColor=col;ctx.shadowBlur=8;
+  ctx.beginPath();
+  if(fat>0){
+    // Cuerpo gordo con barriga
+    ctx.ellipse(cx,y-h*0.45,w/2,h*0.42,0,0,Math.PI*2);
+  } else {
+    // Cuerpo atlético
+    ctx.beginPath();
+    ctx.moveTo(cx-w*0.45,y-h*0.15);
+    ctx.quadraticCurveTo(cx-w*0.5,y-h*0.5,cx,y-h*0.85);
+    ctx.quadraticCurveTo(cx+w*0.5,y-h*0.5,cx+w*0.45,y-h*0.15);
+    ctx.closePath();
+  }
+  ctx.fill();ctx.shadowBlur=0;
+
+  // Ropa (remera)
+  ctx.fillStyle="#3355aa";
+  ctx.beginPath();
+  ctx.ellipse(cx,y-h*0.35,w/2-2,h*0.25,0,0,Math.PI*2);
+  ctx.fill();
+
+  // Barriga si es gordo
+  if(fat>0){
+    ctx.fillStyle="rgba(255,220,180,0.6)";
+    ctx.beginPath();ctx.ellipse(cx+2,y-h*0.28,fat,fat*0.8,0,0,Math.PI*2);ctx.fill();
+  }
+
+  // Brazos
+  ctx.strokeStyle=col;ctx.lineWidth=fat>8?6:4;ctx.lineCap="round";
+  if(isJumping){
+    ctx.beginPath();ctx.moveTo(cx-w*0.45,y-h*0.55);ctx.lineTo(cx-w*0.7,y-h*0.35);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx+w*0.45,y-h*0.55);ctx.lineTo(cx+w*0.7,y-h*0.35);ctx.stroke();
+  } else {
+    const armSwing=legAnim*8;
+    ctx.beginPath();ctx.moveTo(cx-w*0.45,y-h*0.55);ctx.lineTo(cx-w*0.6-armSwing*0.05,y-h*0.3+armSwing*0.1);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx+w*0.45,y-h*0.55);ctx.lineTo(cx+w*0.6+armSwing*0.05,y-h*0.3-armSwing*0.1);ctx.stroke();
+  }
+
+  // Cuello
+  ctx.fillStyle=col;
+  ctx.fillRect(cx-5,y-h*0.78,10,h*0.12);
+
+  // Cabeza
+  const headR=fat>8?14:fat>0?12:11;
+  ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=6;
+  ctx.beginPath();ctx.arc(cx,y-h*0.82,headR,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+
+  // Cara
+  // Ojos
+  ctx.fillStyle="#222";
+  ctx.beginPath();ctx.arc(cx-4,y-h*0.85,2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(cx+4,y-h*0.85,2,0,Math.PI*2);ctx.fill();
+  // Pupila
+  ctx.fillStyle="#fff";
+  ctx.beginPath();ctx.arc(cx-3,y-h*0.86,0.7,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(cx+5,y-h*0.86,0.7,0,Math.PI*2);ctx.fill();
+
+  // Boca según estado
+  ctx.strokeStyle="#882200";ctx.lineWidth=1.5;
+  if(isJumping||fat>14){
+    // Jadeando
+    ctx.beginPath();ctx.arc(cx,y-h*0.77,4,0,Math.PI);ctx.stroke();
+    ctx.fillStyle="#cc2200";ctx.beginPath();ctx.ellipse(cx,y-h*0.75,2,3,0,0,Math.PI*2);ctx.fill();
+  } else if(fat>0){
+    // Esforzándose
+    ctx.beginPath();ctx.moveTo(cx-4,y-h*0.77);ctx.lineTo(cx+4,y-h*0.77);ctx.stroke();
+  } else {
+    // Sonriendo
+    ctx.beginPath();ctx.arc(cx,y-h*0.8,3,0.1,Math.PI-0.1);ctx.stroke();
+  }
+
+  // Pelo
+  ctx.fillStyle="#3a2000";
+  ctx.beginPath();ctx.arc(cx,y-h*0.84,headR,Math.PI,Math.PI*2);ctx.fill();
+  // Mechón
+  ctx.beginPath();ctx.ellipse(cx+2,y-h*0.95,3,5,0.3,0,Math.PI*2);ctx.fill();
+
+  // Gotas de sudor si es gordo
+  if(fat>0&&frame%8===0){
+    ctx.fillStyle="rgba(100,200,255,0.5)";
+    ctx.beginPath();ctx.ellipse(cx+headR-2,y-h*0.88,2,3,0.5,0,Math.PI*2);ctx.fill();
+  }
+
+  // Flash de transición
+  if(runner.transitionTimer>20){
+    ctx.globalAlpha=(runner.transitionTimer-20)/20*0.5;
+    ctx.fillStyle="#ffe600";
+    ctx.beginPath();ctx.arc(cx,y-h/2,headR*2,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+  }
+}
+
+// Controles
+document.addEventListener("keydown",e=>{
+  if([" ","ArrowUp","w","W"].includes(e.key)){e.preventDefault();jump();}
+});
+cv.addEventListener("click",jump);
+cv.addEventListener("touchstart",e=>{e.preventDefault();jump();},{passive:false});
+
+init();
+</script>
+</body>
+</html>
