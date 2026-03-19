@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Gor2Games — Portal gamer. Jugá, progresá, competí.">
+<title>Gor2Games — Portal Gamer</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- === MODAL BIENVENIDA === -->
+<div id="modal-bienvenida" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <span class="modal-mascota">🧑‍💻</span>
+    <h1 class="modal-titulo">BIENVENIDO A GOR2GAMES</h1>
+    <p class="modal-subtitulo">El portal gamer donde jugás, progresás y competís.<br>¿Cómo te llamamos?</p>
+    <div>
+      <label class="form-label" for="input-nombre">Tu nombre de jugador</label>
+      <input type="text" id="input-nombre" class="form-input"
+             placeholder="Ej: GorPlayer99..."
+             maxlength="20" autocomplete="off" spellcheck="false">
+      <p id="error-nombre">El nombre debe tener entre 2 y 20 caracteres.</p>
+      <button id="btn-comenzar" class="btn-principal">⚡ ENTRAR AL JUEGO</button>
+    </div>
+  </div>
+</div>
+
+<!-- === OVERLAY NIVEL === -->
+<div id="overlay-nivel">
+  <div class="particulas"></div>
+  <div style="position:relative;z-index:1;text-align:center">
+    <div class="overlay-nivel-titulo">¡SUBISTE DE NIVEL!</div>
+    <div class="overlay-nivel-nombre">Novato Gor2</div>
+    <div style="font-size:40px;letter-spacing:8px;animation:pulseGlow 0.6s ease infinite alternate">⭐⭐⭐</div>
+  </div>
+</div>
+
+<!-- === BANNER ERROR === -->
+<div id="banner-error">
+  <span class="banner-msg"></span>
+  <button id="btn-reset" class="btn-banner-reset">REINICIAR</button>
+</div>
+
+<!-- === HEADER === -->
+<header>
+  <a id="logo-container" href="index.html" title="Gor2Games">
+    <!-- Reemplazá .logo-icon con <img src="assets/logo/mascota.png"> cuando tengas el arte -->
+    <div class="logo-icon">🎮</div>
+    <span class="logo-texto">GOR2GAMES</span>
+  </a>
+
+  <nav id="nav-menu">
+    <button class="nav-btn activo" data-seccion="inicio">Inicio</button>
+    <button class="nav-btn" data-seccion="juegos">Juegos</button>
+    <button class="nav-btn" data-seccion="favoritos">Favoritos</button>
+  </nav>
+
+  <!-- Mini perfil -->
+  <div class="perfil-header">
+    <div class="perfil-nombre-nivel">
+      <span id="perfil-nombre" class="perfil-nombre">—</span>
+      <span id="perfil-nivel-texto" class="perfil-nivel-texto">Novato Gor2</span>
+    </div>
+    <div class="perfil-xp-wrap">
+      <div class="xp-bar">
+        <div id="xp-bar-fill" class="xp-bar-fill" style="width:0%"></div>
+      </div>
+      <span id="xp-texto">0/1000 XP</span>
+    </div>
+    <span class="perfil-monedas">🪙 <span id="perfil-monedas">0</span></span>
+    <span id="perfil-nivel" style="font-family:'Orbitron',sans-serif;font-size:12px;color:var(--color-muted)">Nv.1</span>
+  </div>
+
+  <button id="hamburger" aria-label="Menú">☰</button>
+</header>
+
+<!-- === APP BODY === -->
+<div class="app-body">
+
+  <!-- SIDEBAR (solo desktop) -->
+  <aside id="sidebar">
+    <div class="sidebar-titulo">Categorías</div>
+    <div id="sidebar-categorias"><!-- renderizarSidebar() --></div>
+
+    <div class="sidebar-titulo" style="margin-top:20px">🔥 Más Jugados</div>
+    <div class="mas-jugados-panel">
+      <div id="mas-jugados"><!-- renderizarMasJugados() --></div>
+    </div>
+  </aside>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="main-content">
+
+    <!-- Cat strip mobile -->
+    <div id="cat-strip">
+      <button class="cat-pill activo" data-categoria="todos">🕹 Todos</button>
+      <button class="cat-pill" data-categoria="accion">⚔️ Acción</button>
+      <button class="cat-pill" data-categoria="aventura">🗺️ Aventura</button>
+      <button class="cat-pill" data-categoria="puzzle">🧩 Puzzle</button>
+      <button class="cat-pill" data-categoria="deportes">⚽ Deportes</button>
+      <button class="cat-pill" data-categoria="carreras">🏎️ Carreras</button>
+      <button class="cat-pill" data-categoria="estrategia">♟️ Estrategia</button>
+      <button class="cat-pill" data-categoria="arcade">👾 Arcade</button>
+      <button class="cat-pill" data-categoria="retro">📺 Retro</button>
+    </div>
+
+    <!-- SECCIÓN INICIO -->
+    <section id="seccion-inicio" class="seccion activa">
+      <div class="buscador-wrap">
+        <input type="search" id="buscador" placeholder="Buscar juegos por nombre, categoría o tag..." autocomplete="off">
+      </div>
+
+      <h2 class="seccion-titulo">🕹 Recientes</h2>
+      <div id="recientes-grid">
+        <p class="muted-text">Todavía no jugaste nada.</p>
+      </div>
+
+      <h2 class="seccion-titulo">Todos los Juegos</h2>
+      <div id="games-grid"><!-- renderizarGrid() --></div>
+    </section>
+
+    <!-- SECCIÓN JUEGOS (catálogo filtrado) -->
+    <section id="seccion-juegos" class="seccion">
+      <h2 class="seccion-titulo" id="titulo-seccion-juegos">Juegos</h2>
+      <div id="games-grid-juegos"></div>
+    </section>
+
+    <!-- SECCIÓN FAVORITOS -->
+    <section id="seccion-favoritos" class="seccion">
+      <h2 class="seccion-titulo">♥ Mis Favoritos</h2>
+      <div id="favoritos-grid"><!-- renderizarFavoritos() --></div>
+    </section>
+
+  </main>
+</div>
+
+<script src="js/games-data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

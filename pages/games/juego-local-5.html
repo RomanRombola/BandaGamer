@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dino Runner</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#0a0a0a;color:#f0f0f0;font-family:'Courier New',monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;}
+  h1{font-size:20px;letter-spacing:4px;color:#ffe600;text-shadow:0 0 12px rgba(255,230,0,0.8);margin-bottom:6px;}
+  #info{display:flex;gap:24px;margin-bottom:10px;font-size:14px;color:#888;}
+  #info span{color:#ffe600;font-weight:700;}
+  canvas{border:1px solid rgba(255,230,0,0.2);display:block;box-shadow:0 0 16px rgba(255,230,0,0.1);}
+  #msg{margin-top:10px;font-size:15px;color:#ffe600;letter-spacing:2px;min-height:20px;text-align:center;}
+  .btn{margin-top:10px;background:linear-gradient(135deg,#ffe600,#ff9500);border:none;color:#000;font-family:'Courier New',monospace;font-size:13px;font-weight:700;padding:9px 22px;border-radius:8px;cursor:pointer;letter-spacing:2px;}
+</style>
+</head>
+<body>
+<h1>🦕 DINO RUNNER</h1>
+<div id="info">PUNTAJE: <span id="score">0</span> &nbsp;|&nbsp; MEJOR: <span id="best">0</span> &nbsp;|&nbsp; VEL: <span id="vel">5</span></div>
+<canvas id="c" width="600" height="200"></canvas>
+<div id="msg">ESPACIO / tap para saltar</div>
+<button class="btn" id="btn-r" style="display:none" onclick="init()">▶ REINICIAR</button>
+
+<script>
+const C=document.getElementById("c"),ctx=C.getContext("2d");
+const W=C.width,H=C.height,GY=H-30;
+const BEST_KEY="dino_best";
+let dino,obstacles,score,speed,loop,started,dead,frames,clouds;
+
+function best(){return parseInt(localStorage.getItem(BEST_KEY)||"0");}
+document.getElementById("best").textContent=best();
+
+function init(){
+  dino={x:70,y:GY,w:28,h:32,vy:0,onGround:true,anim:0};
+  obstacles=[];score=0;speed=5;frames=0;dead=false;started=false;clouds=[];
+  document.getElementById("score").textContent=0;
+  document.getElementById("vel").textContent=5;
+  document.getElementById("msg").textContent="ESPACIO / tap para saltar";
+  document.getElementById("btn-r").style.display="none";
+  for(let i=0;i<4;i++) clouds.push({x:Math.random()*W,y:20+Math.random()*40,w:60+Math.random()*40,sp:0.3+Math.random()*0.3});
+  clearInterval(loop); draw(); 
+}
+
+function jump(){
+  if(!started){started=true;document.getElementById("msg").textContent="";loop=setInterval(step,16);return;}
+  if(dino.onGround){dino.vy=-13;dino.onGround=false;}
+}
+
+function step(){
+  frames++;
+  // Dino física
+  dino.vy+=0.7; dino.y+=dino.vy;
+  dino.anim=Math.floor(frames/8)%2;
+  if(dino.y>=GY){dino.y=GY;dino.vy=0;dino.onGround=true;}
+  // Score & velocidad
+  score++;
+  if(score>best())localStorage.setItem(BEST_KEY,score);
+  document.getElementById("score").textContent=score;
+  document.getElementById("best").textContent=best();
+  speed=5+Math.floor(score/200)*0.5;
+  document.getElementById("vel").textContent=speed.toFixed(1);
+  // Obstáculos
+  if(frames%Math.max(60,90-Math.floor(score/100)*5)===0)
+    obstacles.push({x:W+10,y:GY,w:18+Math.random()*16,h:28+Math.random()*24});
+  obstacles.forEach(o=>o.x-=speed);
+  obstacles=obstacles.filter(o=>o.x>-50);
+  // Colisión
+  for(const o of obstacles){
+    if(dino.x+dino.w-6>o.x+4&&dino.x+6<o.x+o.w-4&&dino.y+dino.h-4>o.y&&dino.y+4<o.y+o.h){gameOver();return;}
+  }
+  // Nubes
+  clouds.forEach(c=>{c.x-=c.sp;if(c.x+c.w<0)c.x=W+20;});
+  draw();
+}
+
+function draw(){
+  ctx.fillStyle="#0a0a0a";ctx.fillRect(0,0,W,H);
+  // Nubes
+  clouds.forEach(c=>{ctx.fillStyle="rgba(255,255,255,0.05)";ctx.beginPath();ctx.ellipse(c.x+c.w/2,c.y,c.w/2,12,0,0,Math.PI*2);ctx.fill();});
+  // Suelo
+  ctx.strokeStyle="rgba(255,230,0,0.3)";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,GY+dino.h);ctx.lineTo(W,GY+dino.h);ctx.stroke();
+  // Obstáculos (cactus pixel)
+  obstacles.forEach(o=>{
+    ctx.fillStyle="#39ff14";ctx.shadowColor="#39ff14";ctx.shadowBlur=8;
+    ctx.fillRect(o.x+o.w/2-4,o.y-o.h,8,o.h);
+    ctx.fillRect(o.x+2,o.y-o.h*0.6,o.w-4,6);
+    ctx.shadowBlur=0;
+  });
+  // Dino pixel art simplificado
+  const dx=dino.x,dy=dino.y-dino.h+2;
+  ctx.fillStyle="#ffe600";ctx.shadowColor="#ffe600";ctx.shadowBlur=10;
+  ctx.fillRect(dx+4,dy,16,24);  // cuerpo
+  ctx.fillRect(dx+12,dy-10,12,12); // cabeza
+  ctx.fillRect(dx+20,dy-8,4,4);  // ojo sombra
+  ctx.fillStyle="#0a0a0a";ctx.fillRect(dx+21,dy-7,2,2); // ojo
+  ctx.fillStyle="#ffe600";
+  // Pata animada
+  if(dino.onGround){
+    ctx.fillRect(dx+5,dy+24,5,6+dino.anim*2);
+    ctx.fillRect(dx+12,dy+24,5,6+(1-dino.anim)*2);
+  } else { ctx.fillRect(dx+5,dy+24,14,4); }
+  ctx.shadowBlur=0;
+}
+
+function gameOver(){
+  dead=true;clearInterval(loop);
+  document.getElementById("msg").textContent=`GAME OVER — ${score} pts`;
+  document.getElementById("btn-r").style.display="inline-block";
+  ctx.fillStyle="rgba(0,0,0,0.72)";ctx.fillRect(0,0,W,H);
+  ctx.font="bold 24px 'Courier New'";ctx.fillStyle="#ffe600";ctx.textAlign="center";
+  ctx.shadowColor="#ffe600";ctx.shadowBlur=16;ctx.fillText("GAME OVER",W/2,H/2);
+  ctx.font="15px 'Courier New'";ctx.fillStyle="#aaa";ctx.shadowBlur=0;ctx.fillText(`Puntaje: ${score}`,W/2,H/2+28);
+}
+
+document.addEventListener("keydown",e=>{if(e.key===" "){e.preventDefault();jump();}});
+C.addEventListener("touchstart",e=>{e.preventDefault();jump();},{passive:false});
+C.addEventListener("click",jump);
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El Impostor — Gor2Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #08080f;
+  --surface: #111120;
+  --surface2: #1a1a2e;
+  --primary: #ff6600;
+  --secondary: #00aaff;
+  --accent: #ffe600;
+  --danger: #ff3366;
+  --success: #39ff14;
+  --text: #f0f0f0;
+  --muted: #666688;
+  --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px 16px 40px;
+  overflow-x: hidden;
+}
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,102,0,0.06) 0%, transparent 60%);
+  pointer-events:none; z-index:0;
+}
+
+/* ── TIPOGRAFÍA ── */
+.orb { font-family:'Orbitron',sans-serif; }
+h1 {
+  font-family:'Orbitron',sans-serif;
+  font-size: clamp(22px,5vw,36px);
+  font-weight:900;
+  background: linear-gradient(90deg,#ff6600,#ffe600);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  text-align:center; margin-bottom:6px;
+  filter: drop-shadow(0 0 12px rgba(255,102,0,0.4));
+}
+.subtitle { color:var(--muted); font-size:14px; text-align:center; margin-bottom:28px; letter-spacing:1px; }
+
+/* ── LAYOUT ── */
+.screen { display:none; flex-direction:column; align-items:center; width:100%; max-width:520px; position:relative; z-index:1; }
+.screen.active { display:flex; animation: fadeUp 0.3s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px);} to{opacity:1;transform:translateY(0);} }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid rgba(255,102,0,0.15);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-family:'Orbitron',sans-serif;
+  font-size:13px; font-weight:700;
+  color:var(--primary); letter-spacing:2px;
+  text-transform:uppercase; margin-bottom:16px;
+  display:flex; align-items:center; gap:8px;
+}
+.card-title::before { content:''; width:3px; height:14px; background:var(--primary); border-radius:2px; flex-shrink:0; }
+
+/* ── INPUTS ── */
+.form-group { margin-bottom:14px; width:100%; }
+.form-label { display:block; font-size:12px; font-weight:700; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:7px; font-family:'Orbitron',sans-serif; }
+.form-input {
+  width:100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text);
+  font-family:'Rajdhani',sans-serif; font-size:16px; font-weight:600;
+  padding: 12px 16px; border-radius:10px; outline:none;
+  transition: all 0.2s;
+}
+.form-input:focus { border-color:var(--primary); background:rgba(255,102,0,0.05); box-shadow:0 0 12px rgba(255,102,0,0.2); }
+.form-input::placeholder { color:var(--muted); }
+
+/* ── BOTONES ── */
+.btn {
+  font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700;
+  padding:13px 24px; border-radius:10px; border:none;
+  cursor:pointer; letter-spacing:1.5px; transition:all 0.2s;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  width:100%;
+}
+.btn-primary { background:linear-gradient(135deg,#ff6600,#ff9500); color:#fff; box-shadow:0 0 16px rgba(255,102,0,0.4); }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(255,102,0,0.6); }
+.btn-secondary { background:rgba(0,170,255,0.1); border:1px solid rgba(0,170,255,0.35); color:var(--secondary); }
+.btn-secondary:hover { background:rgba(0,170,255,0.2); transform:translateY(-2px); }
+.btn-danger { background:rgba(255,51,102,0.15); border:1px solid rgba(255,51,102,0.4); color:var(--danger); }
+.btn-danger:hover { background:rgba(255,51,102,0.25); }
+.btn-success { background:rgba(57,255,20,0.15); border:1px solid rgba(57,255,20,0.4); color:var(--success); }
+.btn-success:hover { background:rgba(57,255,20,0.25); }
+.btn-muted { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--muted); font-size:12px; }
+.btn-muted:hover { background:rgba(255,255,255,0.1); color:var(--text); }
+.btn-sm { padding:9px 16px; font-size:11px; width:auto; }
+.btn:disabled { opacity:0.4; cursor:not-allowed; transform:none !important; }
+.btn-row { display:flex; gap:10px; width:100%; }
+
+/* ── DIVIDER ── */
+.divider { display:flex; align-items:center; gap:12px; color:var(--muted); font-size:12px; width:100%; margin:16px 0; }
+.divider::before,.divider::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.07); }
+
+/* ── CÓDIGO DE SALA ── */
+.room-code-display {
+  background: linear-gradient(135deg,rgba(255,102,0,0.12),rgba(255,230,0,0.08));
+  border: 2px solid rgba(255,102,0,0.35);
+  border-radius:14px; padding:20px;
+  text-align:center; margin-bottom:16px; width:100%;
+  cursor:pointer; transition:all 0.2s;
+}
+.room-code-display:hover { border-color:rgba(255,102,0,0.6); }
+.room-code-lbl { font-size:11px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; font-family:'Orbitron',sans-serif; margin-bottom:6px; }
+.room-code-val {
+  font-family:'Orbitron',sans-serif; font-size:clamp(32px,8vw,52px);
+  font-weight:900; letter-spacing:8px;
+  background:linear-gradient(90deg,#ff6600,#ffe600);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 12px rgba(255,102,0,0.5));
+}
+.room-code-hint { font-size:12px; color:var(--muted); margin-top:6px; }
+
+/* ── LISTA DE JUGADORES ── */
+.players-list { display:flex; flex-direction:column; gap:8px; width:100%; }
+.player-item {
+  display:flex; align-items:center; gap:12px;
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07);
+  border-radius:10px; padding:10px 14px;
+  transition:all 0.2s;
+}
+.player-item.is-host { border-color:rgba(255,102,0,0.3); background:rgba(255,102,0,0.06); }
+.player-item.eliminated { opacity:0.35; }
+.player-avatar {
+  width:36px; height:36px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; flex-shrink:0;
+  background:linear-gradient(135deg,rgba(255,102,0,0.2),rgba(0,170,255,0.1));
+  border:1px solid rgba(255,255,255,0.1);
+}
+.player-name { font-weight:700; font-size:15px; flex:1; }
+.player-badge {
+  font-family:'Orbitron',sans-serif; font-size:9px; font-weight:700;
+  padding:3px 8px; border-radius:6px; letter-spacing:1px;
+}
+.badge-host { background:rgba(255,102,0,0.2); color:var(--primary); border:1px solid rgba(255,102,0,0.3); }
+.badge-impostor { background:rgba(255,51,102,0.2); color:var(--danger); border:1px solid rgba(255,51,102,0.3); }
+.badge-civil { background:rgba(57,255,20,0.1); color:var(--success); border:1px solid rgba(57,255,20,0.2); }
+.badge-elim { background:rgba(255,255,255,0.05); color:var(--muted); border:1px solid rgba(255,255,255,0.1); }
+.turn-indicator {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--accent); box-shadow:0 0 8px var(--accent);
+  animation: blink 0.8s ease infinite alternate; flex-shrink:0;
+}
+@keyframes blink { from{opacity:0.4;} to{opacity:1;} }
+
+/* ── CATEGORÍAS ── */
+.cat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; width:100%; }
+.cat-item {
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;
+  display:flex; align-items:center; gap:10px;
+  font-weight:600; font-size:14px;
+}
+.cat-item:hover { background:rgba(255,102,0,0.08); border-color:rgba(255,102,0,0.3); }
+.cat-item.selected { background:rgba(255,102,0,0.15); border-color:var(--primary); color:var(--primary); }
+.cat-item.selected .cat-check { opacity:1; }
+.cat-icon { font-size:20px; flex-shrink:0; }
+.cat-check { margin-left:auto; color:var(--primary); opacity:0; font-size:16px; transition:opacity 0.2s; }
+
+/* ── TOGGLE SWITCH ── */
+.toggle-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
+.toggle-row:last-child { border-bottom:none; }
+.toggle-label { font-weight:600; font-size:14px; }
+.toggle-sub { font-size:12px; color:var(--muted); margin-top:2px; }
+.toggle {
+  position:relative; width:44px; height:24px; flex-shrink:0;
+}
+.toggle input { opacity:0; width:0; height:0; }
+.toggle-slider {
+  position:absolute; inset:0; background:rgba(255,255,255,0.1);
+  border-radius:24px; cursor:pointer; transition:0.3s;
+  border:1px solid rgba(255,255,255,0.1);
+}
+.toggle-slider::before {
+  content:''; position:absolute;
+  width:18px; height:18px; border-radius:50%;
+  background:#888; left:3px; top:2px; transition:0.3s;
+}
+.toggle input:checked + .toggle-slider { background:rgba(255,102,0,0.3); border-color:var(--primary); }
+.toggle input:checked + .toggle-slider::before { background:var(--primary); transform:translateX(20px); }
+
+/* ── PALABRA SECRET ── */
+.word-reveal-card {
+  background:linear-gradient(135deg,rgba(255,102,0,0.1),rgba(255,230,0,0.06));
+  border:2px solid rgba(255,102,0,0.3); border-radius:16px;
+  padding:30px 24px; text-align:center; width:100%;
+}
+.word-role-badge {
+  font-family:'Orbitron',sans-serif; font-size:12px; font-weight:700;
+  padding:5px 14px; border-radius:20px; letter-spacing:2px;
+  display:inline-block; margin-bottom:14px;
+}
+.role-civil { background:rgba(57,255,20,0.15); color:var(--success); border:1px solid rgba(57,255,20,0.3); }
+.role-impostor { background:rgba(255,51,102,0.15); color:var(--danger); border:1px solid rgba(255,51,102,0.3); }
+.word-big {
+  font-family:'Orbitron',sans-serif; font-size:clamp(22px,6vw,38px);
+  font-weight:900; margin:10px 0;
+  background:linear-gradient(90deg,var(--primary),var(--accent));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+.word-hint { font-size:13px; color:var(--muted); line-height:1.6; }
+.word-cover {
+  background:var(--surface2); border:2px dashed rgba(255,102,0,0.3);
+  border-radius:12px; padding:20px; text-align:center;
+  font-size:13px; color:var(--muted); margin-top:10px; cursor:pointer;
+  transition:all 0.2s;
+}
+.word-cover:hover { border-color:rgba(255,102,0,0.5); }
+
+/* ── TURNO ACTUAL ── */
+.turn-card {
+  background:linear-gradient(135deg,rgba(0,170,255,0.1),rgba(255,102,0,0.06));
+  border:1px solid rgba(0,170,255,0.25); border-radius:14px;
+  padding:20px; text-align:center; width:100%; margin-bottom:12px;
+}
+.turn-label { font-size:11px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; font-family:'Orbitron',sans-serif; margin-bottom:6px; }
+.turn-name { font-family:'Orbitron',sans-serif; font-size:clamp(18px,4vw,26px); font-weight:900; color:var(--secondary); }
+.turn-you { font-size:13px; color:var(--accent); margin-top:4px; font-weight:700; }
+
+/* ── VOTACIÓN ── */
+.vote-item {
+  display:flex; align-items:center; gap:12px;
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px; padding:12px 16px; cursor:pointer;
+  transition:all 0.2s; width:100%; margin-bottom:8px;
+}
+.vote-item:hover:not(.voted):not(.self-vote) { background:rgba(255,51,102,0.1); border-color:rgba(255,51,102,0.3); }
+.vote-item.voted { border-color:var(--danger); background:rgba(255,51,102,0.12); cursor:default; }
+.vote-item.self-vote { opacity:0.35; cursor:not-allowed; }
+.vote-name { font-weight:700; font-size:15px; flex:1; }
+.vote-count {
+  font-family:'Orbitron',sans-serif; font-size:14px; font-weight:900;
+  color:var(--danger); min-width:24px; text-align:right;
+}
+.vote-bar-wrap { width:100%; height:4px; background:rgba(255,255,255,0.07); border-radius:2px; margin-top:8px; }
+.vote-bar { height:100%; background:var(--danger); border-radius:2px; transition:width 0.4s ease; }
+
+/* ── RESULTADO ── */
+.result-reveal {
+  text-align:center; padding:10px 0; width:100%;
+}
+.result-emoji { font-size:64px; display:block; margin-bottom:10px; animation:popIn 0.4s ease; }
+@keyframes popIn { from{transform:scale(0.4) rotate(-10deg);opacity:0;} 60%{transform:scale(1.15) rotate(3deg);} to{transform:scale(1) rotate(0);opacity:1;} }
+.result-title {
+  font-family:'Orbitron',sans-serif; font-size:clamp(20px,5vw,32px);
+  font-weight:900; margin-bottom:8px;
+}
+.result-win { background:linear-gradient(90deg,var(--success),#00ff88); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.result-lose { background:linear-gradient(90deg,var(--danger),#ff8800); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.result-sub { color:var(--muted); font-size:14px; line-height:1.6; }
+
+/* ── TOAST ── */
+#toast-container { position:fixed; top:16px; right:16px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+.toast {
+  background:var(--surface2); border:1px solid rgba(255,102,0,0.35);
+  border-radius:10px; padding:12px 16px; font-size:13px; font-weight:600;
+  max-width:280px; box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  animation:toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+  display:flex; align-items:center; gap:10px;
+}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
+@keyframes toastOut{to{opacity:0;transform:translateX(40px);}}
+
+/* ── MISC ── */
+.text-center { text-align:center; }
+.text-muted { color:var(--muted); font-size:13px; }
+.mt-8 { margin-top:8px; }
+.mt-16 { margin-top:16px; }
+.separator { width:100%; height:1px; background:rgba(255,255,255,0.06); margin:16px 0; }
+.pill {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+  border-radius:20px; padding:4px 12px; font-size:12px; font-weight:600; color:var(--muted);
+}
+.loading-dots::after { content:''; animation:dots 1.2s steps(4,end) infinite; }
+@keyframes dots { 0%{content:'';} 25%{content:'.';} 50%{content:'..';} 75%{content:'...';} }
+.highlight { color:var(--accent); font-weight:700; }
+.info-box {
+  background:rgba(0,170,255,0.07); border:1px solid rgba(0,170,255,0.2);
+  border-radius:10px; padding:12px 16px; font-size:13px; color:var(--secondary);
+  width:100%; line-height:1.6;
+}
+</style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════════════════
+     PANTALLA 0 — INICIO
+══════════════════════════════════════════════════ -->
+<div id="screen-home" class="screen active">
+  <div style="margin-bottom:8px;font-size:48px;text-align:center">🕵️</div>
+  <h1>EL IMPOSTOR</h1>
+  <p class="subtitle">Todos tienen la misma palabra... menos uno.</p>
+
+  <div class="card">
+    <div class="card-title">Ingresar</div>
+    <div class="form-group">
+      <label class="form-label">Tu nombre</label>
+      <input type="text" id="input-name" class="form-input" placeholder="Cómo te llaman..." maxlength="16" autocomplete="off">
+    </div>
+    <button class="btn btn-primary" onclick="goToLobby()">⚡ JUGAR</button>
+
+    <div class="divider">o</div>
+
+    <div class="form-group">
+      <label class="form-label">Tengo un código de sala</label>
+      <input type="text" id="input-room-code" class="form-input" placeholder="Ej: XKPQ" maxlength="4"
+             style="text-transform:uppercase;letter-spacing:4px;font-family:'Orbitron',sans-serif;font-size:20px;text-align:center">
+    </div>
+    <button class="btn btn-secondary" onclick="joinByCode()">🚪 UNIRSE A SALA</button>
+  </div>
+
+  <p class="text-muted text-center">Jugá con amigos en cualquier dispositivo.<br>Recomendamos estar en llamada de voz.</p>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PANTALLA 1 — LOBBY (anfitrión configura)
+══════════════════════════════════════════════════ -->
+<div id="screen-lobby" class="screen">
+  <h1>SALA DE ESPERA</h1>
+
+  <!-- Código de sala -->
+  <div class="room-code-display" onclick="copyCode()" title="Tap para copiar">
+    <div class="room-code-lbl">Código de sala</div>
+    <div class="room-code-val" id="display-code">----</div>
+    <div class="room-code-hint">📋 Tocá para copiar</div>
+  </div>
+
+  <!-- Jugadores -->
+  <div class="card">
+    <div class="card-title">Jugadores <span id="player-count-badge" class="pill" style="margin-left:auto">0</span></div>
+    <div class="players-list" id="lobby-players-list"></div>
+    <p class="text-muted mt-8" style="font-size:12px">Mínimo 3 jugadores para iniciar.</p>
+  </div>
+
+  <!-- Configuración (solo anfitrión) -->
+  <div class="card" id="config-card">
+    <div class="card-title">Configuración</div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Pista para el impostor</div>
+        <div class="toggle-sub">El impostor recibe una pista relacionada con la palabra</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="cfg-hint"><span class="toggle-slider"></span></label>
+    </div>
+
+    <div class="separator"></div>
+
+    <div style="margin-bottom:12px">
+      <div class="form-label" style="margin-bottom:12px">Categorías de palabras</div>
+      <div class="cat-grid" id="cat-grid"></div>
+    </div>
+  </div>
+
+  <!-- Botones según rol -->
+  <div id="host-actions" style="width:100%;display:none">
+    <button class="btn btn-primary" id="btn-start" onclick="startGame()" disabled>🎮 INICIAR PARTIDA</button>
+    <button class="btn btn-muted mt-8" onclick="leaveRoom()">← Salir</button>
+  </div>
+  <div id="guest-actions" style="width:100%;display:none">
+    <div class="info-box">Esperando que el anfitrión inicie la partida<span class="loading-dots"></span></div>
+    <button class="btn btn-muted mt-8" onclick="leaveRoom()">← Salir</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PANTALLA 2 — VER PALABRA (privado, cada jugador toca)
+══════════════════════════════════════════════════ -->
+<div id="screen-word" class="screen">
+  <h1>TU ROL</h1>
+  <p class="subtitle">Mostrá la pantalla solo a vos.</p>
+
+  <div class="word-reveal-card" id="word-reveal-card">
+    <div id="word-role-badge" class="word-role-badge role-civil">CIVIL</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">La palabra secreta es:</div>
+    <div id="word-big" class="word-big">—</div>
+    <div id="word-hint-text" class="word-hint" style="display:none"></div>
+  </div>
+
+  <div class="word-cover" id="word-cover" onclick="toggleWordCover()">
+    👁 Tocá para revelar / ocultar tu palabra
+  </div>
+
+  <div class="info-box mt-16">
+    <strong>¿Cómo jugar?</strong><br>
+    Cada jugador da pistas sin decir la palabra directamente.<br>
+    Si sos el impostor, intentá pasar desapercibido 🎭
+  </div>
+
+  <button class="btn btn-primary mt-16" onclick="goToGame()" id="btn-go-game">
+    ✅ LISTO — IR AL JUEGO
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PANTALLA 3 — JUEGO (turnos + votación)
+══════════════════════════════════════════════════ -->
+<div id="screen-game" class="screen">
+  <h1>EN JUEGO</h1>
+
+  <!-- Turno actual -->
+  <div class="turn-card" id="turn-card">
+    <div class="turn-label">Turno actual</div>
+    <div class="turn-name" id="turn-name">—</div>
+    <div class="turn-you" id="turn-you" style="display:none">¡Es tu turno! Da una pista.</div>
+  </div>
+
+  <!-- Orden de turnos -->
+  <div class="card">
+    <div class="card-title">Jugadores</div>
+    <div class="players-list" id="game-players-list"></div>
+  </div>
+
+  <!-- Botones anfitrión -->
+  <div id="host-game-actions" style="width:100%;display:none">
+    <button class="btn btn-danger" onclick="startVoting()">🗳️ INICIAR VOTACIÓN</button>
+    <button class="btn btn-muted mt-8" onclick="nextTurnHost()">⏭ SIGUIENTE TURNO</button>
+  </div>
+  <div id="guest-game-info" style="display:none">
+    <div class="info-box">El anfitrión decide cuándo pasar al siguiente turno y cuándo votar.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PANTALLA 4 — VOTACIÓN
+══════════════════════════════════════════════════ -->
+<div id="screen-vote" class="screen">
+  <h1>VOTACIÓN</h1>
+  <p class="subtitle">¿Quién es el impostor? Votá.</p>
+
+  <div class="card">
+    <div class="card-title">Votar para eliminar</div>
+    <div id="vote-list"></div>
+    <div id="my-vote-status" class="text-muted text-center mt-8" style="font-size:13px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Votos en tiempo real</div>
+    <div id="vote-progress"></div>
+    <div id="vote-count-info" class="text-muted text-center mt-8" style="font-size:13px"></div>
+  </div>
+
+  <!-- Solo anfitrión -->
+  <div id="host-vote-actions" style="width:100%;display:none">
+    <button class="btn btn-danger" onclick="closeVoting()">⚡ CERRAR VOTACIÓN Y ELIMINAR</button>
+    <button class="btn btn-muted mt-8" onclick="cancelVoting()">↩ CANCELAR VOTACIÓN</button>
+  </div>
+  <div id="guest-vote-info" style="display:none">
+    <div class="info-box">El anfitrión cierra la votación cuando lo decida.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PANTALLA 5 — RESULTADO DE VOTACIÓN
+══════════════════════════════════════════════════ -->
+<div id="screen-result" class="screen">
+  <h1>RESULTADO</h1>
+
+  <div class="result-reveal">
+    <span class="result-emoji" id="result-emoji">🏆</span>
+    <div class="result-title" id="result-title">—</div>
+    <p class="result-sub" id="result-sub"></p>
+  </div>
+
+  <div class="card mt-16" id="result-word-reveal">
+    <div class="card-title">Palabra secreta</div>
+    <div style="text-align:center;padding:10px 0">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px">La palabra era:</div>
+      <div id="result-word" style="font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;color:var(--accent)">—</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px" id="result-impostor-name"></div>
+    </div>
+  </div>
+
+  <div id="host-result-actions" style="width:100%;display:none;margin-top:16px">
+    <button class="btn btn-primary" onclick="newRound()">🔄 NUEVA RONDA</button>
+    <button class="btn btn-muted mt-8" onclick="endGame()">🚪 TERMINAR PARTIDA</button>
+  </div>
+  <div id="guest-result-info" style="display:none;margin-top:16px">
+    <div class="info-box">Esperando que el anfitrión decida<span class="loading-dots"></span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PANTALLA 6 — FIN DE PARTIDA
+══════════════════════════════════════════════════ -->
+<div id="screen-end" class="screen">
+  <div style="font-size:60px;text-align:center;margin-bottom:10px">🏁</div>
+  <h1>FIN DE PARTIDA</h1>
+  <p class="subtitle" id="end-subtitle">Gracias por jugar.</p>
+
+  <button class="btn btn-primary mt-16" onclick="backToHome()">🏠 VOLVER AL INICIO</button>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     FIREBASE + LÓGICA
+══════════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, update, push, onValue, off, remove }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ── Firebase config ────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyACkFsE_0cBEsLEPQPc3GLeZD3KZ0i89RE",
+  authDomain: "gor2games-657f7.firebaseapp.com",
+  databaseURL: "https://gor2games-657f7-default-rtdb.firebaseio.com",
+  projectId: "gor2games-657f7",
+  storageBucket: "gor2games-657f7.firebasestorage.app",
+  messagingSenderId: "91189543289",
+  appId: "1:91189543289:web:2a6ffc41710279febb6fa8"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ── Palabras por categoría ─────────────────────────────────────────────────
+const CATEGORIAS = {
+  "🌍 Países":       { id:"paises",    words:["Argentina","Brasil","Francia","Japón","Australia","Egipto","Canadá","México","Italia","Alemania","España","India","China","Rusia","Chile","Perú","Colombia","Portugal","Grecia","Turquía","Suecia","Noruega","Holanda","Bélgica","Polonia","Cuba","Venezuela","Uruguay","Paraguay","Bolivia"] },
+  "🍕 Comidas":      { id:"comidas",   words:["Pizza","Sushi","Tacos","Hamburguesa","Pasta","Asado","Milanesa","Empanada","Ramen","Paella","Sándwich","Ensalada","Lasaña","Churros","Helado","Pancakes","Hot dog","Ceviche","Risotto","Crepes","Shawarma","Falafel","Arepa","Cachapa","Pho","Pad Thai","Curry","Burrito","Nachos","Gazpacho"] },
+  "🎬 Películas":    { id:"peliculas", words:["Titanic","Avatar","Matrix","Inception","Interstellar","El Padrino","Joker","Avengers","Coco","Toy Story","Up","Shrek","Lion King","Frozen","Parasite","Gladiador","Batman","Spider-Man","Star Wars","Jurassic Park","Harry Potter","Fast and Furious","Minions","Moana","Encanto","Soul","Luca","Ratatouille","Wall-E","Cars"] },
+  "🎵 Cantantes":    { id:"cantantes", words:["Shakira","Daddy Yankee","Bad Bunny","Taylor Swift","Ed Sheeran","Maluma","J Balvin","Rosalía","Ariana Grande","Beyoncé","Rihanna","Drake","Eminem","The Weeknd","Dua Lipa","Billie Eilish","Harry Styles","Justin Bieber","Selena Gomez","Miley Cyrus","Karol G","Ozuna","Anuel AA","Farruko","Nicky Jam","Rauw Alejandro","Myke Towers","Sech","Jhay Cortez","Arcangel"] },
+  "🏆 Deportes":     { id:"deportes",  words:["Fútbol","Básquet","Tenis","Natación","Boxeo","Voleibol","Rugby","Golf","Béisbol","Hockey","Ciclismo","Atletismo","Surf","Skateboarding","Gimnasia","Esgrima","Judo","Karate","Taekwondo","Vóley playa","Polo","Remo","Vela","Triatlón","Pentatlón","Halterofilia","Lucha","Trampolín","Tiro con arco","Equitación"] },
+  "📱 Tecnología":   { id:"tecnologia",words:["iPhone","Netflix","Instagram","YouTube","Twitter","WhatsApp","Google","Amazon","PlayStation","Xbox","Nintendo","Tesla","Robot","Drone","Realidad Virtual","Blockchain","Inteligencia Artificial","Metaverso","5G","Bitcoin","Spotify","TikTok","Twitch","Discord","Zoom","ChatGPT","Alexa","Siri","Starlink","Cybertruck"] },
+  "🦁 Animales":     { id:"animales",  words:["León","Tigre","Elefante","Jirafa","Pingüino","Delfín","Ballena","Koala","Panda","Canguro","Loro","Pulpo","Mantarraya","Cocodrilo","Gorila","Chimpancé","Jaguar","Leopardo","Lince","Guepardo","Hipopótamo","Rinoceronte","Ornitorrinco","Axolote","Capibara","Tapir","Okapi","Pangolín","Quokka","Fosa"] },
+  "🎭 Todo mezclado":{ id:"mezclado",  words:["Silla","Montaña","Lluvia","Castillo","Volcán","Submarino","Espejo","Cohete","Pirámide","Laberinto","Fantasma","Diamante","Tornado","Arcoíris","Faro","Iglú","Catacumba","Trampolín","Telescopio","Microscopio","Compás","Reloj de arena","Acordeón","Didgeridoo","Kalimba","Theremin","Oboe","Clavicémbalo","Bandoneón","Sitar"] }
+};
+
+// ── Estado local ───────────────────────────────────────────────────────────
+let myName    = "";
+let myId      = "";
+let roomCode  = "";
+let isHost    = false;
+let myRole    = "";   // "civil" | "impostor"
+let myWord    = "";
+let myHint    = "";
+let wordHidden = true;
+let roomRef   = null;
+let listeners = [];
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo(0,0);
+}
+
+function toast(msg, icon="ℹ️") {
+  const c = document.getElementById("toast-container");
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function genCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from({length:4}, () => chars[Math.floor(Math.random()*chars.length)]).join("");
+}
+
+function genId() {
+  return Math.random().toString(36).substr(2,10);
+}
+
+function getEmoji(name) {
+  const emojis = ["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔","🦭","🐨","🐻","🦞","🦚"];
+  let h = 0;
+  for (let i=0;i<name.length;i++) h = (h<<5) - h + name.charCodeAt(i);
+  return emojis[Math.abs(h) % emojis.length];
+}
+
+function clearListeners() {
+  listeners.forEach(([r, fn]) => off(r, "value", fn));
+  listeners = [];
+}
+
+function listenTo(path, fn) {
+  const r = ref(db, path);
+  onValue(r, fn);
+  listeners.push([r, fn]);
+}
+
+// ── Categorías UI ──────────────────────────────────────────────────────────
+let selectedCats = new Set(["mezclado"]);
+
+function buildCatGrid() {
+  const grid = document.getElementById("cat-grid");
+  grid.innerHTML = "";
+  Object.entries(CATEGORIAS).forEach(([label, {id}]) => {
+    const div = document.createElement("div");
+    div.className = `cat-item ${selectedCats.has(id) ? "selected" : ""}`;
+    div.dataset.id = id;
+    div.innerHTML = `<span class="cat-icon">${label.split(" ")[0]}</span><span>${label.split(" ").slice(1).join(" ")}</span><span class="cat-check">✓</span>`;
+    div.onclick = () => {
+      if (selectedCats.has(id)) {
+        if (selectedCats.size === 1) { toast("Necesitás al menos una categoría", "⚠️"); return; }
+        selectedCats.delete(id);
+        div.classList.remove("selected");
+      } else {
+        selectedCats.add(id);
+        div.classList.add("selected");
+      }
+    };
+    grid.appendChild(div);
+  });
+}
+
+// ── IR A LOBBY ─────────────────────────────────────────────────────────────
+window.goToLobby = async function() {
+  const nameInput = document.getElementById("input-name").value.trim();
+  if (!nameInput || nameInput.length < 2) { toast("Ingresá tu nombre (mín. 2 caracteres)", "⚠️"); return; }
+  myName = nameInput;
+  myId   = genId();
+  isHost = true;
+
+  // Generar código único
+  let code;
+  do {
+    code = genCode();
+    const snap = await get(ref(db, `rooms/${code}`));
+    if (!snap.exists()) break;
+  } while (true);
+  roomCode = code;
+
+  // Crear sala en Firebase
+  await set(ref(db, `rooms/${roomCode}`), {
+    host: myId,
+    status: "lobby",
+    config: { hintEnabled: false, categories: ["mezclado"] },
+    players: {
+      [myId]: { name: myName, id: myId, isHost: true, eliminated: false, joinedAt: Date.now() }
+    },
+    currentTurn: null,
+    turnOrder: null,
+    votes: null,
+    round: 1
+  });
+
+  roomRef = `rooms/${roomCode}`;
+  buildCatGrid();
+  document.getElementById("display-code").textContent = roomCode;
+  document.getElementById("host-actions").style.display = "block";
+  document.getElementById("guest-actions").style.display = "none";
+  showScreen("screen-lobby");
+  subscribeToRoom();
+  toast("Sala creada", "🏠");
+};
+
+// ── UNIRSE CON CÓDIGO ──────────────────────────────────────────────────────
+window.joinByCode = async function() {
+  const nameInput = document.getElementById("input-name").value.trim();
+  const codeInput = document.getElementById("input-room-code").value.trim().toUpperCase();
+  if (!nameInput || nameInput.length < 2) { toast("Ingresá tu nombre", "⚠️"); return; }
+  if (codeInput.length !== 4)             { toast("El código tiene 4 caracteres", "⚠️"); return; }
+
+  const snap = await get(ref(db, `rooms/${codeInput}`));
+  if (!snap.exists()) { toast("Sala no encontrada", "❌"); return; }
+  const room = snap.val();
+  if (room.status !== "lobby") { toast("La partida ya comenzó", "⚠️"); return; }
+
+  const players = room.players || {};
+  if (Object.keys(players).length >= 10) { toast("Sala llena (máx. 10)", "⚠️"); return; }
+  // Verificar nombre duplicado
+  if (Object.values(players).some(p => p.name.toLowerCase() === nameInput.toLowerCase())) {
+    toast("Ese nombre ya está en uso en esta sala", "⚠️"); return;
+  }
+
+  myName   = nameInput;
+  myId     = genId();
+  isHost   = false;
+  roomCode = codeInput;
+  roomRef  = `rooms/${roomCode}`;
+
+  await set(ref(db, `${roomRef}/players/${myId}`), {
+    name: myName, id: myId, isHost: false, eliminated: false, joinedAt: Date.now()
+  });
+
+  buildCatGrid();
+  document.getElementById("display-code").textContent = roomCode;
+  document.getElementById("host-actions").style.display  = "none";
+  document.getElementById("guest-actions").style.display = "block";
+  document.getElementById("config-card").style.display   = "none";
+  showScreen("screen-lobby");
+  subscribeToRoom();
+  toast(`Te uniste a la sala ${roomCode}`, "🚪");
+};
+
+// ── COPIAR CÓDIGO ──────────────────────────────────────────────────────────
+window.copyCode = function() {
+  navigator.clipboard?.writeText(roomCode).then(() => toast("Código copiado", "📋"))
+    .catch(() => toast(`Código: ${roomCode}`, "📋"));
+};
+
+// ── SUSCRIBIRSE A CAMBIOS DE SALA ──────────────────────────────────────────
+function subscribeToRoom() {
+  listenTo(`${roomRef}`, (snap) => {
+    if (!snap.exists()) { backToHome(); return; }
+    const room = snap.val();
+    handleRoomUpdate(room);
+  });
+}
+
+// Estado anterior para detectar cambios reales
+let lastRoomStatus = null;
+
+function handleRoomUpdate(room) {
+  const players = room.players || {};
+  const playerCount = Object.keys(players).length;
+  const status = room.status;
+  const statusChanged = status !== lastRoomStatus;
+  lastRoomStatus = status;
+
+  // ── LOBBY ──────────────────────────────────────────────────────────────
+  if (status === "lobby") {
+    updateLobbyPlayers(players);
+    document.getElementById("player-count-badge").textContent = playerCount;
+    if (isHost) document.getElementById("btn-start").disabled = playerCount < 3;
+    return;
+  }
+
+  // ── PLAYING ─────────────────────────────────────────────────────────────
+  if (status === "playing") {
+    const currentScreen = document.querySelector(".screen.active")?.id;
+    // Si venimos del lobby, word, result o es un cambio de estado → mostrar palabra
+    if (statusChanged || currentScreen === "screen-lobby" || currentScreen === "screen-result" || currentScreen === "screen-word") {
+      loadMyRole(room);
+      return;
+    }
+    // Si ya estamos en el juego, actualizar
+    if (currentScreen === "screen-game") {
+      updateGameScreen(room);
+    }
+    return;
+  }
+
+  // ── VOTING ──────────────────────────────────────────────────────────────
+  if (status === "voting") {
+    const currentScreen = document.querySelector(".screen.active")?.id;
+    if (currentScreen !== "screen-vote") {
+      showScreen("screen-vote");
+      // Mostrar controles según rol
+      document.getElementById("host-vote-actions").style.display = isHost ? "block" : "none";
+      document.getElementById("guest-vote-info").style.display   = isHost ? "none" : "block";
+    }
+    updateVoteScreen(room);
+    return;
+  }
+
+  // ── RESULT ───────────────────────────────────────────────────────────────
+  if (status === "result") {
+    const currentScreen = document.querySelector(".screen.active")?.id;
+    if (currentScreen !== "screen-result") {
+      showResultScreen(room);
+    }
+    return;
+  }
+
+  // ── ENDED ────────────────────────────────────────────────────────────────
+  if (status === "ended") {
+    showScreen("screen-end");
+    document.getElementById("end-subtitle").textContent = "¡Gracias por jugar con todos!";
+    return;
+  }
+}
+
+// ── LOBBY: lista de jugadores ──────────────────────────────────────────────
+function updateLobbyPlayers(players) {
+  const list = document.getElementById("lobby-players-list");
+  list.innerHTML = "";
+  Object.values(players)
+    .sort((a,b) => a.joinedAt - b.joinedAt)
+    .forEach(p => {
+      const div = document.createElement("div");
+      div.className = `player-item ${p.isHost ? "is-host" : ""}`;
+      div.innerHTML = `
+        <div class="player-avatar">${getEmoji(p.name)}</div>
+        <div class="player-name">${p.name}</div>
+        ${p.isHost ? '<span class="player-badge badge-host">ANFITRIÓN</span>' : ''}
+        ${p.id === myId ? '<span class="player-badge" style="background:rgba(0,170,255,0.1);color:var(--secondary);border:1px solid rgba(0,170,255,0.2)">TÚ</span>' : ''}
+      `;
+      list.appendChild(div);
+    });
+}
+
+// ── INICIAR PARTIDA ────────────────────────────────────────────────────────
+window.startGame = async function() {
+  const snap = await get(ref(db, `${roomRef}/players`));
+  const players = snap.val();
+  const ids = Object.keys(players);
+  if (ids.length < 3) { toast("Necesitás mínimo 3 jugadores", "⚠️"); return; }
+
+  // Elegir categorías seleccionadas
+  const cats = [...selectedCats];
+  const wordPool = cats.flatMap(cat => {
+    const entry = Object.values(CATEGORIAS).find(c => c.id === cat);
+    return entry ? entry.words : [];
+  });
+  const word = wordPool[Math.floor(Math.random() * wordPool.length)];
+
+  // Elegir impostor aleatoriamente
+  const impostorIdx = Math.floor(Math.random() * ids.length);
+  const impostorId  = ids[impostorIdx];
+
+  // Pista para el impostor
+  const hintEnabled = document.getElementById("cfg-hint").checked;
+  let impostorHint  = "";
+  if (hintEnabled) {
+    // Buscar la categoría de la palabra
+    for (const [label, {words}] of Object.entries(CATEGORIAS)) {
+      if (words.includes(word)) {
+        impostorHint = `Pista: es una ${label.split(" ").slice(1).join(" ").toLowerCase()}`;
+        break;
+      }
+    }
+    if (!impostorHint) impostorHint = "Pista: es una cosa conocida";
+  }
+
+  // Orden de turnos aleatorio
+  const shuffled = [...ids].sort(() => Math.random() - 0.5);
+
+  // Asignar roles a cada jugador (guardado de forma que solo Firebase lo sabe,
+  // cada cliente lee solo su propio nodo)
+  const rolesData = {};
+  ids.forEach(id => {
+    rolesData[id] = {
+      role: id === impostorId ? "impostor" : "civil",
+      word: id === impostorId ? (hintEnabled ? "???" : "???") : word,
+      hint: id === impostorId ? impostorHint : ""
+    };
+  });
+
+  await update(ref(db, roomRef), {
+    status: "playing",
+    word,
+    impostorId,
+    turnOrder: shuffled,
+    currentTurnIdx: 0,
+    currentTurn: shuffled[0],
+    roles: rolesData,
+    votes: {},
+    round: 1,
+    "config/hintEnabled": hintEnabled,
+    "config/categories": cats
+  });
+};
+
+// ── CARGAR ROL PROPIO ──────────────────────────────────────────────────────
+async function loadMyRole(room) {
+  const myRoleData = room.roles?.[myId];
+  if (!myRoleData) return;
+
+  myRole = myRoleData.role;
+  myWord = myRoleData.role === "impostor" ? "???" : room.word;
+  myHint = myRoleData.hint || "";
+
+  // Configurar pantalla de palabra
+  const badge = document.getElementById("word-role-badge");
+  const wordEl = document.getElementById("word-big");
+  const hintEl = document.getElementById("word-hint-text");
+  const card   = document.getElementById("word-reveal-card");
+
+  if (myRole === "impostor") {
+    badge.className = "word-role-badge role-impostor";
+    badge.textContent = "😈 ERES EL IMPOSTOR";
+    wordEl.textContent = myHint ? myHint.replace("Pista: ","") : "No tenés la palabra";
+    card.style.borderColor = "rgba(255,51,102,0.4)";
+    card.style.background  = "linear-gradient(135deg,rgba(255,51,102,0.1),rgba(255,80,0,0.06))";
+    if (myHint) {
+      hintEl.textContent = myHint;
+      hintEl.style.display = "block";
+    }
+  } else {
+    badge.className = "word-role-badge role-civil";
+    badge.textContent = "✅ ERES CIVIL";
+    wordEl.textContent = myWord;
+    card.style.borderColor = "rgba(57,255,20,0.3)";
+    card.style.background  = "linear-gradient(135deg,rgba(57,255,20,0.08),rgba(0,170,255,0.06))";
+    hintEl.style.display = "none";
+  }
+
+  wordHidden = true;
+  document.getElementById("word-reveal-card").style.filter = "blur(8px)";
+
+  showScreen("screen-word");
+}
+
+// ── REVELAR/OCULTAR PALABRA ────────────────────────────────────────────────
+window.toggleWordCover = function() {
+  wordHidden = !wordHidden;
+  document.getElementById("word-reveal-card").style.filter = wordHidden ? "blur(8px)" : "none";
+  document.getElementById("word-cover").textContent = wordHidden
+    ? "👁 Tocá para revelar / ocultar tu palabra"
+    : "🙈 Tocá para ocultar";
+};
+
+// ── IR AL JUEGO ────────────────────────────────────────────────────────────
+window.goToGame = function() {
+  const snap_listener = (snap) => {
+    if (!snap.exists()) return;
+    updateGameScreen(snap.val());
+  };
+  // Forzar ir a pantalla juego y escuchar
+  showScreen("screen-game");
+  if (isHost) {
+    document.getElementById("host-game-actions").style.display = "block";
+    document.getElementById("guest-game-info").style.display   = "none";
+  } else {
+    document.getElementById("host-game-actions").style.display = "none";
+    document.getElementById("guest-game-info").style.display   = "block";
+  }
+  // El listener ya está activo por subscribeToRoom
+  get(ref(db, roomRef)).then(snap => { if (snap.exists()) updateGameScreen(snap.val()); });
+};
+
+// ── ACTUALIZAR PANTALLA DE JUEGO ───────────────────────────────────────────
+function updateGameScreen(room) {
+  const players = room.players || {};
+  const turnOrder = room.turnOrder || [];
+  const currentTurn = room.currentTurn;
+
+  // Turno actual
+  const turnPlayer = players[currentTurn];
+  if (turnPlayer) {
+    document.getElementById("turn-name").textContent = turnPlayer.name;
+    const isMyTurn = currentTurn === myId;
+    const youEl = document.getElementById("turn-you");
+    youEl.style.display = isMyTurn ? "block" : "none";
+  }
+
+  // Lista de jugadores con orden de turno
+  const list = document.getElementById("game-players-list");
+  list.innerHTML = "";
+  turnOrder.forEach((pid, idx) => {
+    const p = players[pid];
+    if (!p) return;
+    const isCurrentTurn = pid === currentTurn;
+    const div = document.createElement("div");
+    div.className = `player-item ${p.eliminated ? "eliminated" : ""}`;
+    div.innerHTML = `
+      ${isCurrentTurn ? '<div class="turn-indicator"></div>' : '<div style="width:8px"></div>'}
+      <div class="player-avatar">${getEmoji(p.name)}</div>
+      <div style="flex:1">
+        <div class="player-name">${p.name}${p.id === myId ? " <span style='color:var(--secondary);font-size:12px'>(vos)</span>" : ""}</div>
+        <div style="font-size:11px;color:var(--muted)">Turno #${idx+1}</div>
+      </div>
+      ${p.eliminated ? '<span class="player-badge badge-elim">ELIMINADO</span>' : ""}
+      ${p.isHost ? '<span class="player-badge badge-host">HOST</span>' : ""}
+    `;
+    list.appendChild(div);
+  });
+}
+
+// ── SIGUIENTE TURNO (host) ─────────────────────────────────────────────────
+window.nextTurnHost = async function() {
+  const snap = await get(ref(db, roomRef));
+  const room = snap.val();
+  const turnOrder = room.turnOrder || [];
+  const players = room.players || {};
+
+  // Filtrar eliminados
+  const active = turnOrder.filter(id => players[id] && !players[id].eliminated);
+  if (active.length === 0) return;
+
+  const curIdx = active.indexOf(room.currentTurn);
+  const nextIdx = (curIdx + 1) % active.length;
+  const nextId  = active[nextIdx];
+
+  await update(ref(db, roomRef), {
+    currentTurn: nextId,
+    currentTurnIdx: nextIdx
+  });
+};
+
+// ── INICIAR VOTACIÓN ───────────────────────────────────────────────────────
+window.startVoting = async function() {
+  await update(ref(db, roomRef), {
+    status: "voting",
+    votes: {}
+  });
+  toast("Votación iniciada", "🗳️");
+};
+
+// ── ACTUALIZAR PANTALLA VOTACIÓN ───────────────────────────────────────────
+let myVote = null;
+
+function updateVoteScreen(room) {
+  const players = room.players || {};
+  const votes   = room.votes   || {};
+  const active  = Object.values(players).filter(p => !p.eliminated);
+  const totalVoters = active.length;
+
+  // Contar votos
+  const voteCounts = {};
+  active.forEach(p => voteCounts[p.id] = 0);
+  Object.values(votes).forEach(votedId => {
+    if (voteCounts[votedId] !== undefined) voteCounts[votedId]++;
+  });
+  const totalVoted = Object.keys(votes).length;
+
+  // Lista para votar
+  const voteList = document.getElementById("vote-list");
+  voteList.innerHTML = "";
+  active.forEach(p => {
+    if (p.id === myId) return; // No podés votarte a vos mismo
+    const div = document.createElement("div");
+    const alreadyVoted = votes[myId] !== undefined;
+    const isVotedFor   = votes[myId] === p.id;
+    div.className = `vote-item ${isVotedFor ? "voted" : ""} ${alreadyVoted && !isVotedFor ? "self-vote" : ""}`;
+    div.innerHTML = `
+      <div class="player-avatar">${getEmoji(p.name)}</div>
+      <div class="vote-name">${p.name}</div>
+      ${isVotedFor ? '<span style="color:var(--danger);font-size:18px">✓</span>' : ""}
+    `;
+    if (!alreadyVoted) {
+      div.onclick = () => castVote(p.id);
+    }
+    voteList.appendChild(div);
+  });
+
+  // Barra de progreso de votos
+  const progress = document.getElementById("vote-progress");
+  progress.innerHTML = "";
+  active.forEach(p => {
+    const count = voteCounts[p.id] || 0;
+    const pct   = totalVoters > 0 ? (count / totalVoters) * 100 : 0;
+    const div = document.createElement("div");
+    div.style.marginBottom = "10px";
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-weight:600;font-size:14px">${p.name}</span>
+        <span class="vote-count">${count}</span>
+      </div>
+      <div class="vote-bar-wrap"><div class="vote-bar" style="width:${pct}%"></div></div>
+    `;
+    progress.appendChild(div);
+  });
+
+  document.getElementById("vote-count-info").textContent = `${totalVoted} de ${totalVoters} votos emitidos`;
+
+  const myVoteStatus = document.getElementById("my-vote-status");
+  if (votes[myId]) {
+    const votedName = players[votes[myId]]?.name || "?";
+    myVoteStatus.textContent = `✓ Votaste a ${votedName}`;
+    myVoteStatus.style.color = "var(--success)";
+  } else {
+    myVoteStatus.textContent = "Todavía no votaste";
+    myVoteStatus.style.color = "var(--muted)";
+  }
+
+  // Controles host
+  if (isHost) {
+    document.getElementById("host-vote-actions").style.display = "block";
+    document.getElementById("guest-vote-info").style.display   = "none";
+  } else {
+    document.getElementById("host-vote-actions").style.display = "none";
+    document.getElementById("guest-vote-info").style.display   = "block";
+  }
+}
+
+// ── EMITIR VOTO ────────────────────────────────────────────────────────────
+async function castVote(targetId) {
+  await set(ref(db, `${roomRef}/votes/${myId}`), targetId);
+  toast("Voto emitido", "✅");
+}
+
+// ── CERRAR VOTACIÓN ────────────────────────────────────────────────────────
+window.closeVoting = async function() {
+  const snap = await get(ref(db, roomRef));
+  const room = snap.val();
+  const players = room.players || {};
+  const votes   = room.votes   || {};
+  const active  = Object.values(players).filter(p => !p.eliminated);
+
+  // Contar votos
+  const voteCounts = {};
+  active.forEach(p => voteCounts[p.id] = 0);
+  Object.values(votes).forEach(vid => { if (voteCounts[vid] !== undefined) voteCounts[vid]++; });
+
+  // Buscar máximo
+  const maxVotes = Math.max(...Object.values(voteCounts));
+  const topVoted = Object.entries(voteCounts).filter(([,v]) => v === maxVotes).map(([id]) => id);
+
+  if (topVoted.length > 1) {
+    // Empate → siguiente ronda de pistas
+    toast("¡Empate! Continúa la ronda.", "⚖️");
+    await update(ref(db, roomRef), {
+      status: "playing",
+      votes: {},
+      round: (room.round || 1) + 1
+    });
+    return;
+  }
+
+  // Eliminar jugador
+  const eliminatedId   = topVoted[0];
+  const eliminatedName = players[eliminatedId]?.name || "?";
+  const wasImpostor    = eliminatedId === room.impostorId;
+
+  await update(ref(db, roomRef), {
+    [`players/${eliminatedId}/eliminated`]: true,
+    status: "result",
+    lastEliminated: eliminatedId,
+    civilsWin: wasImpostor
+  });
+
+  toast(`${eliminatedName} fue eliminado`, "💀");
+};
+
+// ── CANCELAR VOTACIÓN ──────────────────────────────────────────────────────
+window.cancelVoting = async function() {
+  await update(ref(db, roomRef), { status: "playing", votes: {} });
+  toast("Votación cancelada", "↩️");
+};
+
+// ── MOSTRAR RESULTADO ──────────────────────────────────────────────────────
+async function showResultScreen(room) {
+  const players  = room.players || {};
+  const elimId   = room.lastEliminated;
+  const elimName = players[elimId]?.name || "?";
+  const civilsWin = room.civilsWin;
+  const impostorName = players[room.impostorId]?.name || "?";
+
+  document.getElementById("result-word").textContent     = room.word || "—";
+  document.getElementById("result-impostor-name").textContent =
+    `El impostor era: ${impostorName} ${room.impostorId === myId ? "(eras vos 😈)" : ""}`;
+
+  if (civilsWin) {
+    document.getElementById("result-emoji").textContent  = "🎉";
+    document.getElementById("result-title").className    = "result-title result-win";
+    document.getElementById("result-title").textContent  = "¡CIVILES GANAN!";
+    document.getElementById("result-sub").textContent    = `${elimName} era el impostor. Los civiles lo descubrieron.`;
+  } else {
+    document.getElementById("result-emoji").textContent  = "😈";
+    document.getElementById("result-title").className    = "result-title result-lose";
+    document.getElementById("result-title").textContent  = "¡EL IMPOSTOR GANA!";
+    document.getElementById("result-sub").textContent    = `Eliminaron a ${elimName}, que era inocente. ${impostorName} se escapó.`;
+  }
+
+  if (isHost) {
+    document.getElementById("host-result-actions").style.display = "block";
+    document.getElementById("guest-result-info").style.display   = "none";
+  } else {
+    document.getElementById("host-result-actions").style.display = "none";
+    document.getElementById("guest-result-info").style.display   = "block";
+  }
+
+  showScreen("screen-result");
+}
+
+// ── NUEVA RONDA ────────────────────────────────────────────────────────────
+window.newRound = async function() {
+  const snap = await get(ref(db, `${roomRef}/players`));
+  const players = snap.val();
+  const ids = Object.keys(players).filter(id => !players[id].eliminated);
+
+  if (ids.length < 3) {
+    toast("No hay suficientes jugadores para otra ronda", "⚠️");
+    return;
+  }
+
+  const catSnap = await get(ref(db, `${roomRef}/config/categories`));
+  const cats    = catSnap.val() || ["mezclado"];
+  const wordPool = cats.flatMap(cat => {
+    const entry = Object.values(CATEGORIAS).find(c => c.id === cat);
+    return entry ? entry.words : [];
+  });
+  const word = wordPool[Math.floor(Math.random() * wordPool.length)];
+
+  const impostorId   = ids[Math.floor(Math.random() * ids.length)];
+  const hintSnap     = await get(ref(db, `${roomRef}/config/hintEnabled`));
+  const hintEnabled  = hintSnap.val() || false;
+  let impostorHint   = "";
+  if (hintEnabled) {
+    for (const [label, {words}] of Object.entries(CATEGORIAS)) {
+      if (words.includes(word)) { impostorHint = `Pista: es una ${label.split(" ").slice(1).join(" ").toLowerCase()}`; break; }
+    }
+    if (!impostorHint) impostorHint = "Pista: es una cosa conocida";
+  }
+
+  const shuffled = [...ids].sort(() => Math.random() - 0.5);
+  const rolesData = {};
+  ids.forEach(id => {
+    rolesData[id] = {
+      role: id === impostorId ? "impostor" : "civil",
+      word: id === impostorId ? "???" : word,
+      hint: id === impostorId ? impostorHint : ""
+    };
+  });
+
+  await update(ref(db, roomRef), {
+    status: "playing",
+    word, impostorId,
+    turnOrder: shuffled,
+    currentTurnIdx: 0,
+    currentTurn: shuffled[0],
+    roles: rolesData,
+    votes: {},
+    lastEliminated: null,
+    civilsWin: null
+  });
+};
+
+// ── TERMINAR PARTIDA ───────────────────────────────────────────────────────
+window.endGame = async function() {
+  await update(ref(db, roomRef), { status: "ended" });
+};
+
+// ── SALIR DE SALA ──────────────────────────────────────────────────────────
+window.leaveRoom = async function() {
+  clearListeners();
+  if (isHost) {
+    await remove(ref(db, roomRef));
+  } else {
+    await remove(ref(db, `${roomRef}/players/${myId}`));
+  }
+  backToHome();
+};
+
+// ── VOLVER AL INICIO ───────────────────────────────────────────────────────
+window.backToHome = function() {
+  clearListeners();
+  myName = ""; myId = ""; roomCode = ""; isHost = false;
+  myRole = ""; myWord = ""; myVote = null;
+  document.getElementById("input-name").value = "";
+  document.getElementById("input-room-code").value = "";
+  showScreen("screen-home");
+};
+
+// ── INPUT: código en mayúsculas automático ─────────────────────────────────
+document.getElementById("input-room-code").addEventListener("input", function() {
+  this.value = this.value.toUpperCase();
+});
+
+// Limpiar salas antiguas al salir
+window.addEventListener("beforeunload", () => {
+  if (!isHost && roomCode && myId) {
+    // Usar sendBeacon para eliminar jugador sin bloquear el unload
+    const url = `https://gor2games-657f7-default-rtdb.firebaseio.com/rooms/${roomCode}/players/${myId}.json`;
+    navigator.sendBeacon && navigator.sendBeacon(url, JSON.stringify(null));
+  }
+});
+
+</script>
+</body>
+</html>
