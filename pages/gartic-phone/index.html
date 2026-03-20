@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Gartic Phone Gor2</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+:root{--bg:#08080f;--sur:#111120;--sur2:#1a1a2e;--pr:#ff6600;--se:#00aaff;--ac:#ffe600;--da:#ff3366;--ok:#39ff14;--tx:#f0f0f0;--mu:#666688;--r:12px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--tx);font-family:'Rajdhani',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;overflow-x:hidden;overflow-y:auto;padding:14px 12px 30px;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(255,102,0,0.05),transparent 60%);pointer-events:none;z-index:0;}
+h1{font-family:'Orbitron',sans-serif;font-size:clamp(18px,4vw,28px);font-weight:900;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:4px;filter:drop-shadow(0 0 10px rgba(255,102,0,0.4));}
+.sub{color:var(--mu);font-size:13px;text-align:center;margin-bottom:20px;letter-spacing:1px;}
+.screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:540px;position:relative;z-index:1;}
+.screen.active{display:flex;animation:fu .3s ease;}
+@keyframes fu{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.card{background:var(--sur);border:1px solid rgba(255,102,0,0.15);border-radius:var(--r);padding:18px;width:100%;margin-bottom:12px;}
+.ct{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--pr);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.ct::before{content:'';width:3px;height:13px;background:var(--pr);border-radius:2px;flex-shrink:0;}
+label{display:block;font-size:11px;font-weight:700;color:var(--mu);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:'Orbitron',sans-serif;}
+input,select,textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--tx);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;padding:10px 13px;border-radius:10px;outline:none;transition:all .2s;margin-bottom:10px;}
+input:focus,select:focus,textarea:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);}
+textarea{resize:none;height:72px;font-size:16px;}
+.btn{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;padding:12px 18px;border-radius:10px;border:none;cursor:pointer;letter-spacing:1px;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-bottom:8px;}
+.bp{background:linear-gradient(135deg,#ff6600,#ff9500);color:#fff;box-shadow:0 0 14px rgba(255,102,0,0.4);}
+.bp:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(255,102,0,0.6);}
+.bs{background:rgba(0,170,255,0.1);border:1px solid rgba(0,170,255,0.3);color:var(--se);}
+.bm{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--mu);font-size:11px;}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
+.div{display:flex;align-items:center;gap:10px;color:var(--mu);font-size:12px;width:100%;margin:10px 0;}
+.div::before,.div::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.07);}
+.code-box{background:linear-gradient(135deg,rgba(255,102,0,0.1),rgba(255,230,0,0.07));border:2px solid rgba(255,102,0,0.3);border-radius:14px;padding:14px;text-align:center;margin-bottom:12px;width:100%;cursor:pointer;}
+.code-val{font-family:'Orbitron',sans-serif;font-size:clamp(28px,7vw,44px);font-weight:900;letter-spacing:8px;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.plist{display:flex;flex-direction:column;gap:6px;width:100%;}
+.pi{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:8px 12px;}
+.pi.host{border-color:rgba(255,102,0,0.3);background:rgba(255,102,0,0.06);}
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:rgba(255,102,0,0.1);border:1px solid rgba(255,255,255,0.1);}
+.pn{font-weight:700;font-size:13px;flex:1;}
+.badge{font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:3px 7px;border-radius:6px;letter-spacing:1px;}
+.bh{background:rgba(255,102,0,0.2);color:var(--pr);border:1px solid rgba(255,102,0,0.3);}
+.ibox{background:rgba(0,170,255,0.07);border:1px solid rgba(0,170,255,0.2);border-radius:10px;padding:10px 13px;font-size:13px;color:var(--se);width:100%;line-height:1.6;}
+.loading::after{content:'';animation:dots 1.2s steps(4,end) infinite;}
+@keyframes dots{0%{content:'';}25%{content:'.';}50%{content:'..';}75%{content:'...';};}
+
+/* Timer */
+.timer-wrap{height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;margin-bottom:10px;}
+.timer-bar{height:100%;background:linear-gradient(90deg,var(--pr),var(--ac));border-radius:3px;transition:width 1s linear;}
+
+/* Canvas de dibujo */
+.draw-area{position:relative;width:100%;}
+.draw-toolbar{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:6px;padding:8px;background:var(--sur);border-radius:10px;border:1px solid rgba(255,255,255,0.07);}
+.cbtn{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,0.15);cursor:pointer;transition:all .15s;flex-shrink:0;}
+.cbtn.active,.cbtn:hover{border-color:#fff;transform:scale(1.25);}
+.sbtn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);color:var(--tx);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-weight:700;flex-shrink:0;}
+.sbtn.active{background:rgba(255,102,0,0.2);border-color:var(--pr);color:var(--pr);}
+.tsep{width:1px;height:22px;background:rgba(255,255,255,0.1);flex-shrink:0;}
+.ebtn,.clrbtn{padding:4px 9px;border-radius:6px;cursor:pointer;font-size:11px;white-space:nowrap;}
+.ebtn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--tx);}
+.ebtn.active{background:rgba(0,170,255,0.15);border-color:var(--se);}
+.clrbtn{background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.2);color:var(--da);font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:1px;}
+#draw-canvas{width:100%;border-radius:10px;border:2px solid rgba(255,102,0,0.2);display:block;touch-action:none;background:#1a1a1a;cursor:crosshair;}
+
+/* Palabra a dibujar */
+.palabra-card{background:linear-gradient(135deg,rgba(57,255,20,0.08),rgba(0,170,255,0.05));border:1px solid rgba(57,255,20,0.25);border-radius:12px;padding:14px;text-align:center;margin-bottom:10px;width:100%;}
+.palabra-lbl{font-size:11px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Orbitron',sans-serif;}
+.palabra-val{font-family:'Orbitron',sans-serif;font-size:clamp(16px,4vw,24px);font-weight:900;color:var(--ok);margin-top:4px;}
+
+/* Lo que ves (texto/imagen de la ronda anterior) */
+.prev-card{background:var(--sur2);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;text-align:center;margin-bottom:10px;width:100%;}
+.prev-lbl{font-size:11px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Orbitron',sans-serif;margin-bottom:8px;}
+.prev-text{font-size:18px;font-weight:700;color:var(--ac);padding:8px 0;}
+.prev-img{max-width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.1);}
+.prev-hint{font-size:12px;color:var(--mu);margin-top:6px;}
+
+/* Revelación */
+.reveal-chain{display:flex;flex-direction:column;gap:10px;width:100%;}
+.chain-step{border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.03);}
+.chain-step.step-text{border-color:rgba(0,170,255,0.2);background:rgba(0,170,255,0.05);}
+.chain-step.step-draw{border-color:rgba(255,102,0,0.2);background:rgba(255,102,0,0.05);}
+.chain-author{font-size:11px;color:var(--mu);margin-bottom:6px;font-family:'Orbitron',sans-serif;letter-spacing:1px;}
+.chain-text{font-size:17px;font-weight:700;color:var(--tx);}
+.chain-img{width:100%;border-radius:8px;}
+.chain-nav{display:flex;gap:8px;width:100%;margin-top:10px;justify-content:center;}
+.chain-btn{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;padding:9px 18px;border-radius:8px;border:none;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.cb-prev{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:var(--mu);}
+.cb-next{background:linear-gradient(135deg,#ff6600,#ff9500);color:#fff;}
+.chain-dots{display:flex;gap:6px;justify-content:center;margin-top:8px;}
+.chain-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.15);transition:all .2s;}
+.chain-dot.active{background:var(--pr);box-shadow:0 0 8px rgba(255,102,0,0.6);}
+
+/* Progress bar rondas */
+.ronda-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
+.ronda-num{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:var(--pr);}
+.timer-num{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--ac);}
+.tipo-badge{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;padding:4px 12px;border-radius:8px;letter-spacing:1px;}
+.tb-texto{background:rgba(0,170,255,0.15);color:var(--se);border:1px solid rgba(0,170,255,0.3);}
+.tb-dibujo{background:rgba(255,102,0,0.15);color:var(--pr);border:1px solid rgba(255,102,0,0.3);}
+
+/* Toast */
+#toast-c{position:fixed;top:14px;right:14px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:var(--sur2);border:1px solid rgba(255,102,0,0.3);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;max-width:250px;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:tIn .3s ease,tOut .3s ease 2.7s forwards;display:flex;align-items:center;gap:8px;}
+@keyframes tIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
+@keyframes tOut{to{opacity:0;transform:translateX(40px);}}
+
+/* Countdown overlay */
+#countdown-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:8000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+#countdown-overlay.active{display:flex;}
+.cd-num{font-family:'Orbitron',sans-serif;font-size:80px;font-weight:900;color:var(--pr);animation:cdPop .9s ease;}
+@keyframes cdPop{0%{transform:scale(1.4);opacity:0;}50%{transform:scale(0.9);}100%{transform:scale(1);opacity:1;}}
+.cd-lbl{font-family:'Orbitron',sans-serif;font-size:16px;color:var(--mu);letter-spacing:3px;}
+</style>
+</head>
+<body>
+<div id="toast-c"></div>
+<div id="countdown-overlay">
+  <div class="cd-num" id="cd-num">3</div>
+  <div class="cd-lbl" id="cd-lbl">PRÓXIMA RONDA</div>
+</div>
+
+<!-- INICIO -->
+<div id="s-home" class="screen active">
+  <div style="font-size:44px;text-align:center;margin-bottom:6px">📞</div>
+  <h1>GARTIC PHONE</h1>
+  <p class="sub">Dibujá y adiviná. El teléfono descompuesto.</p>
+  <div class="card">
+    <div class="ct">Ingresar</div>
+    <label>Tu nombre</label>
+    <input type="text" id="inp-name" placeholder="Cómo te llaman..." maxlength="16" autocomplete="off">
+    <button class="btn bp" onclick="createRoom()">📞 CREAR SALA</button>
+    <div class="div">o</div>
+    <label>Código de sala</label>
+    <input type="text" id="inp-code" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-family:'Orbitron',sans-serif;font-size:18px;text-align:center">
+    <button class="btn bs" onclick="joinRoom()">🚪 UNIRSE</button>
+  </div>
+  <p style="color:var(--mu);font-size:12px;text-align:center">Mínimo 3 jugadores · Máximo 8</p>
+</div>
+
+<!-- LOBBY -->
+<div id="s-lobby" class="screen">
+  <h1>SALA DE ESPERA</h1>
+  <div class="code-box" onclick="copyCode()">
+    <div style="font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Orbitron',sans-serif;margin-bottom:3px">Código de sala</div>
+    <div class="code-val" id="d-code">----</div>
+    <div style="font-size:11px;color:var(--mu);margin-top:3px">📋 Tocá para copiar</div>
+  </div>
+  <div class="card">
+    <div class="ct">Jugadores <span id="p-count" style="margin-left:auto;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:2px 10px;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--mu)">0</span></div>
+    <div class="plist" id="lobby-list"></div>
+    <p style="color:var(--mu);font-size:11px;margin-top:8px">Necesitás al menos 3 jugadores para iniciar.</p>
+  </div>
+  <div class="card" id="cfg-card" style="display:none">
+    <div class="ct">Configuración</div>
+    <label>Tiempo para escribir / dibujar</label>
+    <select id="cfg-time"><option value="60">60 segundos</option><option value="90" selected>90 segundos</option><option value="120">120 segundos</option></select>
+  </div>
+  <div id="host-btns" style="width:100%;display:none">
+    <button class="btn bp" id="btn-start" onclick="hostStart()" disabled>📞 INICIAR</button>
+    <button class="btn bm" onclick="leaveRoom()">← Salir</button>
+  </div>
+  <div id="guest-btns" style="width:100%;display:none">
+    <div class="ibox">Esperando que el anfitrión inicie<span class="loading"></span></div>
+    <button class="btn bm" style="margin-top:8px" onclick="leaveRoom()">← Salir</button>
+  </div>
+</div>
+
+<!-- ESCRIBIR FRASE INICIAL -->
+<div id="s-write" class="screen">
+  <h1>ESCRIBÍ UNA FRASE</h1>
+  <p class="sub">Los demás la van a dibujar e interpretar.</p>
+  <div class="ronda-info">
+    <span class="ronda-num">RONDA INICIAL</span>
+    <span class="timer-num" id="write-timer">90</span>
+    <span class="tipo-badge tb-texto">✍️ TEXTO</span>
+  </div>
+  <div class="timer-wrap"><div class="timer-bar" id="write-timer-bar" style="width:100%"></div></div>
+  <div class="card">
+    <div class="ct">Tu frase</div>
+    <textarea id="write-input" placeholder="Ej: un astronauta comiendo pizza en la luna..." maxlength="80"></textarea>
+    <div id="write-count" style="text-align:right;font-size:11px;color:var(--mu);margin-top:-6px;margin-bottom:10px">0/80</div>
+    <button class="btn bp" id="btn-send-write" onclick="submitText()">✅ ENVIAR FRASE</button>
+  </div>
+</div>
+
+<!-- DIBUJAR -->
+<div id="s-draw" class="screen" style="max-width:none;width:100%">
+  <div style="width:100%;max-width:540px">
+    <h1>DIBUJÁ ESTO</h1>
+    <div class="ronda-info">
+      <span class="ronda-num" id="draw-ronda">RONDA 1</span>
+      <span class="timer-num" id="draw-timer">90</span>
+      <span class="tipo-badge tb-dibujo">🎨 DIBUJO</span>
+    </div>
+    <div class="timer-wrap"><div class="timer-bar" id="draw-timer-bar" style="width:100%"></div></div>
+    <div class="prev-card">
+      <div class="prev-lbl">Dibujá esto:</div>
+      <div class="prev-text" id="draw-palabra">—</div>
+    </div>
+    <div class="draw-toolbar">
+      <div id="draw-palette" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+      <div class="tsep"></div>
+      <button class="sbtn active" onclick="setSize(3,this)">S</button>
+      <button class="sbtn" onclick="setSize(7,this)">M</button>
+      <button class="sbtn" onclick="setSize(13,this)">L</button>
+      <button class="sbtn" onclick="setSize(20,this)">XL</button>
+      <div class="tsep"></div>
+      <button class="ebtn" id="ebtn" onclick="toggleEraser()">🧹</button>
+      <button class="clrbtn" onclick="clearCanvas()">🗑</button>
+    </div>
+    <canvas id="draw-canvas" width="500" height="340"></canvas>
+    <button class="btn bp" id="btn-send-draw" onclick="submitDraw()" style="margin-top:10px">✅ ENVIAR DIBUJO</button>
+  </div>
+</div>
+
+<!-- ADIVINAR (texto sobre dibujo) -->
+<div id="s-guess" class="screen">
+  <h1>¿QUÉ ES ESTO?</h1>
+  <p class="sub">Escribí lo que ves en el dibujo.</p>
+  <div class="ronda-info">
+    <span class="ronda-num" id="guess-ronda">RONDA 2</span>
+    <span class="timer-num" id="guess-timer">90</span>
+    <span class="tipo-badge tb-texto">✍️ TEXTO</span>
+  </div>
+  <div class="timer-wrap"><div class="timer-bar" id="guess-timer-bar" style="width:100%"></div></div>
+  <div class="prev-card">
+    <div class="prev-lbl">Describí este dibujo:</div>
+    <img id="guess-img" class="prev-img" src="" alt="dibujo">
+    <div class="prev-hint">Describí con una frase corta lo que ves.</div>
+  </div>
+  <div class="card">
+    <textarea id="guess-input" placeholder="Lo que ves es..." maxlength="80"></textarea>
+    <button class="btn bp" id="btn-send-guess" onclick="submitText()">✅ ENVIAR</button>
+  </div>
+</div>
+
+<!-- ESPERANDO -->
+<div id="s-waiting" class="screen">
+  <div style="font-size:50px;text-align:center;margin-bottom:10px">⏳</div>
+  <h1>ESPERANDO</h1>
+  <div class="ibox" style="text-align:center">Esperando que todos los jugadores terminen<span class="loading"></span></div>
+  <div id="waiting-progress" style="margin-top:14px;width:100%;text-align:center;color:var(--mu);font-size:13px"></div>
+</div>
+
+<!-- REVELACIÓN -->
+<div id="s-reveal" class="screen">
+  <h1>REVELACIÓN</h1>
+  <p class="sub">Así quedó la cadena</p>
+  <div class="card" id="reveal-player-card">
+    <div class="ct" id="reveal-chain-title">Cadena de —</div>
+    <div class="reveal-chain" id="reveal-chain"></div>
+  </div>
+  <div class="chain-dots" id="chain-dots"></div>
+  <div class="chain-nav">
+    <button class="chain-btn cb-prev" onclick="prevChain()" id="btn-prev-chain">◀ ANTERIOR</button>
+    <button class="chain-btn cb-next" onclick="nextChain()" id="btn-next-chain">SIGUIENTE ▶</button>
+  </div>
+  <div id="reveal-host-btns" style="width:100%;margin-top:12px;display:none">
+    <button class="btn bp" onclick="newGame()">🔄 NUEVA PARTIDA</button>
+    <button class="btn bm" style="margin-top:4px" onclick="leaveRoom()">← Salir</button>
+  </div>
+  <div id="reveal-guest-info" style="width:100%;margin-top:12px;display:none">
+    <div class="ibox">El anfitrión controla la revelación<span class="loading"></span></div>
+  </div>
+</div>
+
+<script>
+// ── Firebase ───────────────────────────────────────────────────────────────
+const fbCfg={apiKey:"AIzaSyACkFsE_0cBEsLEPQPc3GLeZD3KZ0i89RE",authDomain:"gor2games-657f7.firebaseapp.com",databaseURL:"https://gor2games-657f7-default-rtdb.firebaseio.com",projectId:"gor2games-657f7",storageBucket:"gor2games-657f7.firebasestorage.app",messagingSenderId:"91189543289",appId:"1:91189543289:web:2a6ffc41710279febb6fa8"};
+const fbApp=firebase.apps.length?firebase.apps[0]:firebase.initializeApp(fbCfg);
+const db=firebase.database();
+
+// ── Estado ─────────────────────────────────────────────────────────────────
+let myId="",myName="",code="",isHost=false;
+let playerOrder=[],totalRounds=0,currentRound=0;
+let currentChainIdx=0,chains=[];
+let timerInt=null,timerLeft=90,timerTotal=90;
+let lastStatus=null;
+let roomListener=null;
+
+// Canvas
+const cv=document.getElementById("draw-canvas"),ctx=cv.getContext("2d");
+let bcolor="#ffffff",bsize=3,eraser=false,painting=false,lx=0,ly=0;
+const COLORS=["#ffffff","#111111","#ff3366","#ff6600","#ffe600","#39ff14","#00aaff","#a855f7","#ff69b4","#00ffcc","#8B4513","#808080"];
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo(0,0);}
+function toast(msg,icon="ℹ️"){const c=document.getElementById("toast-c"),t=document.createElement("div");t.className="toast";t.innerHTML=`<span>${icon}</span><span>${msg}</span>`;c.appendChild(t);setTimeout(()=>t.remove(),3000);}
+function genCode(){const ch="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";return Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join("");}
+function genId(){return Math.random().toString(36).substr(2,10)+Date.now().toString(36);}
+function emj(n){const e=["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔"];let h=0;for(let i=0;i<n.length;i++)h=(h<<5)-h+n.charCodeAt(i);return e[Math.abs(h)%e.length];}
+function rref(p){return db.ref(p);}
+
+// ── LOBBY ──────────────────────────────────────────────────────────────────
+async function createRoom(){
+  const name=document.getElementById("inp-name").value.trim();
+  if(!name||name.length<2){toast("Ingresá tu nombre","⚠️");return;}
+  const btn=document.querySelector("#s-home .bp");
+  if(btn){btn.disabled=true;btn.textContent="Creando...";}
+  try{
+    myName=name;myId=genId();isHost=true;code=genCode();
+    await rref(`gartic-phone/${code}`).set({
+      host:myId,status:"lobby",
+      config:{time:90},
+      players:{[myId]:{name:myName,id:myId,isHost:true,joinedAt:Date.now()}},
+      round:0,totalRounds:0,chains:null,inputs:null,currentChain:0
+    });
+    document.getElementById("d-code").textContent=code;
+    document.getElementById("cfg-card").style.display="block";
+    document.getElementById("host-btns").style.display="block";
+    document.getElementById("guest-btns").style.display="none";
+    if(btn){btn.disabled=false;btn.textContent="📞 CREAR SALA";}
+    show("s-lobby");subRoom();toast("Sala creada","📞");
+  }catch(e){
+    toast("Error: "+e.message,"❌");
+    if(btn){btn.disabled=false;btn.textContent="📞 CREAR SALA";}
+    myId="";myName="";isHost=false;code="";
+  }
+}
+
+async function joinRoom(){
+  const name=document.getElementById("inp-name").value.trim();
+  const c=document.getElementById("inp-code").value.trim().toUpperCase();
+  if(!name||name.length<2){toast("Ingresá tu nombre","⚠️");return;}
+  if(c.length!==4){toast("Código de 4 letras","⚠️");return;}
+  const snap=await rref(`gartic-phone/${c}`).once("value");
+  if(!snap.exists()){toast("Sala no encontrada","❌");return;}
+  const room=snap.val();
+  if(room.status!=="lobby"){toast("La partida ya comenzó","⚠️");return;}
+  const players=room.players||{};
+  if(Object.keys(players).length>=8){toast("Sala llena (máx. 8)","⚠️");return;}
+  if(Object.values(players).some(p=>p.name.toLowerCase()===name.toLowerCase())){toast("Nombre en uso","⚠️");return;}
+  myName=name;myId=genId();isHost=false;code=c;
+  await rref(`gartic-phone/${code}/players/${myId}`).set({name:myName,id:myId,isHost:false,joinedAt:Date.now()});
+  document.getElementById("d-code").textContent=code;
+  document.getElementById("cfg-card").style.display="none";
+  document.getElementById("host-btns").style.display="none";
+  document.getElementById("guest-btns").style.display="block";
+  show("s-lobby");subRoom();toast(`Unido a ${code}`,"🚪");
+}
+
+function copyCode(){navigator.clipboard?.writeText(code).then(()=>toast("Copiado","📋")).catch(()=>toast(`Código: ${code}`,"📋"));}
+
+// ── SUSCRIBIR ──────────────────────────────────────────────────────────────
+function subRoom(){
+  if(roomListener) rref(`gartic-phone/${code}`).off("value",roomListener);
+  roomListener=rref(`gartic-phone/${code}`).on("value",snap=>{
+    if(!snap.exists()){backHome();return;}
+    handleRoom(snap.val());
+  });
+}
+
+function handleRoom(room){
+  const s=room.status,sc=s!==lastStatus;lastStatus=s;
+  const players=room.players||{};
+  const pcount=Object.keys(players).length;
+
+  if(s==="lobby"){
+    const list=document.getElementById("lobby-list");list.innerHTML="";
+    Object.values(players).sort((a,b)=>a.joinedAt-b.joinedAt).forEach(p=>{
+      const d=document.createElement("div");d.className=`pi ${p.isHost?"host":""}`;
+      d.innerHTML=`<div class="av">${emj(p.name)}</div><div class="pn">${p.name}</div>${p.isHost?'<span class="badge bh">HOST</span>':''}${p.id===myId?'<span class="badge" style="background:rgba(0,170,255,0.1);color:var(--se);border:1px solid rgba(0,170,255,0.2)">TÚ</span>':''}`;
+      list.appendChild(d);
+    });
+    document.getElementById("p-count").textContent=pcount;
+    if(isHost) document.getElementById("btn-start").disabled=pcount<3;
+    return;
+  }
+
+  // Calcular ronda y tipo
+  if(s==="playing"){
+    const rnd=room.round||1;
+    const total=room.totalRounds||pcount;
+    const tipo=rnd===1?"write":(rnd%2===0?"draw":"guess");
+    const myChainIdx=getMyChainIdx(room,rnd);
+    const myInput=room.inputs&&room.inputs[myId];
+    const allDone=checkAllDone(room,players);
+
+    if(sc||!document.querySelector(".screen.active")?.id?.includes("s-")){
+      showRoundScreen(room,rnd,tipo,myChainIdx);
+    }
+    // Actualizar progreso en espera
+    if(document.getElementById("s-waiting").classList.contains("active")){
+      const done=Object.keys(room.inputs||{}).length;
+      document.getElementById("waiting-progress").textContent=`${done} de ${pcount} listo`;
+    }
+    // Si todos enviaron y soy host, avanzar
+    if(isHost && allDone && !myInput){/* no avanzar si host no envió */}
+    if(isHost && allDone){ advanceRound(room,players); }
+    return;
+  }
+
+  if(s==="reveal"){
+    if(sc) showReveal(room,players);
+    else if(room.currentChain !== undefined) updateRevealChain(room,players);
+    return;
+  }
+}
+
+// ── CALCULAR ÍNDICE DE CADENA ──────────────────────────────────────────────
+// Cada ronda, el jugador recibe la cadena del jugador anterior (rotación circular)
+// Ronda 1: cada uno escribe su propia frase (índice = índice propio)
+// Ronda 2+: recibe la cadena del jugador -1 (rotación)
+function getMyChainIdx(room,rnd){
+  const order=room.playerOrder||[];
+  const myIdx=order.indexOf(myId);
+  if(myIdx===-1) return 0;
+  if(rnd===1) return myIdx; // escribo mi propia cadena
+  // Rotación: en ronda N recibo la cadena del jugador (myIdx - (rnd-1)) mod total
+  const total=order.length;
+  return ((myIdx-(rnd-1))%total+total)%total;
+}
+
+function checkAllDone(room,players){
+  const pids=Object.keys(players);
+  const inputs=room.inputs||{};
+  return pids.every(pid=>inputs[pid]!==undefined);
+}
+
+// ── MOSTRAR PANTALLA DE RONDA ─────────────────────────────────────────────
+function showRoundScreen(room,rnd,tipo,chainIdx){
+  clearInterval(timerInt);
+  timerTotal=room.config?.time||90;
+  const elapsed=room.roundStart?Math.floor((Date.now()-room.roundStart)/1000):0;
+  timerLeft=Math.max(0,timerTotal-elapsed);
+  const chains=room.chains||{};
+  const order=room.playerOrder||[];
+  const chainOwnerId=order[chainIdx];
+  const chain=chains[chainOwnerId]||[];
+
+  if(rnd===1){
+    // Ronda inicial — escribir frase
+    document.getElementById("write-timer").textContent=timerLeft;
+    show("s-write");
+    startTimer("write-timer","write-timer-bar",()=>{if(isHost) submitTextAuto();});
+  } else if(tipo==="draw"){
+    // Dibujar la frase del step anterior
+    const prevStep=chain[chain.length-1];
+    document.getElementById("draw-ronda").textContent=`RONDA ${rnd}`;
+    document.getElementById("draw-palabra").textContent=prevStep?.content||"?";
+    document.getElementById("draw-timer").textContent=timerLeft;
+    clearCanvas();
+    show("s-draw");
+    startTimer("draw-timer","draw-timer-bar",()=>submitDrawAuto());
+  } else {
+    // Adivinar a partir del dibujo
+    const prevStep=chain[chain.length-1];
+    document.getElementById("guess-ronda").textContent=`RONDA ${rnd}`;
+    document.getElementById("guess-timer").textContent=timerLeft;
+    if(prevStep?.type==="draw"&&prevStep?.content){
+      document.getElementById("guess-img").src=prevStep.content;
+    }
+    show("s-guess");
+    startTimer("guess-timer","guess-timer-bar",()=>{if(isHost) submitTextAuto();});
+  }
+}
+
+// ── TIMER ─────────────────────────────────────────────────────────────────
+function startTimer(elId,barId,onDone){
+  clearInterval(timerInt);
+  updateTimerDisplay(elId,barId);
+  timerInt=setInterval(()=>{
+    timerLeft=Math.max(0,timerLeft-1);
+    updateTimerDisplay(elId,barId);
+    if(timerLeft<=0){clearInterval(timerInt);onDone();}
+  },1000);
+}
+function updateTimerDisplay(elId,barId){
+  const el=document.getElementById(elId);
+  const bar=document.getElementById(barId);
+  if(el) el.textContent=timerLeft;
+  if(bar){
+    const pct=(timerLeft/timerTotal)*100;
+    bar.style.width=pct+"%";
+    bar.style.background=timerLeft>30?"linear-gradient(90deg,var(--pr),var(--ac))":timerLeft>10?"var(--ac)":"var(--da)";
+  }
+}
+
+// ── HOST INICIA ────────────────────────────────────────────────────────────
+async function hostStart(){
+  const snap=await rref(`gartic-phone/${code}/players`).once("value");
+  const players=snap.val()||{};
+  const ids=Object.keys(players);
+  if(ids.length<3){toast("Mínimo 3 jugadores","⚠️");return;}
+  const shuffled=[...ids].sort(()=>Math.random()-0.5);
+  const time=parseInt(document.getElementById("cfg-time").value)||90;
+  // Inicializar cadenas vacías
+  const chainsInit={};
+  shuffled.forEach(id=>{chainsInit[id]=[];});
+  await rref(`gartic-phone/${code}`).update({
+    status:"playing",round:1,totalRounds:shuffled.length,
+    playerOrder:shuffled,config:{time},
+    chains:chainsInit,inputs:{},currentChain:0,
+    roundStart:Date.now()
+  });
+}
+
+// ── ENVIAR TEXTO ───────────────────────────────────────────────────────────
+async function submitText(){
+  const rnd=(await rref(`gartic-phone/${code}/round`).once("value")).val();
+  const isWrite=rnd===1;
+  const inputEl=document.getElementById(isWrite?"write-input":"guess-input");
+  const text=inputEl.value.trim();
+  if(!text){toast("Escribí algo primero","⚠️");return;}
+
+  clearInterval(timerInt);
+  disableSendBtn(isWrite?"btn-send-write":"btn-send-guess");
+  await sendMyInput({type:"text",content:text});
+  show("s-waiting");
+}
+
+async function submitTextAuto(){
+  const rnd=(await rref(`gartic-phone/${code}/round`).once("value")).val();
+  const isWrite=rnd===1;
+  const inputEl=document.getElementById(isWrite?"write-input":"guess-input");
+  const text=inputEl.value.trim()||"(sin respuesta)";
+  await sendMyInput({type:"text",content:text});
+  show("s-waiting");
+}
+
+// ── ENVIAR DIBUJO ──────────────────────────────────────────────────────────
+async function submitDraw(){
+  clearInterval(timerInt);
+  disableSendBtn("btn-send-draw");
+  const dataUrl=cv.toDataURL("image/jpeg",0.5);
+  await sendMyInput({type:"draw",content:dataUrl});
+  show("s-waiting");
+}
+
+async function submitDrawAuto(){
+  const dataUrl=cv.toDataURL("image/jpeg",0.4);
+  await sendMyInput({type:"draw",content:dataUrl});
+  show("s-waiting");
+}
+
+async function sendMyInput(input){
+  await rref(`gartic-phone/${code}/inputs/${myId}`).set(input);
+}
+
+function disableSendBtn(id){const btn=document.getElementById(id);if(btn){btn.disabled=true;btn.textContent="Enviado ✓";}}
+
+// ── AVANZAR RONDA (HOST) ────────────────────────────────────────────────────
+async function advanceRound(room,players){
+  const snap=await rref(`gartic-phone/${code}`).once("value");
+  const r=snap.val();
+  if(!r||r.status!=="playing") return;
+  const inputs=r.inputs||{};
+  const order=r.playerOrder||[];
+  const rnd=r.round||1;
+  const total=r.totalRounds||order.length;
+
+  // Guardar inputs en las cadenas correspondientes
+  const chainsUpdate={};
+  order.forEach((pid,idx)=>{
+    // En ronda N, el jugador idx recibió la cadena (idx - (rnd-1)) mod total
+    // Eso significa que el input de pid va a la cadena (idx - (rnd-1)) mod total
+    const chainOwnerIdx=((idx-(rnd-1))%total+total)%total;
+    const chainOwnerId=order[chainOwnerIdx];
+    const currentChain=[...(r.chains[chainOwnerId]||[])];
+    if(inputs[pid]){currentChain.push({...inputs[pid],author:players[pid]?.name||"?"});}
+    chainsUpdate[chainOwnerId]=currentChain;
+  });
+
+  if(rnd>=total){
+    // Fin del juego
+    await rref(`gartic-phone/${code}`).update({chains:chainsUpdate,status:"reveal",inputs:{},currentChain:0,round:rnd});
+  } else {
+    // Siguiente ronda
+    await rref(`gartic-phone/${code}`).update({chains:chainsUpdate,status:"playing",round:rnd+1,inputs:{},roundStart:Date.now()});
+  }
+}
+
+// ── REVELACIÓN ─────────────────────────────────────────────────────────────
+function showReveal(room,players){
+  clearInterval(timerInt);
+  chains=Object.entries(room.chains||{}).map(([ownerId,steps])=>({
+    owner:players[ownerId]?.name||"?",
+    steps:steps||[]
+  }));
+  currentChainIdx=room.currentChain||0;
+  renderChain(currentChainIdx);
+  if(isHost){
+    document.getElementById("reveal-host-btns").style.display="block";
+    document.getElementById("reveal-guest-info").style.display="none";
+  } else {
+    document.getElementById("reveal-host-btns").style.display="none";
+    document.getElementById("reveal-guest-info").style.display="block";
+  }
+  show("s-reveal");
+}
+
+function updateRevealChain(room,players){
+  const idx=room.currentChain||0;
+  currentChainIdx=idx;
+  renderChain(idx);
+}
+
+function renderChain(idx){
+  if(!chains.length) return;
+  const chain=chains[idx];
+  document.getElementById("reveal-chain-title").textContent=`Cadena de ${chain.owner}`;
+  const container=document.getElementById("reveal-chain");
+  container.innerHTML="";
+  chain.steps.forEach((step,i)=>{
+    const d=document.createElement("div");
+    d.className=`chain-step ${step.type==="draw"?"step-draw":"step-text"}`;
+    d.innerHTML=`<div class="chain-author">${step.type==="draw"?"🎨":"✍️"} ${step.author} — paso ${i+1}</div>`;
+    if(step.type==="text"){
+      d.innerHTML+=`<div class="chain-text">"${step.content}"</div>`;
+    } else {
+      d.innerHTML+=`<img class="chain-img" src="${step.content}" alt="dibujo">`;
+    }
+    container.appendChild(d);
+  });
+  // Puntos de navegación
+  const dots=document.getElementById("chain-dots");dots.innerHTML="";
+  chains.forEach((_,i)=>{const dot=document.createElement("div");dot.className=`chain-dot ${i===idx?"active":""}`;dots.appendChild(dot);});
+  // Botones nav
+  document.getElementById("btn-prev-chain").disabled=idx===0;
+  document.getElementById("btn-next-chain").textContent=idx===chains.length-1?"🏁 FIN":"SIGUIENTE ▶";
+}
+
+async function nextChain(){
+  if(currentChainIdx<chains.length-1){
+    currentChainIdx++;
+    await rref(`gartic-phone/${code}/currentChain`).set(currentChainIdx);
+    renderChain(currentChainIdx);
+  }
+}
+async function prevChain(){
+  if(currentChainIdx>0){
+    currentChainIdx--;
+    await rref(`gartic-phone/${code}/currentChain`).set(currentChainIdx);
+    renderChain(currentChainIdx);
+  }
+}
+
+// ── NUEVA PARTIDA / SALIR ─────────────────────────────────────────────────
+async function newGame(){
+  const snap=await rref(`gartic-phone/${code}/players`).once("value");
+  const players=snap.val()||{};
+  const ids=Object.keys(players);
+  const shuffled=[...ids].sort(()=>Math.random()-0.5);
+  const chainsInit={};
+  shuffled.forEach(id=>{chainsInit[id]=[];});
+  await rref(`gartic-phone/${code}`).update({
+    status:"playing",round:1,totalRounds:shuffled.length,
+    playerOrder:shuffled,chains:chainsInit,inputs:{},currentChain:0,
+    roundStart:Date.now()
+  });
+  lastStatus=null;
+  toast("¡Nueva partida!","🔄");
+}
+
+async function leaveRoom(){
+  clearInterval(timerInt);
+  if(roomListener) rref(`gartic-phone/${code}`).off("value",roomListener);
+  if(isHost){await rref(`gartic-phone/${code}`).remove();}
+  else{await rref(`gartic-phone/${code}/players/${myId}`).remove();}
+  backHome();
+}
+
+function backHome(){
+  clearInterval(timerInt);
+  if(roomListener&&code) rref(`gartic-phone/${code}`).off("value",roomListener);
+  myId="";myName="";code="";isHost=false;lastStatus=null;chains=[];
+  document.getElementById("inp-name").value="";
+  document.getElementById("inp-code").value="";
+  show("s-home");
+}
+
+// ── CANVAS ────────────────────────────────────────────────────────────────
+function buildPalette(){
+  const pal=document.getElementById("draw-palette");pal.innerHTML="";
+  COLORS.forEach((c,i)=>{
+    const btn=document.createElement("div");btn.className=`cbtn ${i===0?"active":""}`;btn.style.background=c;
+    btn.onclick=()=>{bcolor=c;eraser=false;document.getElementById("ebtn").classList.remove("active");document.querySelectorAll(".cbtn").forEach(b=>b.classList.remove("active"));btn.classList.add("active");};
+    pal.appendChild(btn);
+  });
+}
+buildPalette();
+
+function setSize(s,btn){bsize=s;document.querySelectorAll(".sbtn").forEach(b=>b.classList.remove("active"));btn.classList.add("active");}
+function toggleEraser(){eraser=!eraser;document.getElementById("ebtn").classList.toggle("active",eraser);}
+function clearCanvas(){ctx.fillStyle="#1a1a1a";ctx.fillRect(0,0,cv.width,cv.height);}
+clearCanvas();
+
+function getPos(e){const r=cv.getBoundingClientRect(),sx=cv.width/r.width,sy=cv.height/r.height,src=e.touches?e.touches[0]:e;return{x:(src.clientX-r.left)*sx,y:(src.clientY-r.top)*sy};}
+cv.addEventListener("mousedown",e=>{painting=true;const p=getPos(e);lx=p.x;ly=p.y;});
+cv.addEventListener("mouseup",()=>painting=false);
+cv.addEventListener("mouseleave",()=>painting=false);
+cv.addEventListener("mousemove",e=>{if(!painting)return;const p=getPos(e);const c=eraser?"#1a1a1a":bcolor,s=eraser?bsize*3:bsize;ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.strokeStyle=c;ctx.lineWidth=s;ctx.lineCap="round";ctx.lineJoin="round";ctx.stroke();lx=p.x;ly=p.y;});
+cv.addEventListener("touchstart",e=>{e.preventDefault();painting=true;const p=getPos(e);lx=p.x;ly=p.y;},{passive:false});
+cv.addEventListener("touchend",e=>{e.preventDefault();painting=false;},{passive:false});
+cv.addEventListener("touchmove",e=>{e.preventDefault();if(!painting)return;const p=getPos(e);const c=eraser?"#1a1a1a":bcolor,s=eraser?bsize*3:bsize;ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(p.x,p.y);ctx.strokeStyle=c;ctx.lineWidth=s;ctx.lineCap="round";ctx.lineJoin="round";ctx.stroke();lx=p.x;ly=p.y;},{passive:false});
+
+// Contador de chars
+document.getElementById("write-input").addEventListener("input",function(){document.getElementById("write-count").textContent=`${this.value.length}/80`;});
+document.getElementById("inp-code").addEventListener("input",function(){this.value=this.value.toUpperCase();});
+</script>
+</body>
+</html>
