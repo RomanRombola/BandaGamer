@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impostor Online entre Amigos</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase compat (no ES modules, funciona con onclick directamente) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<style>
+:root{--bg:#08080f;--sur:#111120;--sur2:#1a1a2e;--pr:#ff6600;--se:#00aaff;--ac:#ffe600;--da:#ff3366;--ok:#39ff14;--tx:#f0f0f0;--mu:#666688;--r:12px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--tx);font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 14px 40px;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(255,102,0,0.05),transparent 60%);pointer-events:none;z-index:0;}
+h1{font-family:'Orbitron',sans-serif;font-size:clamp(18px,4vw,30px);font-weight:900;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:4px;filter:drop-shadow(0 0 10px rgba(255,102,0,0.4));}
+.sub{color:var(--mu);font-size:13px;text-align:center;margin-bottom:20px;letter-spacing:1px;}
+.screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:500px;position:relative;z-index:1;}
+.screen.active{display:flex;animation:fu .3s ease;}
+@keyframes fu{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.card{background:var(--sur);border:1px solid rgba(255,102,0,0.15);border-radius:var(--r);padding:20px;width:100%;margin-bottom:12px;}
+.ct{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--pr);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.ct::before{content:'';width:3px;height:13px;background:var(--pr);border-radius:2px;flex-shrink:0;}
+label{display:block;font-size:11px;font-weight:700;color:var(--mu);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:'Orbitron',sans-serif;}
+input,select{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--tx);font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:600;padding:11px 14px;border-radius:10px;outline:none;transition:all .2s;margin-bottom:10px;}
+input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);box-shadow:0 0 12px rgba(255,102,0,0.2);}
+.btn{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;padding:13px 20px;border-radius:10px;border:none;cursor:pointer;letter-spacing:1px;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-bottom:8px;}
+.bp{background:linear-gradient(135deg,#ff6600,#ff9500);color:#fff;box-shadow:0 0 14px rgba(255,102,0,0.4);}
+.bp:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(255,102,0,0.6);}
+.bs{background:rgba(0,170,255,0.1);border:1px solid rgba(0,170,255,0.3);color:var(--se);}
+.bs:hover{background:rgba(0,170,255,0.2);transform:translateY(-2px);}
+.bd{background:rgba(255,51,102,0.15);border:1px solid rgba(255,51,102,0.35);color:var(--da);}
+.bd:hover{background:rgba(255,51,102,0.25);}
+.bm{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--mu);font-size:11px;}
+.bm:hover{background:rgba(255,255,255,0.1);color:var(--tx);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none!important;}
+.div{display:flex;align-items:center;gap:10px;color:var(--mu);font-size:12px;width:100%;margin:10px 0;}
+.div::before,.div::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.07);}
+.code-box{background:linear-gradient(135deg,rgba(255,102,0,0.1),rgba(255,230,0,0.07));border:2px solid rgba(255,102,0,0.3);border-radius:14px;padding:16px;text-align:center;margin-bottom:12px;width:100%;cursor:pointer;transition:all .2s;}
+.code-box:hover{border-color:rgba(255,102,0,0.5);}
+.code-lbl{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Orbitron',sans-serif;margin-bottom:4px;}
+.code-val{font-family:'Orbitron',sans-serif;font-size:clamp(30px,8vw,48px);font-weight:900;letter-spacing:8px;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.code-hint{font-size:11px;color:var(--mu);margin-top:4px;}
+.plist{display:flex;flex-direction:column;gap:6px;width:100%;}
+.pi{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:9px 12px;transition:all .2s;}
+.pi.host{border-color:rgba(255,102,0,0.3);background:rgba(255,102,0,0.06);}
+.pi.elim{opacity:0.3;}
+.av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;background:linear-gradient(135deg,rgba(255,102,0,0.2),rgba(0,170,255,0.1));border:1px solid rgba(255,255,255,0.1);}
+.pn{font-weight:700;font-size:14px;flex:1;}
+.badge{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:1px;}
+.bh{background:rgba(255,102,0,0.2);color:var(--pr);border:1px solid rgba(255,102,0,0.3);}
+.bt{background:rgba(255,230,0,0.1);color:var(--ac);border:1px solid rgba(255,230,0,0.25);}
+.bg{background:rgba(57,255,20,0.1);color:var(--ok);border:1px solid rgba(57,255,20,0.2);}
+.be{background:rgba(255,255,255,0.05);color:var(--mu);border:1px solid rgba(255,255,255,0.1);}
+.bi{background:rgba(255,51,102,0.15);color:var(--da);border:1px solid rgba(255,51,102,0.25);}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.toggle-row:last-child{border-bottom:none;}
+.tl{font-weight:600;font-size:14px;}
+.ts{font-size:12px;color:var(--mu);margin-top:2px;}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.tslider{position:absolute;inset:0;background:rgba(255,255,255,0.1);border-radius:24px;cursor:pointer;transition:.3s;border:1px solid rgba(255,255,255,0.1);}
+.tslider::before{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#888;left:3px;top:2px;transition:.3s;}
+.toggle input:checked+.tslider{background:rgba(255,102,0,0.3);border-color:var(--pr);}
+.toggle input:checked+.tslider::before{background:var(--pr);transform:translateX(20px);}
+
+/* Pantalla de rol */
+.role-card{border-radius:16px;padding:28px 22px;text-align:center;width:100%;margin-bottom:12px;}
+.role-card.civil{background:linear-gradient(135deg,rgba(57,255,20,0.08),rgba(0,170,255,0.06));border:2px solid rgba(57,255,20,0.3);}
+.role-card.impostor{background:linear-gradient(135deg,rgba(255,51,102,0.1),rgba(255,80,0,0.06));border:2px solid rgba(255,51,102,0.4);}
+.role-badge{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;letter-spacing:2px;display:inline-block;margin-bottom:12px;}
+.rb-civil{background:rgba(57,255,20,0.15);color:var(--ok);border:1px solid rgba(57,255,20,0.3);}
+.rb-impostor{background:rgba(255,51,102,0.15);color:var(--da);border:1px solid rgba(255,51,102,0.3);}
+.role-word{font-family:'Orbitron',sans-serif;font-size:clamp(22px,6vw,36px);font-weight:900;margin:10px 0;background:linear-gradient(90deg,var(--pr),var(--ac));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.role-desc{font-size:13px;color:var(--mu);line-height:1.6;}
+.role-hint{margin-top:12px;background:rgba(255,230,0,0.08);border:1px solid rgba(255,230,0,0.25);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--ac);}
+.cover-btn{background:var(--sur2);border:2px dashed rgba(255,102,0,0.3);border-radius:12px;padding:18px;text-align:center;font-size:13px;color:var(--mu);cursor:pointer;transition:all .2s;width:100%;margin-bottom:12px;}
+.cover-btn:hover{border-color:rgba(255,102,0,0.5);}
+
+/* Turno */
+.turn-card{background:linear-gradient(135deg,rgba(0,170,255,0.1),rgba(255,102,0,0.06));border:1px solid rgba(0,170,255,0.25);border-radius:14px;padding:18px;text-align:center;width:100%;margin-bottom:10px;}
+.turn-lbl{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Orbitron',sans-serif;margin-bottom:6px;}
+.turn-name{font-family:'Orbitron',sans-serif;font-size:clamp(16px,4vw,24px);font-weight:900;color:var(--se);}
+.turn-you{font-size:13px;color:var(--ac);margin-top:4px;font-weight:700;}
+.turn-dot{width:8px;height:8px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac);display:inline-block;margin-right:6px;animation:bl .8s ease infinite alternate;}
+@keyframes bl{from{opacity:.4;}to{opacity:1;}}
+
+/* Votación */
+.vote-item{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 16px;cursor:pointer;transition:all .2s;width:100%;margin-bottom:8px;}
+.vote-item:hover:not(.voted):not(.no-vote){background:rgba(255,51,102,0.1);border-color:rgba(255,51,102,0.3);}
+.vote-item.voted{border-color:var(--da);background:rgba(255,51,102,0.12);cursor:default;}
+.vote-item.no-vote{opacity:.35;cursor:not-allowed;}
+.vbar-wrap{width:100%;height:4px;background:rgba(255,255,255,0.07);border-radius:2px;margin-top:8px;}
+.vbar{height:100%;background:var(--da);border-radius:2px;transition:width .4s ease;}
+.vcnt{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:var(--da);min-width:20px;text-align:right;}
+
+/* Resultado */
+.res-emoji{font-size:60px;display:block;text-align:center;margin-bottom:8px;animation:popIn .4s ease;}
+@keyframes popIn{from{transform:scale(.4) rotate(-10deg);opacity:0;}60%{transform:scale(1.15) rotate(3deg);}to{transform:scale(1) rotate(0);opacity:1;}}
+.res-title{font-family:'Orbitron',sans-serif;font-size:clamp(20px,5vw,30px);font-weight:900;text-align:center;margin-bottom:8px;}
+.res-win{background:linear-gradient(90deg,var(--ok),#00ff88);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.res-lose{background:linear-gradient(90deg,var(--da),#ff8800);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+
+/* Info box */
+.ibox{background:rgba(0,170,255,0.07);border:1px solid rgba(0,170,255,0.2);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--se);width:100%;line-height:1.6;}
+.loading::after{content:'';animation:dots 1.2s steps(4,end) infinite;}
+@keyframes dots{0%{content:'';}25%{content:'.';}50%{content:'..';}75%{content:'...';};}
+
+/* Categorías */
+.cat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;}
+.cat-item{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:11px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;}
+.cat-item:hover{background:rgba(255,102,0,0.08);border-color:rgba(255,102,0,0.3);}
+.cat-item.sel{background:rgba(255,102,0,0.15);border-color:var(--pr);color:var(--pr);}
+.cat-chk{margin-left:auto;color:var(--pr);opacity:0;font-size:15px;transition:opacity .2s;}
+.cat-item.sel .cat-chk{opacity:1;}
+
+#toast-c{position:fixed;top:14px;right:14px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:var(--sur2);border:1px solid rgba(255,102,0,0.3);border-radius:10px;padding:11px 14px;font-size:13px;font-weight:600;max-width:260px;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:tIn .3s ease,tOut .3s ease 2.7s forwards;display:flex;align-items:center;gap:8px;}
+@keyframes tIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
+@keyframes tOut{to{opacity:0;transform:translateX(40px);}}
+</style>
+</head>
+<body>
+<div id="toast-c"></div>
+
+<!-- INICIO -->
+<div id="s-home" class="screen active">
+  <div style="font-size:44px;text-align:center;margin-bottom:6px">🕵️</div>
+  <h1>IMPOSTOR ONLINE</h1>
+  <p class="sub">entre amigos</p>
+  <div class="card">
+    <div class="ct">Ingresar</div>
+    <label>Tu nombre de jugador</label>
+    <input type="text" id="inp-name" placeholder="Ej: GorPlayer99..." maxlength="16" autocomplete="off">
+    <button class="btn bp" onclick="createRoom()">⚡ CREAR SALA</button>
+    <div class="div">o tengo un código</div>
+    <label>Código de sala</label>
+    <input type="text" id="inp-code" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-family:'Orbitron',sans-serif;font-size:20px;text-align:center">
+    <button class="btn bs" onclick="joinRoom()">🚪 UNIRSE A SALA</button>
+  </div>
+  <p style="color:var(--mu);font-size:12px;text-align:center">Mínimo 3 jugadores · Recomendado en llamada de voz 🎙</p>
+</div>
+
+<!-- LOBBY -->
+<div id="s-lobby" class="screen">
+  <h1>SALA DE ESPERA</h1>
+  <div class="code-box" onclick="copyCode()">
+    <div class="code-lbl">Código de sala</div>
+    <div class="code-val" id="d-code">----</div>
+    <div class="code-hint">📋 Tocá para copiar y compartir</div>
+  </div>
+  <div class="card">
+    <div class="ct">Jugadores <span id="p-count" style="margin-left:auto;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:2px 10px;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--mu)">0</span></div>
+    <div class="plist" id="lobby-list"></div>
+    <p style="color:var(--mu);font-size:11px;margin-top:8px">Mínimo 3 jugadores para iniciar.</p>
+  </div>
+  <div class="card" id="cfg-card" style="display:none">
+    <div class="ct">Configuración</div>
+    <div class="toggle-row">
+      <div><div class="tl">Pista para el impostor</div><div class="ts">El impostor ve una pista relacionada con la palabra</div></div>
+      <label class="toggle"><input type="checkbox" id="cfg-hint"><span class="tslider"></span></label>
+    </div>
+    <div style="height:14px"></div>
+    <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Categorías de palabras</div>
+    <div class="cat-grid" id="cat-grid"></div>
+  </div>
+  <div id="host-btns" style="width:100%;display:none">
+    <button class="btn bp" id="btn-start" onclick="startGame()" disabled>🎮 INICIAR PARTIDA</button>
+    <button class="btn bm" onclick="leaveRoom()">← Salir</button>
+  </div>
+  <div id="guest-btns" style="width:100%;display:none">
+    <div class="ibox">Esperando que el anfitrión inicie<span class="loading"></span></div>
+    <button class="btn bm" style="margin-top:8px" onclick="leaveRoom()">← Salir</button>
+  </div>
+</div>
+
+<!-- ROL (cada jugador ve su carta) -->
+<div id="s-role" class="screen">
+  <h1>TU CARTA</h1>
+  <p class="sub">Mostrá la pantalla solo a vos</p>
+  <div id="role-card-wrap"></div>
+  <div class="cover-btn" id="cover-btn" onclick="toggleCover()">👁 Tocá para revelar / ocultar tu carta</div>
+  <div class="ibox" style="margin-bottom:12px">
+    <strong>¿Cómo jugar?</strong><br>
+    Cada jugador da una pista sin decir la palabra directamente.<br>
+    El impostor intenta pasar desapercibido 🎭<br>
+    Los turnos son aleatorios — coordínense en llamada.
+  </div>
+  <button class="btn bp" onclick="goToGame()">✅ LISTO — ENTENDÍ MI ROL</button>
+</div>
+
+<!-- JUEGO -->
+<div id="s-game" class="screen">
+  <h1>EN JUEGO</h1>
+  <div class="turn-card" id="turn-card">
+    <div class="turn-lbl">Turno actual</div>
+    <div class="turn-name" id="turn-name">—</div>
+    <div class="turn-you" id="turn-you" style="display:none"><span class="turn-dot"></span>¡Es tu turno! Da una pista.</div>
+  </div>
+  <div class="card">
+    <div class="ct">Orden de turnos</div>
+    <div class="plist" id="game-list"></div>
+  </div>
+  <div id="game-host-btns" style="width:100%;display:none">
+    <button class="btn bd" onclick="startVoting()">🗳️ INICIAR VOTACIÓN</button>
+    <button class="btn bs" style="margin-top:8px" onclick="nextTurn()">⏭ SIGUIENTE TURNO</button>
+  </div>
+  <div id="game-guest-info" style="display:none">
+    <div class="ibox">El anfitrión maneja los turnos y llama a votación cuando quieran.</div>
+  </div>
+</div>
+
+<!-- VOTACIÓN -->
+<div id="s-vote" class="screen">
+  <h1>VOTACIÓN</h1>
+  <p class="sub">¿Quién es el impostor?</p>
+  <div class="card">
+    <div class="ct">Votar para eliminar</div>
+    <div id="vote-list"></div>
+    <div id="my-vote-txt" style="text-align:center;color:var(--mu);font-size:13px;margin-top:6px"></div>
+  </div>
+  <div class="card">
+    <div class="ct">Votos en tiempo real</div>
+    <div id="vote-bars"></div>
+    <div id="vote-total" style="text-align:center;color:var(--mu);font-size:13px;margin-top:8px"></div>
+  </div>
+  <div id="vote-host-btns" style="width:100%;display:none">
+    <button class="btn bd" onclick="closeVoting()">⚡ CERRAR VOTACIÓN</button>
+    <button class="btn bm" style="margin-top:8px" onclick="cancelVoting()">↩ CANCELAR</button>
+  </div>
+  <div id="vote-guest-info" style="display:none">
+    <div class="ibox">El anfitrión cierra la votación cuando lo decida.</div>
+  </div>
+</div>
+
+<!-- RESULTADO -->
+<div id="s-result" class="screen">
+  <h1>RESULTADO</h1>
+  <div id="result-content" style="width:100%;text-align:center;padding:10px 0"></div>
+  <div class="card" style="margin-top:14px" id="result-word-card">
+    <div class="ct">Palabra secreta</div>
+    <div style="text-align:center;padding:8px 0">
+      <div style="font-size:12px;color:var(--mu);margin-bottom:6px">La palabra era:</div>
+      <div id="result-word" style="font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;color:var(--ac)">—</div>
+      <div id="result-impostor" style="font-size:13px;color:var(--mu);margin-top:6px"></div>
+    </div>
+  </div>
+  <div id="result-host-btns" style="width:100%;margin-top:14px;display:none">
+    <button class="btn bp" onclick="newRound()">🔄 NUEVA RONDA</button>
+    <button class="btn bm" style="margin-top:8px" onclick="endGame()">🚪 TERMINAR PARTIDA</button>
+  </div>
+  <div id="result-guest-info" style="width:100%;margin-top:14px;display:none">
+    <div class="ibox">Esperando que el anfitrión decida<span class="loading"></span></div>
+  </div>
+</div>
+
+<!-- FIN -->
+<div id="s-end" class="screen">
+  <div style="font-size:60px;text-align:center;margin-bottom:10px">🏁</div>
+  <h1>FIN DE PARTIDA</h1>
+  <button class="btn bp" style="margin-top:20px" onclick="backToHome()">🏠 VOLVER AL INICIO</button>
+</div>
+
+<script>
+// ── Firebase init ──────────────────────────────────────────────────────────
+const fbConfig = {
+  apiKey: "AIzaSyACkFsE_0cBEsLEPQPc3GLeZD3KZ0i89RE",
+  authDomain: "gor2games-657f7.firebaseapp.com",
+  databaseURL: "https://gor2games-657f7-default-rtdb.firebaseio.com",
+  projectId: "gor2games-657f7",
+  storageBucket: "gor2games-657f7.firebasestorage.app",
+  messagingSenderId: "91189543289",
+  appId: "1:91189543289:web:2a6ffc41710279febb6fa8"
+};
+// Evitar inicializar dos veces si ya existe
+let fbApp, db;
+try {
+  fbApp = firebase.apps.length ? firebase.apps[0] : firebase.initializeApp(fbConfig);
+  db = firebase.database();
+} catch(e) {
+  console.error("[Impostor] Firebase init error:", e);
+}
+
+// ── Palabras por categoría ─────────────────────────────────────────────────
+const CATS = {
+  "🌍 Países":       {id:"paises",   w:["Argentina","Brasil","Francia","Japón","Australia","Egipto","Canadá","México","Italia","Alemania","España","India","China","Chile","Perú","Colombia","Portugal","Grecia","Turquía","Suecia","Cuba","Venezuela","Uruguay","Paraguay","Bolivia","Tailandia","Marruecos","Nigeria","Sudáfrica","Indonesia"]},
+  "🍕 Comidas":      {id:"comidas",  w:["Pizza","Sushi","Tacos","Hamburguesa","Pasta","Asado","Milanesa","Empanada","Ramen","Paella","Sándwich","Ensalada","Lasaña","Churros","Helado","Pancakes","Hot dog","Ceviche","Risotto","Crepes","Shawarma","Falafel","Arepa","Pho","Curry","Burrito","Nachos","Gazpacho","Tempura","Goulash"]},
+  "🎬 Películas":    {id:"pelis",    w:["Titanic","Avatar","Matrix","Inception","Interstellar","El Padrino","Joker","Avengers","Coco","Toy Story","Up","Shrek","Lion King","Frozen","Parasite","Gladiador","Batman","Spider-Man","Star Wars","Jurassic Park","Harry Potter","Minions","Moana","Encanto","Soul","Ratatouille","Wall-E","Cars","Luca","Brave"]},
+  "🎵 Cantantes":    {id:"musica",   w:["Shakira","Daddy Yankee","Bad Bunny","Taylor Swift","Ed Sheeran","Maluma","J Balvin","Rosalía","Ariana Grande","Beyoncé","Rihanna","Drake","Eminem","The Weeknd","Dua Lipa","Billie Eilish","Harry Styles","Justin Bieber","Selena Gomez","Karol G","Ozuna","Anuel AA","Farruko","Nicky Jam","Rauw Alejandro","Myke Towers","Sech","Jhay Cortez","Arcangel","Peso Pluma"]},
+  "🏆 Deportes":     {id:"deportes", w:["Fútbol","Básquet","Tenis","Natación","Boxeo","Voleibol","Rugby","Golf","Béisbol","Hockey","Ciclismo","Atletismo","Surf","Skateboard","Gimnasia","Esgrima","Judo","Karate","Taekwondo","Vóley playa","Polo","Remo","Triatlón","Halterofilia","Lucha libre","Trampolín","Tiro con arco","Equitación","Handball","Esports"]},
+  "📱 Tecnología":   {id:"tech",     w:["iPhone","Netflix","Instagram","YouTube","Twitter","WhatsApp","Google","Amazon","PlayStation","Xbox","Nintendo","Tesla","Robot","Drone","Realidad Virtual","Blockchain","Inteligencia Artificial","Metaverso","Bitcoin","Spotify","TikTok","Twitch","Discord","Zoom","ChatGPT","Alexa","Siri","Starlink","iPad","Smartwatch"]},
+  "🦁 Animales":     {id:"animales", w:["León","Tigre","Elefante","Jirafa","Pingüino","Delfín","Ballena","Koala","Panda","Canguro","Loro","Pulpo","Cocodrilo","Gorila","Chimpancé","Jaguar","Leopardo","Lince","Guepardo","Hipopótamo","Rinoceronte","Ornitorrinco","Axolote","Capibara","Tapir","Okapi","Pangolín","Quokka","Fosa","Narval"]},
+  "🎭 Mezclado":     {id:"mix",      w:["Silla","Montaña","Lluvia","Castillo","Volcán","Submarino","Espejo","Cohete","Pirámide","Laberinto","Fantasma","Diamante","Tornado","Arcoíris","Faro","Iglú","Trampolín","Telescopio","Microscopio","Compás","Reloj de arena","Acordeón","Mariposa","Dragón","Sirena","Robot","Unicornio","Zombie","Bruja","Fénix"]}
+};
+
+// Pistas inteligentes por palabra — el impostor recibe una pista que puede usar en la ronda
+const PISTAS_PALABRA = {
+  // Países — pistas culturales no geográficas
+  "Argentina":"gaucho","Brasil":"samba","Francia":"vino","Japón":"samurái",
+  "Australia":"outback","Egipto":"faraón","Canadá":"oso","México":"mariachi",
+  "Italia":"coliseo","Alemania":"autobahn","España":"toro","India":"elefante",
+  "China":"seda","Chile":"terremoto","Perú":"llama","Colombia":"esmeralda",
+  "Portugal":"navegante","Grecia":"filósofo","Turquía":"bazar","Suecia":"vikingo",
+  "Cuba":"habano","Venezuela":"llanero","Uruguay":"mate","Paraguay":"yerba",
+  "Bolivia":"mina","Tailandia":"budismo","Marruecos":"zoco","Nigeria":"sabana",
+  "Sudáfrica":"diamante","Indonesia":"archipiélago",
+  // Comidas — pistas por textura, sensación o contexto
+  "Pizza":"redonda","Sushi":"raw","Hamburguesa":"doble","Pasta":"al dente",
+  "Asado":"brasa","Milanesa":"apanado","Empanada":"doblada","Ramen":"caldo",
+  "Paella":"azafrán","Sándwich":"relleno","Helado":"derretir","Tacos":"doblar",
+  "Churros":"masa","Pancakes":"esponjoso","Hot dog":"salchicha",
+  "Ceviche":"acídico","Risotto":"cremoso","Crepes":"delgado","Shawarma":"giratorio",
+  "Burrito":"enrollado","Nachos":"crujiente","Curry":"especiado","Falafel":"frito",
+  "Arepa":"maíz","Pho":"anisado","Gazpacho":"fresco","Tempura":"rebozado","Goulash":"estofado",
+  // Películas — pistas por sensación, no por trama
+  "Titanic":"hundirse","Avatar":"pandora","Matrix":"pastilla","Inception":"capas",
+  "Interstellar":"wormhole","El Padrino":"oferta","Joker":"caos","Avengers":"infinity",
+  "Coco":"ofrenda","Toy Story":"plástico","Up":"flotando","Shrek":"pantano",
+  "Lion King":"pride","Frozen":"elsa","Parasite":"clase","Gladiador":"arena",
+  "Batman":"gotham","Spider-Man":"telaraña","Star Wars":"fuerza","Jurassic Park":"amber",
+  "Harry Potter":"varita","Minions":"despicable","Moana":"te fiti","Encanto":"casita",
+  "Soul":"jazz","Ratatouille":"chef","Wall-E":"basura","Cars":"rayo",
+  "Luca":"silencio","Brave":"arco",
+  // Cantantes — rasgos no tan obvios
+  "Shakira":"barranquilla","Daddy Yankee":"gasolina","Bad Bunny":"trap",
+  "Taylor Swift":"eras","Ed Sheeran":"bucle","Maluma":"medellín",
+  "J Balvin":"colores","Rosalía":"motomami","Ariana Grande":"whistle",
+  "Beyoncé":"lemonade","Rihanna":"umbrella","Drake":"hotline",
+  "Eminem":"slim","The Weeknd":"blinding","Dua Lipa":"levitating",
+  "Billie Eilish":"whisper","Harry Styles":"watermelon","Justin Bieber":"sorry",
+  "Selena Gomez":"wolves","Karol G":"provenza","Ozuna":"taki",
+  // Deportes — pistas por acción, no equipamiento
+  "Fútbol":"offside","Básquet":"doble","Tenis":"deuce","Natación":"crol",
+  "Boxeo":"nocaut","Voleibol":"bloqueo","Rugby":"scrum","Golf":"birdie",
+  "Béisbol":"home run","Hockey":"power play","Ciclismo":"pelotón","Atletismo":"relevo",
+  "Surf":"tubo","Skateboard":"kickflip","Gimnasia":"paralelas","Esgrima":"touché",
+  "Judo":"ippon","Karate":"kata","Taekwondo":"poomsae","Handball":"pivote",
+  // Tecnología — pistas más técnicas
+  "iPhone":"retina","Netflix":"thumbnail","Instagram":"reels","YouTube":"monetizar",
+  "Twitter":"thread","WhatsApp":"cifrado","Google":"pagerank","Amazon":"prime",
+  "PlayStation":"trophy","Xbox":"achievement","Nintendo":"cartridge","Tesla":"autopilot",
+  "Robot":"servo","Drone":"gimbal","Bitcoin":"hash","Spotify":"algoritmo",
+  "TikTok":"fyp","Twitch":"clip","Discord":"servidor","Zoom":"breakout",
+  "ChatGPT":"token","Alexa":"skill","Siri":"shortcut","iPad":"pencil",
+  // Animales — pistas ambiguas, características no obvias
+  "León":"orgullo","Tigre":"acecho","Elefante":"memoria","Jirafa":"acacia",
+  "Pingüino":"colonia","Delfín":"ecolocalización","Ballena":"cantar","Koala":"marsupial",
+  "Panda":"solitario","Canguro":"joey","Loro":"mimetismo","Pulpo":"tinta",
+  "Cocodrilo":"termorregular","Gorila":"pecho","Chimpancé":"herramienta","Jaguar":"pantanal",
+  "Leopardo":"árbol","Hipopótamo":"territorial","Rinoceronte":"poaching","Capibara":"semiacuático",
+  // Mezclado — pistas conceptuales
+  "Silla":"apoyo","Montaña":"altitud","Lluvia":"precipitación","Castillo":"tronera",
+  "Volcán":"magma","Submarino":"periscopio","Espejo":"azogue","Cohete":"propulsión",
+  "Pirámide":"solsticio","Laberinto":"minotauro","Fantasma":"ectoplasma","Diamante":"quilate",
+  "Tornado":"embudo","Arcoíris":"refracción","Faro":"fresnel","Iglú":"bloque",
+  "Trampolín":"tensión","Telescopio":"refractor","Mariposa":"metamorfosis","Dragón":"escama",
+  "Sirena":"canto","Robot":"servo","Unicornio":"cuerno","Zombie":"lento",
+  "Bruja":"sabbat","Fénix":"ceniza"
+};
+
+// Obtener pista para una palabra específica
+function getPistaParaPalabra(word) {
+  if(PISTAS_PALABRA[word]) return PISTAS_PALABRA[word];
+  // Fallback por categoría si no tiene pista específica
+  for(const [,{id,w}] of Object.entries(CATS)){
+    if(w.includes(word)){
+      const fallbacks={paises:"territorio",comidas:"ingrediente",pelis:"personaje",
+        musica:"canción",deportes:"competencia",tech:"pantalla",animales:"salvaje",mix:"objeto"};
+      return fallbacks[id]||"relacionado";
+    }
+  }
+  return "conocido";
+}
+
+// ── Estado ─────────────────────────────────────────────────────────────────
+let myId="", myName="", roomCode="", isHost=false;
+let myRole="", myWord="", myHint="";
+let wordHidden=true;
+let selectedCats=new Set(["mix"]);
+let roomListener=null;
+let lastStatus=null;
+
+// ── UI helpers ─────────────────────────────────────────────────────────────
+function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); document.getElementById(id).classList.add("active"); window.scrollTo(0,0); }
+function toast(msg,icon="ℹ️"){ const c=document.getElementById("toast-c"),t=document.createElement("div"); t.className="toast"; t.innerHTML=`<span>${icon}</span><span>${msg}</span>`; c.appendChild(t); setTimeout(()=>t.remove(),3000); }
+function genCode(){ const ch="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; return Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join(""); }
+function genId(){ return Math.random().toString(36).substr(2,12)+Date.now().toString(36); }
+function emoji(n){ const e=["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔","🦭","🐨","🐻","🦞","🦚"]; let h=0; for(let i=0;i<n.length;i++) h=(h<<5)-h+n.charCodeAt(i); return e[Math.abs(h)%e.length]; }
+function rref(path){ return db.ref(path); }
+
+// ── Categorías UI ──────────────────────────────────────────────────────────
+function buildCats(){
+  const g=document.getElementById("cat-grid"); g.innerHTML="";
+  Object.entries(CATS).forEach(([label,{id}])=>{
+    const d=document.createElement("div");
+    d.className=`cat-item ${selectedCats.has(id)?"sel":""}`;
+    d.dataset.id=id;
+    d.innerHTML=`<span>${label.split(" ")[0]}</span><span>${label.split(" ").slice(1).join(" ")}</span><span class="cat-chk">✓</span>`;
+    d.onclick=()=>{
+      if(selectedCats.has(id)){if(selectedCats.size===1){toast("Necesitás al menos una categoría","⚠️");return;} selectedCats.delete(id);d.classList.remove("sel");}
+      else{selectedCats.add(id);d.classList.add("sel");}
+    };
+    g.appendChild(d);
+  });
+}
+
+// ── CREAR SALA ─────────────────────────────────────────────────────────────
+async function createRoom(){
+  const name=document.getElementById("inp-name").value.trim();
+  if(!name||name.length<2){toast("Ingresá tu nombre (mín. 2 caracteres)","⚠️");return;}
+  if(!db){toast("Error de conexión","❌");return;}
+
+  const btn=document.querySelector("#s-home .bp");
+  if(btn){btn.disabled=true;btn.textContent="Creando...";}
+
+  try{
+    myName=name; myId=genId(); isHost=true;
+    roomCode=genCode();
+    await rref(`impost/${roomCode}`).set({
+      host:myId, status:"lobby",
+      config:{hintEnabled:false,cats:["mix"]},
+      players:{ [myId]:{name:myName,id:myId,isHost:true,eliminated:false,joinedAt:Date.now()} },
+      turnOrder:null, currentTurn:null, votes:null, round:1, word:null, impostorId:null
+    });
+    buildCats();
+    document.getElementById("d-code").textContent=roomCode;
+    document.getElementById("cfg-card").style.display="block";
+    document.getElementById("host-btns").style.display="block";
+    document.getElementById("guest-btns").style.display="none";
+    if(btn){btn.disabled=false;btn.textContent="⚡ CREAR SALA";}
+    show("s-lobby");
+    subscribeRoom();
+    toast("Sala creada. ¡Compartí el código!","🏠");
+  }catch(e){
+    console.error("[Impostor] Error:",e);
+    toast("Error al crear sala: "+e.message,"❌");
+    if(btn){btn.disabled=false;btn.textContent="⚡ CREAR SALA";}
+    myId="";myName="";isHost=false;roomCode="";
+  }
+}
+
+// ── UNIRSE ─────────────────────────────────────────────────────────────────
+async function joinRoom(){
+  const name=document.getElementById("inp-name").value.trim();
+  const code=document.getElementById("inp-code").value.trim().toUpperCase();
+  if(!name||name.length<2){toast("Ingresá tu nombre","⚠️");return;}
+  if(code.length!==4){toast("El código tiene 4 caracteres","⚠️");return;}
+  if(!db){toast("Error de conexión con Firebase","❌");return;}
+  const snap=await rref(`impost/${code}`).once("value");
+  if(!snap.exists()){toast("Sala no encontrada","❌");return;}
+  const room=snap.val();
+  if(room.status!=="lobby"){toast("La partida ya comenzó","⚠️");return;}
+  const players=room.players||{};
+  if(Object.keys(players).length>=10){toast("Sala llena (máx. 10)","⚠️");return;}
+  if(Object.values(players).some(p=>p.name.toLowerCase()===name.toLowerCase())){toast("Ese nombre ya está en uso","⚠️");return;}
+  myName=name; myId=genId(); isHost=false; roomCode=code;
+  await rref(`impost/${roomCode}/players/${myId}`).set({name:myName,id:myId,isHost:false,eliminated:false,joinedAt:Date.now()});
+  buildCats();
+  document.getElementById("d-code").textContent=roomCode;
+  document.getElementById("cfg-card").style.display="none";
+  document.getElementById("host-btns").style.display="none";
+  document.getElementById("guest-btns").style.display="block";
+  show("s-lobby");
+  subscribeRoom();
+  toast(`Te uniste a la sala ${roomCode}`,"🚪");
+}
+
+function copyCode(){ navigator.clipboard?.writeText(roomCode).then(()=>toast("Código copiado","📋")).catch(()=>toast(`Código: ${roomCode}`,"📋")); }
+
+// ── SUSCRIBIR SALA ─────────────────────────────────────────────────────────
+function subscribeRoom(){
+  if(roomListener) rref(`impost/${roomCode}`).off("value",roomListener);
+  roomListener=rref(`impost/${roomCode}`).on("value",snap=>{
+    if(!snap.exists()){backToHome();return;}
+    handleRoom(snap.val());
+  });
+}
+
+function handleRoom(room){
+  const status=room.status;
+  const statusChanged=status!==lastStatus;
+  lastStatus=status;
+  const players=room.players||{};
+  const pcount=Object.keys(players).length;
+
+  if(status==="lobby"){
+    updateLobbyList(players);
+    document.getElementById("p-count").textContent=pcount;
+    if(isHost) document.getElementById("btn-start").disabled=pcount<3;
+    return;
+  }
+  if(status==="playing"){
+    if(statusChanged){
+      loadMyRole(room);
+    } else if(document.getElementById("s-game").classList.contains("active")){
+      updateGameScreen(room,players);
+    } else if(document.getElementById("s-result").classList.contains("active")){
+      // Nueva ronda iniciada
+      loadMyRole(room);
+    }
+    return;
+  }
+  if(status==="voting"){
+    const cur=document.querySelector(".screen.active")?.id;
+    if(cur!=="s-vote") show("s-vote");
+    updateVoteScreen(room,players);
+    return;
+  }
+  if(status==="result"){
+    if(document.querySelector(".screen.active")?.id!=="s-result") showResult(room,players);
+    return;
+  }
+  if(status==="ended"){
+    show("s-end"); return;
+  }
+}
+
+// ── LOBBY LIST ─────────────────────────────────────────────────────────────
+function updateLobbyList(players){
+  const list=document.getElementById("lobby-list"); list.innerHTML="";
+  Object.values(players).sort((a,b)=>a.joinedAt-b.joinedAt).forEach(p=>{
+    const d=document.createElement("div");
+    d.className=`pi ${p.isHost?"host":""}`;
+    d.innerHTML=`<div class="av">${emoji(p.name)}</div><div class="pn">${p.name}</div>${p.isHost?'<span class="badge bh">HOST</span>':''} ${p.id===myId?'<span class="badge" style="background:rgba(0,170,255,0.1);color:var(--se);border:1px solid rgba(0,170,255,0.2)">TÚ</span>':''}`;
+    list.appendChild(d);
+  });
+}
+
+// ── INICIAR PARTIDA ────────────────────────────────────────────────────────
+async function startGame(){
+  const snap=await rref(`impost/${roomCode}/players`).once("value");
+  const players=snap.val()||{};
+  const ids=Object.keys(players);
+  if(ids.length<3){toast("Necesitás mínimo 3 jugadores","⚠️");return;}
+
+  // Palabra aleatoria de las categorías seleccionadas
+  const cats=[...selectedCats];
+  const wordPool=cats.flatMap(cat=>{ const e=Object.values(CATS).find(c=>c.id===cat); return e?e.w:[]; });
+  const word=wordPool[Math.floor(Math.random()*wordPool.length)];
+
+  // Impostor aleatorio
+  const impostorId=ids[Math.floor(Math.random()*ids.length)];
+
+  // Pista para impostor
+  const hintEnabled=document.getElementById("cfg-hint").checked;
+  let hint="";
+  if(hintEnabled){ hint=getPistaParaPalabra(word); }
+
+  // Turnos aleatorios — se mezclan en cada nueva palabra
+  const shuffled=[...ids].sort(()=>Math.random()-0.5);
+
+  // Roles (guardados en Firebase, cada jugador lee el suyo)
+  const roles={};
+  ids.forEach(id=>{ roles[id]={ role:id===impostorId?"impostor":"civil", hint:id===impostorId&&hintEnabled?hint:"" }; });
+
+  await rref(`impost/${roomCode}`).update({
+    status:"playing", word, impostorId,
+    turnOrder:shuffled, currentTurn:shuffled[0],
+    roles, votes:{}, round:1, hintEnabled
+  });
+}
+
+// ── CARGAR ROL ─────────────────────────────────────────────────────────────
+async function loadMyRole(room){
+  const roleData=room.roles?.[myId];
+  if(!roleData) return;
+  myRole=roleData.role;
+  myWord=myRole==="civil"?room.word:"???";
+  myHint=roleData.hint||"";
+
+  // Construir tarjeta de rol
+  const wrap=document.getElementById("role-card-wrap");
+  if(myRole==="civil"){
+    wrap.innerHTML=`
+      <div class="role-card civil">
+        <div class="role-badge rb-civil">✅ ERES CIVIL</div>
+        <div style="font-size:12px;color:var(--mu);margin-bottom:6px">La palabra secreta es:</div>
+        <div class="role-word">${room.word}</div>
+        <div class="role-desc">Dá pistas sin decir la palabra directamente.<br>Encontrá al impostor entre los demás.</div>
+      </div>`;
+  } else {
+    wrap.innerHTML=`
+      <div class="role-card impostor">
+        <div class="role-badge rb-impostor">😈 ERES EL IMPOSTOR</div>
+        <div style="font-size:13px;color:var(--mu);margin-bottom:10px">No sabés la palabra.</div>
+        <div style="font-size:14px;font-weight:600;color:var(--da)">Fingí que la sabés y confundí a los demás.</div>
+        ${myHint?`<div class="role-hint">💡 Tu palabra pista: <strong style="font-size:18px;color:#ffe600">${myHint}</strong><br><span style="font-size:11px;opacity:.7">Podés usar esta palabra para pasar desapercibido</span></div>`:""}
+      </div>`;
+  }
+
+  wordHidden=true;
+  wrap.style.filter="blur(10px)";
+  show("s-role");
+}
+
+function toggleCover(){
+  wordHidden=!wordHidden;
+  document.getElementById("role-card-wrap").style.filter=wordHidden?"blur(10px)":"none";
+  document.getElementById("cover-btn").textContent=wordHidden?"👁 Tocá para revelar / ocultar tu carta":"🙈 Tocá para ocultar";
+}
+
+function goToGame(){
+  show("s-game");
+  // Mostrar controles según rol
+  if(isHost){
+    document.getElementById("game-host-btns").style.display="block";
+    document.getElementById("game-guest-info").style.display="none";
+  } else {
+    document.getElementById("game-host-btns").style.display="none";
+    document.getElementById("game-guest-info").style.display="block";
+  }
+  // Leer estado actual
+  rref(`impost/${roomCode}`).once("value").then(snap=>{ if(snap.exists()) updateGameScreen(snap.val(),snap.val().players||{}); });
+}
+
+// ── PANTALLA JUEGO ─────────────────────────────────────────────────────────
+function updateGameScreen(room,players){
+  const turnPlayer=players[room.currentTurn];
+  if(turnPlayer){
+    document.getElementById("turn-name").textContent=turnPlayer.name;
+    const isMe=room.currentTurn===myId;
+    const tyEl=document.getElementById("turn-you");
+    tyEl.style.display=isMe?"block":"none";
+  }
+  const list=document.getElementById("game-list"); list.innerHTML="";
+  (room.turnOrder||[]).forEach((pid,i)=>{
+    const p=players[pid]; if(!p) return;
+    const isCur=pid===room.currentTurn;
+    const d=document.createElement("div");
+    d.className=`pi ${p.eliminated?"elim":""}`;
+    d.innerHTML=`${isCur?`<div style="width:8px;height:8px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac);flex-shrink:0;animation:bl .8s ease infinite alternate"></div>`:`<div style="width:8px"></div>`}<div class="av">${emoji(p.name)}</div><div style="flex:1"><div class="pn">${p.name}${p.id===myId?" <span style='color:var(--se);font-size:11px'>(vos)</span>":""}</div><div style="font-size:11px;color:var(--mu)">Turno #${i+1}</div></div>${p.eliminated?'<span class="badge be">ELIMINADO</span>':''}${p.isHost?'<span class="badge bh">HOST</span>':''}`;
+    list.appendChild(d);
+  });
+}
+
+// ── SIGUIENTE TURNO (host) ─────────────────────────────────────────────────
+async function nextTurn(){
+  const snap=await rref(`impost/${roomCode}`).once("value");
+  const room=snap.val();
+  const order=room.turnOrder||[];
+  const players=room.players||{};
+  const active=order.filter(id=>players[id]&&!players[id].eliminated);
+  if(!active.length) return;
+  const curIdx=active.indexOf(room.currentTurn);
+  const nextId=active[(curIdx+1)%active.length];
+  await rref(`impost/${roomCode}`).update({currentTurn:nextId});
+}
+
+// ── VOTACIÓN ───────────────────────────────────────────────────────────────
+async function startVoting(){
+  await rref(`impost/${roomCode}`).update({status:"voting",votes:{}});
+  toast("Votación iniciada","🗳️");
+}
+
+function updateVoteScreen(room,players){
+  const votes=room.votes||{};
+  const active=Object.values(players).filter(p=>!p.eliminated);
+  const total=active.length;
+  const voteCounts={};
+  active.forEach(p=>voteCounts[p.id]=0);
+  Object.values(votes).forEach(vid=>{ if(voteCounts[vid]!==undefined) voteCounts[vid]++; });
+  const totalVoted=Object.keys(votes).length;
+
+  // Lista para votar
+  const vl=document.getElementById("vote-list"); vl.innerHTML="";
+  const myVote=votes[myId];
+  active.forEach(p=>{
+    if(p.id===myId) return;
+    const isVoted=myVote===p.id;
+    const d=document.createElement("div");
+    d.className=`vote-item ${isVoted?"voted":""} ${myVote&&!isVoted?"no-vote":""}`;
+    d.innerHTML=`<div class="av">${emoji(p.name)}</div><div style="flex:1;font-weight:700;font-size:14px">${p.name}</div>${isVoted?'<span style="color:var(--da);font-size:18px">✓</span>':""}`;
+    if(!myVote) d.onclick=()=>castVote(p.id);
+    vl.appendChild(d);
+  });
+
+  // Barras
+  const vb=document.getElementById("vote-bars"); vb.innerHTML="";
+  active.forEach(p=>{
+    const cnt=voteCounts[p.id]||0;
+    const pct=total>0?(cnt/total)*100:0;
+    const d=document.createElement("div");
+    d.style.marginBottom="10px";
+    d.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:700;font-size:14px">${p.name}</span><span class="vcnt">${cnt}</span></div><div class="vbar-wrap"><div class="vbar" style="width:${pct}%"></div></div>`;
+    vb.appendChild(d);
+  });
+  document.getElementById("vote-total").textContent=`${totalVoted} de ${total} votos emitidos`;
+  const mvt=document.getElementById("my-vote-txt");
+  mvt.textContent=myVote?`✓ Votaste a ${players[myVote]?.name||"?"}`:"Todavía no votaste";
+  mvt.style.color=myVote?"var(--ok)":"var(--mu)";
+
+  // Controles
+  if(isHost){
+    document.getElementById("vote-host-btns").style.display="block";
+    document.getElementById("vote-guest-info").style.display="none";
+  } else {
+    document.getElementById("vote-host-btns").style.display="none";
+    document.getElementById("vote-guest-info").style.display="block";
+  }
+}
+
+async function castVote(targetId){
+  await rref(`impost/${roomCode}/votes/${myId}`).set(targetId);
+  toast("Voto emitido","✅");
+}
+
+async function closeVoting(){
+  const snap=await rref(`impost/${roomCode}`).once("value");
+  const room=snap.val();
+  const players=room.players||{};
+  const votes=room.votes||{};
+  const active=Object.values(players).filter(p=>!p.eliminated);
+  const voteCounts={};
+  active.forEach(p=>voteCounts[p.id]=0);
+  Object.values(votes).forEach(vid=>{ if(voteCounts[vid]!==undefined) voteCounts[vid]++; });
+  const maxV=Math.max(...Object.values(voteCounts));
+  const top=Object.entries(voteCounts).filter(([,v])=>v===maxV).map(([id])=>id);
+  if(top.length>1){
+    toast("¡Empate! Continúa la ronda.","⚖️");
+    await rref(`impost/${roomCode}`).update({status:"playing",votes:{}});
+    return;
+  }
+  const elimId=top[0];
+  const wasImpostor=elimId===room.impostorId;
+  await rref(`impost/${roomCode}`).update({[`players/${elimId}/eliminated`]:true,status:"result",lastEliminated:elimId,civilsWin:wasImpostor});
+}
+
+async function cancelVoting(){
+  await rref(`impost/${roomCode}`).update({status:"playing",votes:{}});
+  toast("Votación cancelada","↩️");
+}
+
+// ── RESULTADO ──────────────────────────────────────────────────────────────
+function showResult(room,players){
+  const elimId=room.lastEliminated;
+  const elimName=players[elimId]?.name||"?";
+  const civilsWin=room.civilsWin;
+  const impostorName=players[room.impostorId]?.name||"?";
+  const content=document.getElementById("result-content");
+  if(civilsWin){
+    content.innerHTML=`<span class="res-emoji">🎉</span><div class="res-title res-win">¡CIVILES GANAN!</div><p style="color:var(--mu);font-size:14px">${elimName} era el impostor. ¡Lo descubrieron!</p>`;
+  } else {
+    content.innerHTML=`<span class="res-emoji">😈</span><div class="res-title res-lose">¡EL IMPOSTOR GANA!</div><p style="color:var(--mu);font-size:14px">Eliminaron a ${elimName}, que era inocente. ${impostorName} se escapó.</p>`;
+  }
+  document.getElementById("result-word").textContent=room.word||"—";
+  document.getElementById("result-impostor").textContent=`El impostor era: ${impostorName}${room.impostorId===myId?" (eras vos 😈)":""}`;
+  if(isHost){
+    document.getElementById("result-host-btns").style.display="block";
+    document.getElementById("result-guest-info").style.display="none";
+  } else {
+    document.getElementById("result-host-btns").style.display="none";
+    document.getElementById("result-guest-info").style.display="block";
+  }
+  show("s-result");
+}
+
+// ── NUEVA RONDA ────────────────────────────────────────────────────────────
+async function newRound(){
+  // Usar los mismos jugadores que están en la sala (incluye eliminados restaurados)
+  const snap=await rref(`impost/${roomCode}/players`).once("value");
+  const players=snap.val()||{};
+  const ids=Object.keys(players);
+  // Restaurar eliminados para nueva ronda
+  const updates={};
+  ids.forEach(id=>{ updates[`players/${id}/eliminated`]=false; });
+
+  const cats=[...selectedCats];
+  const wordPool=cats.flatMap(cat=>{ const e=Object.values(CATS).find(c=>c.id===cat); return e?e.w:[]; });
+  const word=wordPool[Math.floor(Math.random()*wordPool.length)];
+  const impostorId=ids[Math.floor(Math.random()*ids.length)];
+  const hintSnap=await rref(`impost/${roomCode}/hintEnabled`).once("value");
+  const hintEnabled=hintSnap.val()||false;
+  let hint="";
+  if(hintEnabled){ hint=getPistaParaPalabra(word); }
+  const shuffled=[...ids].sort(()=>Math.random()-0.5);
+  const roles={};
+  ids.forEach(id=>{ roles[id]={role:id===impostorId?"impostor":"civil",hint:id===impostorId&&hintEnabled?hint:""}; });
+
+  Object.assign(updates,{
+    status:"playing", word, impostorId,
+    turnOrder:shuffled, currentTurn:shuffled[0],
+    roles, votes:{}, lastEliminated:null, civilsWin:null
+  });
+  await rref(`impost/${roomCode}`).update(updates);
+}
+
+async function endGame(){
+  await rref(`impost/${roomCode}`).update({status:"ended"});
+}
+
+async function leaveRoom(){
+  if(roomListener) rref(`impost/${roomCode}`).off("value",roomListener);
+  if(isHost){ await rref(`impost/${roomCode}`).remove(); }
+  else { await rref(`impost/${roomCode}/players/${myId}`).remove(); }
+  backToHome();
+}
+
+function backToHome(){
+  // Volver al lobby manteniendo la sala y los jugadores
+  if(!roomCode){ _resetCompleto(); return; }
+  myRole=""; myWord=""; myHint=""; lastStatus=null;
+  // Resetear sala a estado lobby sin eliminarla
+  rref(`impost/${roomCode}`).update({
+    status:"lobby", word:null, impostorId:null,
+    turnOrder:null, currentTurn:null, votes:null,
+    roles:null, lastEliminated:null, civilsWin:null
+  }).then(()=>{
+    // Restaurar eliminados
+    rref(`impost/${roomCode}/players`).once("value").then(snap=>{
+      if(!snap.exists()) return;
+      const updates={};
+      Object.keys(snap.val()).forEach(id=>{ updates[`${id}/eliminated`]=false; });
+      rref(`impost/${roomCode}/players`).update(updates);
+    });
+    // Mostrar lobby con config visible si es host
+    buildCats();
+    document.getElementById("d-code").textContent=roomCode;
+    document.getElementById("cfg-card").style.display=isHost?"block":"none";
+    document.getElementById("host-btns").style.display=isHost?"block":"none";
+    document.getElementById("guest-btns").style.display=isHost?"none":"block";
+    show("s-lobby");
+  }).catch(()=>{ _resetCompleto(); });
+}
+
+function _resetCompleto(){
+  if(roomListener) rref(`impost/${roomCode}`).off("value",roomListener);
+  myId=""; myName=""; roomCode=""; isHost=false; myRole=""; myWord=""; myHint=""; lastStatus=null;
+  document.getElementById("inp-name").value="";
+  document.getElementById("inp-code").value="";
+  show("s-home");
+}
+
+// Input código mayúsculas automático
+document.getElementById("inp-code").addEventListener("input",function(){ this.value=this.value.toUpperCase(); });
+
+// Limpiar al salir
+window.addEventListener("beforeunload",()=>{
+  if(!isHost&&roomCode&&myId){ navigator.sendBeacon&&navigator.sendBeacon(`https://gor2games-657f7-default-rtdb.firebaseio.com/impost/${roomCode}/players/${myId}.json`,JSON.stringify(null)); }
+});
+</script>
+</body>
+</html>
