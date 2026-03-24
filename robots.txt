@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://romanrombola.github.io/BandaGamer/sitemap.xml
