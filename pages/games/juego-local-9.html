@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordle ES</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#080810;color:#f0f0f0;font-family:'Courier New',monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:14px;padding:16px;}
+h1{font-size:20px;letter-spacing:4px;color:#00aaff;text-shadow:0 0 12px rgba(0,170,255,0.6);}
+#grid{display:flex;flex-direction:column;gap:6px;}
+.row{display:flex;gap:6px;}
+.tile{width:54px;height:54px;border:2px solid rgba(255,255,255,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;letter-spacing:1px;transition:all .2s;text-transform:uppercase;}
+.tile.filled{border-color:rgba(255,255,255,0.4);animation:pop .12s ease;}
+@keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.15);}100%{transform:scale(1);}}
+.tile.correct{background:#2d6a2d;border-color:#39ff14;color:#fff;box-shadow:0 0 10px rgba(57,255,20,0.4);}
+.tile.present{background:#5a4a00;border-color:#ffe600;color:#fff;box-shadow:0 0 10px rgba(255,230,0,0.3);}
+.tile.absent{background:#1a1a2a;border-color:#333;color:#555;}
+.tile.shake{animation:shake .4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-6px);}40%,80%{transform:translateX(6px);}}
+#keyboard{display:flex;flex-direction:column;gap:6px;align-items:center;}
+.kb-row{display:flex;gap:5px;}
+.key{height:44px;min-width:32px;padding:0 6px;border-radius:6px;background:#1e1e2e;border:1px solid rgba(255,255,255,0.08);color:#f0f0f0;font-family:'Courier New',monospace;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-transform:uppercase;display:flex;align-items:center;justify-content:center;}
+.key:hover{background:#2e2e3e;}
+.key.wide{min-width:54px;font-size:11px;}
+.key.correct{background:#2d6a2d;border-color:#39ff14;color:#fff;}
+.key.present{background:#5a4a00;border-color:#ffe600;color:#fff;}
+.key.absent{background:#0e0e14;border-color:#222;color:#333;}
+#msg{font-size:14px;color:#ffe600;min-height:20px;letter-spacing:2px;text-align:center;}
+#word-display{font-family:'Courier New',monospace;font-size:14px;color:#555;letter-spacing:3px;}
+.btn{background:linear-gradient(135deg,#00aaff,#0066aa);border:none;color:white;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:9px 22px;border-radius:8px;cursor:pointer;letter-spacing:2px;}
+</style>
+</head>
+<body>
+<h1>📝 WORDLE ES</h1>
+<div id="grid"></div>
+<div id="msg">Adiviná la palabra de 5 letras</div>
+<div id="word-display"></div>
+<div id="keyboard"></div>
+<button class="btn" onclick="newGame()">🔄 NUEVA PALABRA</button>
+
+<script>
+const WORDS=["CIELO","CARRO","FONDO","SALTO","VUELO","PLAYA","TIEMPO","MUNDO","FUEGO","BELLO",
+"CLARO","NEGRO","BLANCO","VERDE","DULCE","FRUTA","RATON","GATOS","PERRO","LECHE",
+"AGUAS","CAMPO","NOCHE","TARDE","LUNES","METRO","LIBRO","BARCO","PIANO","FLECHA",
+"CABLE","TECHO","PUEDA","NUNCA","SIETE","OCHO","NUEVE","DIEZ","CINCO","CUATRO",
+"ARENA","BOSCO","CUBAS","DANZA","ELFOS","FIRMA","GLOBO","HELADO","INDIA","JABÓN",
+"KARMA","LAZO","MADRE","NADIE","OVEJA","PAPEL","QUESO","RADIO","SALSA","TACOS",
+"USTED","VAPOR","WAFLE","XENON","YERNO","ZURDO","ABEJA","BRUJA","CALOR","DUELO",
+"ENERO","FINCA","GENIO","HIELO","IDEAL","JUEGO","KOALA","LLAMA","MANGA","NIETO"];
+
+const VALID=new Set(WORDS);
+const ROWS=6,COLS=5;
+let target,guesses,current,gameOver,keyStates;
+
+function newGame(){
+  target=WORDS[Math.floor(Math.random()*WORDS.length)];
+  guesses=[];current=[];gameOver=false;keyStates={};
+  document.getElementById("msg").textContent="Adiviná la palabra de 5 letras";
+  document.getElementById("word-display").textContent="";
+  buildGrid();buildKeyboard();
+}
+
+function buildGrid(){
+  const g=document.getElementById("grid");g.innerHTML="";
+  for(let r=0;r<ROWS;r++){
+    const row=document.createElement("div");row.className="row";row.id=`row-${r}`;
+    for(let c=0;c<COLS;c++){
+      const t=document.createElement("div");t.className="tile";t.id=`t-${r}-${c}`;row.appendChild(t);
+    }
+    g.appendChild(row);
+  }
+}
+
+function buildKeyboard(){
+  const rows=["QWERTYUIOP","ASDFGHJKL","⌫ZXCVBNM✓"];
+  const kb=document.getElementById("keyboard");kb.innerHTML="";
+  rows.forEach(rowStr=>{
+    const div=document.createElement("div");
+    div.className="kb-row";
+    [...rowStr].forEach(k=>{
+      const btn=document.createElement("button");
+      btn.className=`key${k==="⌫"||k==="✓"?" wide":""}`;
+      btn.textContent=k;
+      btn.dataset.key=k;
+      btn.addEventListener("click",()=>handleKey(k));
+      div.appendChild(btn);  // agregar al div de la fila, no al kb directamente
+    });
+    kb.appendChild(div);
+  });
+}
+
+function handleKey(k){
+  if(gameOver)return;
+  if(k==="⌫"||k==="Backspace"){if(current.length>0){current.pop();updateCurrentRow();}}
+  else if(k==="✓"||k==="Enter"){submitGuess();}
+  else if(/^[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]$/.test(k)&&current.length<COLS){
+    current.push(k.toUpperCase());updateCurrentRow();
+  }
+}
+
+function updateCurrentRow(){
+  const r=guesses.length;
+  for(let c=0;c<COLS;c++){
+    const t=document.getElementById(`t-${r}-${c}`);
+    t.textContent=current[c]||"";
+    t.className=`tile${current[c]?" filled":""}`;
+  }
+}
+
+function submitGuess(){
+  if(current.length<COLS)return;
+  const word=current.join("");
+  const r=guesses.length;
+  const result=evaluate(word);
+  result.forEach((res,c)=>{
+    const t=document.getElementById(`t-${r}-${c}`);
+    setTimeout(()=>{t.classList.add(res);},c*80+80);
+    const k=word[c];
+    const prev=keyStates[k];
+    if(res==="correct"||(res==="present"&&prev!=="correct")||(res==="absent"&&!prev))
+      setTimeout(()=>{keyStates[k]=res;updateKeyboard();},c*80+200);
+  });
+  guesses.push(word);current=[];
+  if(word===target){
+    setTimeout(()=>{document.getElementById("msg").textContent=`🏆 ¡CORRECTO! en ${guesses.length} intento${guesses.length>1?"s":""}`;gameOver=true;},500);
+  } else if(guesses.length===ROWS){
+    setTimeout(()=>{document.getElementById("msg").textContent="😢 Sin intentos";document.getElementById("word-display").textContent=`La palabra era: ${target}`;gameOver=true;},500);
+  }
+}
+
+function evaluate(word){
+  const res=Array(COLS).fill("absent");
+  const tArr=[...target],wArr=[...word];
+  // Correctas primero
+  tArr.forEach((ch,i)=>{if(wArr[i]===ch){res[i]="correct";tArr[i]=null;wArr[i]=null;}});
+  // Presentes
+  wArr.forEach((ch,i)=>{if(ch){const ti=tArr.indexOf(ch);if(ti!==-1){res[i]="present";tArr[ti]=null;}}});
+  return res;
+}
+
+function updateKeyboard(){
+  document.querySelectorAll(".key").forEach(btn=>{
+    const k=btn.dataset.key;
+    if(keyStates[k])btn.className=`key${k==="⌫"||k==="✓"?" wide":""} ${keyStates[k]}`;
+  });
+}
+
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey||e.altKey||e.metaKey)return;
+  handleKey(e.key==="Backspace"?"⌫":e.key==="Enter"?"✓":e.key);
+});
+
+newGame();
+
+// Escuchar teclado desde página padre (fix foco iframe)
+window.addEventListener("message", e => {
+  if(!e.data || e.data.type !== "keydown") return;
+  document.dispatchEvent(new KeyboardEvent("keydown", {key: e.data.key, code: e.data.code, bubbles: true}));
+});
+</script>
+</body>
+</html>
