@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Curve Fever</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a15;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace;}
+h1{color:#00ffcc;font-size:15px;letter-spacing:3px;margin-bottom:4px;}
+#hud{display:flex;gap:18px;margin-bottom:5px;font-size:12px;color:#aaa;}
+#hud b{color:#00ffcc;}
+canvas{border:2px solid rgba(0,255,204,0.2);border-radius:6px;}
+#ctrl{margin-top:6px;font-size:10px;color:#444;letter-spacing:1px;text-align:center;}
+</style>
+</head>
+<body>
+<h1>〰️ CURVE FEVER</h1>
+<div id="hud"><span>PUNTOS <b id="sc">0</b></span><span>MEJOR <b id="best">0</b></span><span>RONDA <b id="rd">1</b></span></div>
+<canvas id="c" width="400" height="400"></canvas>
+<div id="ctrl">← → girar · ESPACIO para empezar · Múltiples jugadores: P2 usa A/D</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=400,H=400;
+
+const PLAYER_DEFS=[
+  {name:'P1',color:'#00ffcc',left:'ArrowLeft',right:'ArrowRight'},
+  {name:'P2',color:'#ff6600',left:'a',right:'d'},
+  {name:'P3',color:'#a855f7',left:'j',right:'l'},
+];
+
+let players,trails,keys={},state='wait',loop,round=1,scores;
+const SPEED=2.2,TURN=0.06,TRAIL_W=3;
+const GAP_CHANCE=0.012; // probabilidad de agujero
+
+function initPlayers(n=2){
+  players=PLAYER_DEFS.slice(0,n).map((def,i)=>({
+    ...def,
+    x:80+i*120,y:H/2+(-1+i*2)*40,
+    angle:Math.random()*Math.PI*2,
+    alive:true,gap:false,gapTimer:0,drawTimer:0,
+    trail:i,score:scores?scores[i]:0
+  }));
+  trails=players.map(()=>[]);
+  state='countdown';countdown=3;countTimer=60;
+}
+
+let countdown=3,countTimer=0;
+
+function tick(){
+  if(state==='countdown'){
+    countTimer--;
+    if(countTimer<=0){countTimer=60;countdown--;if(countdown<=0)state='play';}
+    draw();loop=requestAnimationFrame(tick);return;
+  }
+  if(state!=='play'){draw();return;}
+  players.forEach((p,i)=>{
+    if(!p.alive) return;
+    // Girar
+    if(keys[p.left]) p.angle-=TURN;
+    if(keys[p.right]) p.angle+=TURN;
+    // Mover
+    const nx=p.x+Math.cos(p.angle)*SPEED;
+    const ny=p.y+Math.sin(p.angle)*SPEED;
+    // Colisión paredes
+    if(nx<2||nx>W-2||ny<2||ny>H-2){p.alive=false;return;}
+    // Agujero
+    p.drawTimer++;
+    if(!p.gap&&Math.random()<GAP_CHANCE){p.gap=true;p.gapTimer=8+Math.random()*12;}
+    if(p.gap){p.gapTimer--;if(p.gapTimer<=0)p.gap=false;}
+    // Agregar al trail solo si no hay agujero
+    if(!p.gap) trails[i].push({x:p.x,y:p.y});
+    p.x=nx;p.y=ny;
+    // Colisión con trails
+    if(!p.gap){
+      for(let ti=0;ti<trails.length;ti++){
+        const skip=ti===i?20:0; // ignorar los últimos puntos propios
+        for(let j=0;j<trails[ti].length-skip;j++){
+          const t=trails[ti][j];
+          if(Math.hypot(p.x-t.x,p.y-t.y)<TRAIL_W+1){p.alive=false;break;}
+        }
+        if(!p.alive) break;
+      }
+    }
+  });
+  const alive=players.filter(p=>p.alive);
+  // Dar puntos a los que siguen vivos
+  players.forEach(p=>{if(p.alive)p.score++;});
+  if(alive.length<=1){
+    // Fin de ronda
+    if(alive.length===1) alive[0].score+=200;
+    scores=players.map(p=>p.score);
+    document.getElementById('sc').textContent=Math.max(...scores);
+    if(Math.max(...scores)>parseInt(document.getElementById('best').textContent||0))
+      document.getElementById('best').textContent=Math.max(...scores);
+    state='roundend';
+    draw();
+    setTimeout(()=>{round++;document.getElementById('rd').textContent=round;initPlayers(2);tick();},2000);
+    return;
+  }
+  draw();loop=requestAnimationFrame(tick);
+}
+
+function draw(){
+  // Fondo con fade para ver trails
+  if(state==='play'){ctx.fillStyle='rgba(5,5,16,0.05)';ctx.fillRect(0,0,W,H);}
+  else{ctx.fillStyle='#050510';ctx.fillRect(0,0,W,H);}
+  // Trails
+  trails.forEach((trail,i)=>{
+    if(trail.length<2) return;
+    ctx.strokeStyle=players[i].color;ctx.lineWidth=TRAIL_W;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.shadowColor=players[i].color;ctx.shadowBlur=4;
+    ctx.beginPath();ctx.moveTo(trail[0].x,trail[0].y);
+    trail.forEach(t=>ctx.lineTo(t.x,t.y));ctx.stroke();
+    ctx.shadowBlur=0;
+  });
+  // Jugadores
+  players.filter(p=>p.alive).forEach(p=>{
+    ctx.shadowColor=p.color;ctx.shadowBlur=10;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);ctx.fill();
+    // Indicador de dirección
+    ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+Math.cos(p.angle)*10,p.y+Math.sin(p.angle)*10);ctx.stroke();
+    ctx.shadowBlur=0;
+  });
+  // Nombres en esquina
+  players.forEach((p,i)=>{
+    ctx.fillStyle=p.color;ctx.font='10px Courier New';ctx.textAlign='left';
+    ctx.fillText(`${p.name}: ${p.score}${!p.alive?' ✗':''}`,8,14+i*14);
+  });
+  if(state==='wait'){
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#00ffcc';ctx.font='bold 18px Courier New';ctx.textAlign='center';
+    ctx.fillText('CURVE FEVER',W/2,H/2-30);
+    ctx.fillStyle='#aaa';ctx.font='12px Courier New';
+    ctx.fillText('2 jugadores: P1 ←→  P2 A/D',W/2,H/2);
+    ctx.fillText('No te choques con nadie',W/2,H/2+18);
+    ctx.fillStyle='#ffe600';ctx.font='12px Courier New';
+    ctx.fillText('ESPACIO para empezar',W/2,H/2+40);
+  }
+  if(state==='countdown'){
+    ctx.fillStyle='#00ffcc';ctx.font='bold 60px Courier New';ctx.textAlign='center';
+    ctx.fillText(countdown>0?countdown:'GO!',W/2,H/2+20);
+  }
+  if(state==='roundend'){
+    ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,W,H);
+    const winner=players.reduce((a,b)=>a.score>b.score?a:b);
+    ctx.fillStyle=winner.color;ctx.font='bold 16px Courier New';ctx.textAlign='center';
+    ctx.fillText(`${winner.name} gana la ronda!`,W/2,H/2);
+    ctx.fillStyle='#aaa';ctx.font='11px Courier New';ctx.fillText('Siguiente ronda...',W/2,H/2+22);
+  }
+}
+
+document.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(e.code==='Space'){e.preventDefault();if(state==='wait'){scores=[0,0,0];initPlayers(2);tick();}}
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))e.preventDefault();
+});
+document.addEventListener('keyup',e=>keys[e.key]=false);
+window.addEventListener('message',e=>{
+  if(!e.data)return;
+  if(e.data.type==='keydown'){keys[e.data.key]=true;if(e.data.key===' '&&state==='wait'){scores=[0,0,0];initPlayers(2);tick();}}
+  if(e.data.type==='keyup')keys[e.data.key]=false;
+});
+draw();
+</script>
+</body>
+</html>

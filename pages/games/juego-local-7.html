@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tetris Banda</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#080810;color:#f0f0f0;font-family:'Courier New',monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;user-select:none;overflow:hidden;}
+h1{font-size:20px;letter-spacing:4px;background:linear-gradient(90deg,#00aaff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+#game-wrap{display:flex;gap:20px;align-items:flex-start;}
+canvas{border:1px solid rgba(0,170,255,0.3);border-radius:4px;box-shadow:0 0 20px rgba(0,170,255,0.2),0 0 60px rgba(0,0,0,0.8);display:block;}
+#panel{display:flex;flex-direction:column;gap:14px;min-width:120px;}
+.p-box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;text-align:center;}
+.p-val{font-size:22px;font-weight:900;color:#00aaff;display:block;}
+.p-lbl{font-size:10px;color:#555;letter-spacing:2px;text-transform:uppercase;}
+#next-canvas{display:block;margin:0 auto;}
+.btn{background:linear-gradient(135deg,#00aaff,#a855f7);border:none;color:white;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:9px;border-radius:8px;cursor:pointer;letter-spacing:1px;width:100%;}
+#msg{font-size:12px;color:#555;text-align:center;margin-top:10px;letter-spacing:1px;}
+</style>
+</head>
+<body>
+<h1>🎯 TETRIS</h1>
+<div id="game-wrap">
+  <canvas id="c" width="240" height="480"></canvas>
+  <div id="panel">
+    <div class="p-box"><span class="p-val" id="h-score">0</span><span class="p-lbl">Puntaje</span></div>
+    <div class="p-box"><span class="p-val" id="h-level">1</span><span class="p-lbl">Nivel</span></div>
+    <div class="p-box"><span class="p-val" id="h-lines">0</span><span class="p-lbl">Líneas</span></div>
+    <div class="p-box">
+      <div class="p-lbl" style="margin-bottom:8px">SIGUIENTE</div>
+      <canvas id="next-canvas" width="80" height="80"></canvas>
+    </div>
+    <button class="btn" onclick="startGame()">▶ JUGAR</button>
+    <button class="btn" onclick="togglePause()" id="btn-pause" style="background:rgba(255,255,255,0.1);color:#888">⏸ PAUSA</button>
+  </div>
+</div>
+<div id="msg">ESPACIO=rotar · ↓=bajar · ←→=mover</div>
+
+<script>
+const C=document.getElementById("c"),ctx=C.getContext("2d");
+const NC=document.getElementById("next-canvas"),nctx=NC.getContext("2d");
+const COLS=10,ROWS=20,BS=24;
+const PIECES=[
+  {shape:[[1,1,1,1]],color:"#00ffff"},
+  {shape:[[1,1],[1,1]],color:"#ffff00"},
+  {shape:[[1,1,0],[0,1,1]],color:"#ff4444"},
+  {shape:[[0,1,1],[1,1,0]],color:"#44ff44"},
+  {shape:[[1,0,0],[1,1,1]],color:"#ff8800"},
+  {shape:[[0,0,1],[1,1,1]],color:"#8888ff"},
+  {shape:[[0,1,0],[1,1,1]],color:"#ff44ff"},
+];
+let board,piece,nextPiece,score,level,lines,loop,paused,running;
+function newBoard(){return Array.from({length:ROWS},()=>Array(COLS).fill(0));}
+function randPiece(){const p=PIECES[Math.floor(Math.random()*PIECES.length)];return{shape:p.shape.map(r=>[...r]),color:p.color,x:Math.floor((COLS-p.shape[0].length)/2),y:0};}
+function rotate(shape){return shape[0].map((_,i)=>shape.map(r=>r[i]).reverse());}
+function valid(sh,x,y){return sh.every((row,dy)=>row.every((v,dx)=>!v||((y+dy>=0)&&(y+dy<ROWS)&&(x+dx>=0)&&(x+dx<COLS)&&!board[y+dy][x+dx])));}
+function startGame(){
+  board=newBoard();score=0;level=1;lines=0;paused=false;running=true;
+  piece=randPiece();nextPiece=randPiece();
+  updHUD();clearInterval(loop);loop=setInterval(tick,500);
+  drawNext();
+}
+function togglePause(){
+  if(!running)return;
+  paused=!paused;
+  document.getElementById("btn-pause").textContent=paused?"▶ REANUDAR":"⏸ PAUSA";
+}
+function tick(){
+  if(paused||!running)return;
+  if(valid(piece.shape,piece.x,piece.y+1)){piece.y++;}
+  else{lock();if(running){piece=nextPiece;nextPiece=randPiece();drawNext();if(!valid(piece.shape,piece.x,piece.y)){gameOver();}}}
+  draw();
+}
+function lock(){
+  piece.shape.forEach((row,dy)=>row.forEach((v,dx)=>{if(v&&piece.y+dy>=0)board[piece.y+dy][piece.x+dx]=piece.color;}));
+  let cleared=0;
+  for(let r=ROWS-1;r>=0;r--){if(board[r].every(v=>v)){board.splice(r,1);board.unshift(Array(COLS).fill(0));cleared++;r++;}}
+  if(cleared){const pts=[0,100,300,500,800][cleared]*level;score+=pts;lines+=cleared;level=Math.floor(lines/10)+1;clearInterval(loop);loop=setInterval(tick,Math.max(80,500-level*40));updHUD();}
+}
+function gameOver(){running=false;clearInterval(loop);document.getElementById("msg").textContent=`GAME OVER · Puntaje: ${score}`;}
+function updHUD(){
+  document.getElementById("h-score").textContent=score;
+  document.getElementById("h-level").textContent=level;
+  document.getElementById("h-lines").textContent=lines;
+}
+function drawNext(){
+  nctx.fillStyle="#080810";nctx.fillRect(0,0,80,80);
+  const s=16,offx=Math.floor((4-nextPiece.shape[0].length)/2)*s+8,offy=Math.floor((4-nextPiece.shape.length)/2)*s+8;
+  nextPiece.shape.forEach((row,r)=>row.forEach((v,c)=>{
+    if(v){nctx.fillStyle=nextPiece.color;nctx.shadowColor=nextPiece.color;nctx.shadowBlur=8;
+    nctx.fillRect(offx+c*s,offy+r*s,s-2,s-2);nctx.shadowBlur=0;}
+  }));
+}
+function drawBlock(ctx2,x,y,color,size=BS){
+  ctx2.fillStyle=color;ctx2.shadowColor=color;ctx2.shadowBlur=8;
+  ctx2.fillRect(x+1,y+1,size-2,size-2);
+  ctx2.fillStyle="rgba(255,255,255,0.2)";ctx2.fillRect(x+2,y+2,size/3,size/3);
+  ctx2.shadowBlur=0;
+}
+function draw(){
+  ctx.fillStyle="#080810";ctx.fillRect(0,0,C.width,C.height);
+  // Grid
+  ctx.strokeStyle="rgba(255,255,255,0.04)";ctx.lineWidth=1;
+  for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(x*BS,0);ctx.lineTo(x*BS,C.height);ctx.stroke();}
+  for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*BS);ctx.lineTo(C.width,y*BS);ctx.stroke();}
+  // Ghost piece
+  let ghostY=piece.y;
+  while(valid(piece.shape,piece.x,ghostY+1))ghostY++;
+  piece.shape.forEach((row,dy)=>row.forEach((v,dx)=>{
+    if(v){ctx.fillStyle="rgba(255,255,255,0.08)";ctx.fillRect((piece.x+dx)*BS+1,(ghostY+dy)*BS+1,BS-2,BS-2);}
+  }));
+  // Board
+  board.forEach((row,r)=>row.forEach((v,c)=>{if(v)drawBlock(ctx,c*BS,r*BS,v);}));
+  // Current piece
+  piece.shape.forEach((row,dy)=>row.forEach((v,dx)=>{if(v)drawBlock(ctx,(piece.x+dx)*BS,(piece.y+dy)*BS,piece.color);}));
+  // Paused overlay
+  if(paused){ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,C.width,C.height);ctx.font="bold 20px 'Courier New'";ctx.fillStyle="#00aaff";ctx.textAlign="center";ctx.fillText("PAUSA",C.width/2,C.height/2);}
+}
+document.addEventListener("keydown",e=>{
+  if(!running||paused)return;
+  if(["ArrowLeft","ArrowRight","ArrowDown","ArrowUp"," "].includes(e.key))e.preventDefault();
+  if(e.key==="ArrowLeft"&&valid(piece.shape,piece.x-1,piece.y))piece.x--;
+  else if(e.key==="ArrowRight"&&valid(piece.shape,piece.x+1,piece.y))piece.x++;
+  else if(e.key==="ArrowDown"&&valid(piece.shape,piece.x,piece.y+1))piece.y++;
+  else if(e.key==="ArrowUp"||e.key===" "){const r=rotate(piece.shape);if(valid(r,piece.x,piece.y))piece.shape=r;}
+  draw();
+});
+// Touch swipe
+let tc=null;
+C.addEventListener("touchstart",e=>{tc={x:e.touches[0].clientX,y:e.touches[0].clientY};},{passive:true});
+C.addEventListener("touchend",e=>{
+  if(!tc||!running||paused)return;
+  const dx=e.changedTouches[0].clientX-tc.x,dy=e.changedTouches[0].clientY-tc.y;
+  if(Math.abs(dx)>Math.abs(dy)){if(dx>0&&valid(piece.shape,piece.x+1,piece.y))piece.x++;else if(dx<0&&valid(piece.shape,piece.x-1,piece.y))piece.x--;}
+  else if(dy>0&&valid(piece.shape,piece.x,piece.y+1))piece.y++;
+  else{const r=rotate(piece.shape);if(valid(r,piece.x,piece.y))piece.shape=r;}
+  draw();
+},{passive:true});
+// Init display
+board=newBoard();piece=randPiece();nextPiece=randPiece();drawNext();draw();
+document.getElementById("msg").textContent="ESPACIO=rotar · ↓=bajar · ←→=mover";
+
+// Escuchar teclado desde página padre (fix foco iframe)
+window.addEventListener("message", e => {
+  if(!e.data || e.data.type !== "keydown") return;
+  document.dispatchEvent(new KeyboardEvent("keydown", {key: e.data.key, code: e.data.code, bubbles: true}));
+});
+</script>
+</body>
+</html>

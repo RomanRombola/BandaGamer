@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Piano Tiles</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a15;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace;}
+h1{color:#a855f7;font-size:14px;letter-spacing:3px;margin-bottom:5px;}
+#hud{display:flex;gap:18px;margin-bottom:5px;font-size:12px;color:#aaa;}
+#hud b{color:#a855f7;}
+canvas{border:2px solid rgba(168,85,247,0.2);border-radius:6px;display:block;cursor:pointer;}
+#ctrl{margin-top:6px;font-size:10px;color:#444;letter-spacing:1px;text-align:center;}
+</style>
+</head>
+<body>
+<h1>🎹 PIANO TILES</h1>
+<div id="hud"><span>SCORE <b id="sc">0</b></span><span>COMBO <b id="combo">0</b></span><span>MEJOR <b id="best">0</b></span></div>
+<canvas id="c" width="280" height="480"></canvas>
+<div id="ctrl">Tocá o clickeá las teclas negras · No te equivoques</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=280,H=480,COLS=4,TW=W/COLS,TH=120;
+let tiles,score,combo,best=0,speed,state,loop,nextRow,frame;
+
+const NOTES=[261,294,329,349,392,440,493,523];
+function playNote(col){
+  try{
+    const ac=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.type='sine';o.frequency.value=NOTES[col%8];
+    g.gain.setValueAtTime(0.3,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.4);
+    o.connect(g);g.connect(ac.destination);
+    o.start();o.stop(ac.currentTime+0.4);
+  }catch(e){}
+}
+
+function init(){
+  tiles=[];score=0;combo=0;speed=3;frame=0;state='play';
+  nextRow=0;
+  // Primer tile para dar inicio
+  spawnRow();spawnRow();spawnRow();spawnRow();
+  if(loop)cancelAnimationFrame(loop);
+  tick();
+}
+
+function spawnRow(){
+  const col=Math.floor(Math.random()*COLS);
+  const y=-nextRow*TH;
+  tiles.push({col,y,hit:false,missed:false,flash:0});
+  nextRow++;
+}
+
+function tick(){
+  if(state!=='play')return;
+  frame++;
+  speed=3+score*0.008;
+  tiles.forEach(t=>{t.y+=speed;if(t.flash>0)t.flash--;});
+  // Spawn tiles
+  const topY=Math.min(...tiles.map(t=>t.y));
+  while(topY>-TH){spawnRow();}
+  // Check missed
+  for(const t of tiles){
+    if(!t.hit&&!t.missed&&t.y>H){
+      t.missed=true;combo=0;document.getElementById('combo').textContent=0;
+      // No morir por tiles pasados si hay muchos
+      if(tiles.filter(t=>t.missed).length>3){state='dead';draw();return;}
+    }
+  }
+  tiles=tiles.filter(t=>t.y<H+TH*2);
+  draw();loop=requestAnimationFrame(tick);
+}
+
+function hitTile(x,y){
+  if(state!=='play')return;
+  const col=Math.floor(x/TW);
+  // Buscar el tile más abajo en esa columna que no fue tocado
+  const inRange=tiles.filter(t=>t.col===col&&!t.hit&&!t.missed&&t.y+TH>H*0.55&&t.y<H);
+  if(inRange.length>0){
+    const t=inRange.reduce((a,b)=>a.y>b.y?a:b);
+    t.hit=true;t.flash=8;
+    combo++;score+=combo>4?20:10;
+    document.getElementById('sc').textContent=score;
+    document.getElementById('combo').textContent=combo;
+    if(score>best){best=score;document.getElementById('best').textContent=best;}
+    playNote(col);
+  } else {
+    // Hit en zona blanca — penalidad
+    combo=0;document.getElementById('combo').textContent=0;
+  }
+}
+
+function draw(){
+  ctx.fillStyle='#07070f';ctx.fillRect(0,0,W,H);
+  // Divisores de columnas
+  ctx.strokeStyle='rgba(168,85,247,0.1)';ctx.lineWidth=1;
+  for(let c=1;c<COLS;c++){ctx.beginPath();ctx.moveTo(c*TW,0);ctx.lineTo(c*TW,H);ctx.stroke();}
+  // Línea de hit zone
+  ctx.strokeStyle='rgba(168,85,247,0.3)';ctx.lineWidth=2;ctx.setLineDash([6,6]);
+  ctx.beginPath();ctx.moveTo(0,H*0.75);ctx.lineTo(W,H*0.75);ctx.stroke();ctx.setLineDash([]);
+  // Tiles
+  tiles.forEach(t=>{
+    if(t.y>H||t.y+TH<0)return;
+    const x=t.col*TW;
+    if(t.hit){
+      const alpha=Math.max(0,t.flash/8);
+      ctx.fillStyle=`rgba(168,85,247,${0.3+alpha*0.5})`;
+      ctx.shadowColor='#a855f7';ctx.shadowBlur=10*alpha;
+    } else if(t.missed){
+      ctx.fillStyle='rgba(255,51,102,0.3)';ctx.shadowBlur=0;
+    } else {
+      ctx.fillStyle='rgba(168,85,247,0.85)';ctx.shadowColor='#a855f7';ctx.shadowBlur=4;
+    }
+    ctx.fillRect(x+2,t.y+2,TW-4,TH-4);
+    ctx.shadowBlur=0;
+  });
+  // Score visual
+  ctx.fillStyle='rgba(168,85,247,0.3)';ctx.font='bold 48px Courier New';ctx.textAlign='center';ctx.fillText(score,W/2,H/2+16);
+  if(state==='wait'){
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#a855f7';ctx.font='bold 18px Courier New';ctx.textAlign='center';ctx.fillText('PIANO TILES',W/2,H/2-20);
+    ctx.fillStyle='#aaa';ctx.font='12px Courier New';ctx.fillText('Tocá las teclas moradas',W/2,H/2+4);
+    ctx.fillStyle='#ffe600';ctx.font='12px Courier New';ctx.fillText('Click para empezar',W/2,H/2+24);
+  }
+  if(state==='dead'){
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ff3366';ctx.font='bold 20px Courier New';ctx.textAlign='center';ctx.fillText('GAME OVER',W/2,H/2-24);
+    ctx.fillStyle='#a855f7';ctx.font='14px Courier New';ctx.fillText(`Score: ${score}`,W/2,H/2+2);
+    ctx.fillStyle='#aaa';ctx.font='11px Courier New';ctx.fillText('Click para reintentar',W/2,H/2+24);
+  }
+}
+
+cv.addEventListener('click',e=>{
+  if(state==='wait'){state='play';init();}
+  else if(state==='dead'){if(score>best)best=score;init();}
+  else{const r=cv.getBoundingClientRect();hitTile(e.clientX-r.left,e.clientY-r.top);}
+});
+cv.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  if(state==='wait'){state='play';init();return;}
+  if(state==='dead'){if(score>best)best=score;init();return;}
+  const r=cv.getBoundingClientRect();
+  Array.from(e.changedTouches).forEach(t=>hitTile(t.clientX-r.left,t.clientY-r.top));
+},{passive:false});
+state='wait';draw();
+</script>
+</body>
+</html>

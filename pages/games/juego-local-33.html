@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fruit Catch</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a15;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace;}
+h1{color:#ff6600;font-size:14px;letter-spacing:3px;margin-bottom:5px;}
+#hud{display:flex;gap:18px;margin-bottom:5px;font-size:12px;color:#aaa;}
+#hud b{color:#ff6600;}
+canvas{border:2px solid rgba(255,102,0,0.2);border-radius:6px;cursor:none;}
+#ctrl{margin-top:6px;font-size:10px;color:#444;letter-spacing:1px;text-align:center;}
+</style>
+</head>
+<body>
+<h1>🧺 FRUIT CATCH</h1>
+<div id="hud"><span>SCORE <b id="sc">0</b></span><span>VIDAS <b id="lv">3</b></span><span>NIVEL <b id="nl">1</b></span><span>MEJOR <b id="best">0</b></span></div>
+<canvas id="c" width="380" height="460"></canvas>
+<div id="ctrl">Mouse / touch para mover la canasta</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=380,H=460;
+const GOOD=['🍎','🍊','🍋','🍇','🍓','⭐','💎','🪙'];
+const BAD=['💀','💣','🔥','⚡','☠️'];
+let basket,items,score,lives,level,best=0,state,loop,frame,particles=[];
+let mouseX=W/2;
+
+function init(){
+  basket={x:W/2,y:H-40,w:80,h:20};
+  items=[];score=0;lives=3;level=1;state='play';frame=0;particles=[];
+  document.getElementById('sc').textContent=0;
+  document.getElementById('lv').textContent=3;
+  document.getElementById('nl').textContent=1;
+  if(loop)cancelAnimationFrame(loop);
+  tick();
+}
+
+function spawnItem(){
+  const isBad=Math.random()<0.2+level*0.03;
+  const emoji=isBad?BAD[Math.floor(Math.random()*BAD.length)]:GOOD[Math.floor(Math.random()*GOOD.length)];
+  items.push({x:20+Math.random()*(W-40),y:-20,vy:2+level*0.4+Math.random()*1.5,emoji,bad:isBad,size:28,rotation:0,rotSpd:(Math.random()-0.5)*0.1});
+}
+
+function explode(x,y,color,n=10){
+  for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-0.5)*8,vy:-Math.random()*6-2,life:1,color,size:4+Math.random()*4});
+}
+
+function tick(){
+  if(state!=='play')return;
+  frame++;
+  const spawnRate=Math.max(25,55-level*4);
+  if(frame%spawnRate===0)spawnItem();
+  // Mover canasta
+  basket.x+=(mouseX-basket.w/2-basket.x)*0.18;
+  basket.x=Math.max(0,Math.min(W-basket.w,basket.x));
+  // Mover items
+  items.forEach(it=>{it.y+=it.vy;it.rotation+=it.rotSpd;});
+  // Colisiones
+  for(let i=items.length-1;i>=0;i--){
+    const it=items[i];
+    if(it.y+it.size/2>basket.y&&it.y-it.size/2<basket.y+basket.h&&it.x+it.size/2>basket.x&&it.x-it.size/2<basket.x+basket.w){
+      if(it.bad){
+        lives--;document.getElementById('lv').textContent=Math.max(0,lives);
+        explode(it.x,it.y,'#ff3366');
+        if(lives<=0){state='dead';draw();return;}
+      } else {
+        score+=10+level;document.getElementById('sc').textContent=score;
+        explode(it.x,it.y,'#ffe600',6);
+        if(score>=(level*level*50+50)){level++;document.getElementById('nl').textContent=level;}
+      }
+      items.splice(i,1);continue;
+    }
+    if(it.y>H+20){
+      if(!it.bad){lives--;document.getElementById('lv').textContent=Math.max(0,lives);if(lives<=0){state='dead';draw();return;}}
+      items.splice(i,1);
+    }
+  }
+  // Partículas
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.3;p.life-=0.055;p.vx*=0.92;});
+  particles=particles.filter(p=>p.life>0);
+  draw();loop=requestAnimationFrame(tick);
+}
+
+function draw(){
+  // Fondo con gradiente de noche
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#07070f');bg.addColorStop(1,'#0a0a1a');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  // Estrellas
+  ctx.fillStyle='rgba(255,255,255,0.2)';
+  for(let i=0;i<30;i++)ctx.fillRect((i*83+frame*0.1)%W,((i*47)%H*0.6),i%5===0?2:1,i%5===0?2:1);
+  // Items
+  items.forEach(it=>{
+    ctx.save();ctx.translate(it.x,it.y);ctx.rotate(it.rotation);
+    ctx.font=`${it.size}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(it.emoji,0,0);
+    ctx.restore();
+  });
+  // Partículas
+  particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();});
+  ctx.globalAlpha=1;
+  // Canasta
+  const bg2=ctx.createLinearGradient(basket.x,basket.y,basket.x,basket.y+basket.h);
+  bg2.addColorStop(0,'#ff6600');bg2.addColorStop(1,'rgba(255,102,0,0.5)');
+  ctx.shadowColor='#ff6600';ctx.shadowBlur=10;
+  ctx.fillStyle=bg2;ctx.beginPath();ctx.roundRect(basket.x,basket.y,basket.w,basket.h,6);ctx.fill();
+  // Cuadrícula de la canasta
+  ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;
+  for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(basket.x+basket.w/4*i,basket.y);ctx.lineTo(basket.x+basket.w/4*i,basket.y+basket.h);ctx.stroke();}
+  ctx.shadowBlur=0;
+  if(state==='wait'){
+    ctx.fillStyle='rgba(0,0,0,0.65)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ff6600';ctx.font='bold 18px Courier New';ctx.textAlign='center';
+    ctx.fillText('FRUIT CATCH',W/2,H/2-20);
+    ctx.fillStyle='#aaa';ctx.font='12px Courier New';
+    ctx.fillText('Atrapá la fruta, esquivá las bombas',W/2,H/2+4);
+    ctx.fillText('Mové el mouse para empezar',W/2,H/2+24);
+  }
+  if(state==='dead'){
+    if(score>best)best=score;document.getElementById('best').textContent=best;
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ff3366';ctx.font='bold 20px Courier New';ctx.textAlign='center';
+    ctx.fillText('GAME OVER',W/2,H/2-24);
+    ctx.fillStyle='#ff6600';ctx.font='14px Courier New';ctx.fillText(`Score: ${score}`,W/2,H/2+2);
+    ctx.fillStyle='#aaa';ctx.font='11px Courier New';ctx.fillText('Click para reintentar',W/2,H/2+26);
+  }
+}
+
+cv.addEventListener('mousemove',e=>{
+  const r=cv.getBoundingClientRect();mouseX=e.clientX-r.left;
+  if(state==='wait'){state='play';tick();}
+});
+cv.addEventListener('click',()=>{if(state==='dead')init();});
+cv.addEventListener('touchmove',e=>{e.preventDefault();const r=cv.getBoundingClientRect();mouseX=e.touches[0].clientX-r.left;if(state==='wait'){state='play';tick();}},{passive:false});
+cv.addEventListener('touchstart',e=>{e.preventDefault();if(state==='dead')init();else if(state==='wait'){const r=cv.getBoundingClientRect();mouseX=e.touches[0].clientX-r.left;state='play';tick();}},{passive:false});
+
+state='wait';draw();
+</script>
+</body>
+</html>

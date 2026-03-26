@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>War - Carta Alta</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0f05;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;overflow:hidden;font-family:'Courier New',monospace;color:#f0f0f0;padding:10px;}
+h1{color:#ffe600;font-size:15px;letter-spacing:3px;margin-bottom:4px;text-shadow:0 0 10px rgba(255,230,0,0.5);}
+.zona{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;}
+.label{font-size:11px;color:#666;letter-spacing:2px;}
+.carta-wrap{height:110px;display:flex;align-items:center;justify-content:center;}
+.carta{width:72px;height:100px;border-radius:10px;border:2px solid rgba(255,255,255,0.15);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:default;transition:transform .25s,box-shadow .25s;position:relative;}
+.carta.roja{background:linear-gradient(135deg,#1a0505,#2a0808);border-color:rgba(255,80,80,0.4);color:#ff6666;}
+.carta.negra{background:linear-gradient(135deg,#050508,#0a0a14);border-color:rgba(100,100,200,0.4);color:#aaaaff;}
+.carta.dorso{background:linear-gradient(135deg,#0d1a0d,#1a2d1a);border-color:rgba(57,255,20,0.2);cursor:pointer;}
+.carta.dorso:hover{transform:scale(1.06);box-shadow:0 0 16px rgba(57,255,20,0.4);}
+.carta.ganadora{box-shadow:0 0 20px rgba(255,230,0,0.8);border-color:#ffe600;transform:scale(1.08);}
+.carta.perdedora{opacity:0.5;}
+.palo{font-size:28px;line-height:1;}
+.val{font-size:14px;letter-spacing:1px;}
+.mid-row{display:flex;align-items:center;justify-content:space-between;width:280px;gap:8px;}
+.puntajes{display:flex;justify-content:space-between;width:280px;padding:6px 0;font-size:13px;}
+.puntajes .p1{color:#00aaff;font-weight:700;}
+.puntajes .cpu{color:#ff6600;font-weight:700;}
+.resultado{font-size:14px;font-weight:700;text-align:center;height:22px;letter-spacing:2px;}
+.btn{background:linear-gradient(135deg,#1a4a1a,#2a6a2a);border:1px solid rgba(57,255,20,0.3);color:#39ff14;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:9px 22px;border-radius:8px;cursor:pointer;letter-spacing:1px;transition:all .2s;margin-top:4px;}
+.btn:hover{background:linear-gradient(135deg,#2a6a2a,#3a8a3a);box-shadow:0 0 12px rgba(57,255,20,0.4);}
+.mazo-count{font-size:11px;color:#555;letter-spacing:1px;}
+.war-area{min-height:30px;display:flex;gap:8px;justify-content:center;align-items:center;}
+.war-label{color:#ff3366;font-size:12px;font-weight:700;letter-spacing:2px;}
+</style>
+</head>
+<body>
+<h1>🃏 WAR - CARTA ALTA</h1>
+<div class="zona">
+  <div class="label">CPU</div>
+  <div class="mazo-count">🂠 <span id="cpu-count">26</span> cartas</div>
+  <div class="carta-wrap"><div class="carta dorso" id="cpu-card"><span style="font-size:32px">🂠</span></div></div>
+</div>
+<div class="war-area" id="war-area"></div>
+<div class="resultado" id="resultado">Sacá una carta</div>
+<div class="puntajes">
+  <span class="p1">TÚ: <b id="p1-score">26</b></span>
+  <span class="cpu">CPU: <b id="cpu-score">26</b></span>
+</div>
+<div class="zona">
+  <div class="carta-wrap"><div class="carta dorso" id="p1-card" onclick="jugar()"><span style="font-size:32px">🃏</span><span style="font-size:10px;color:#39ff14;margin-top:4px">TAP</span></div></div>
+  <div class="label">VOS</div>
+  <div class="mazo-count">🂠 <span id="p1-count">26</span> cartas</div>
+</div>
+<button class="btn" id="btn-nuevo" onclick="nuevaPartida()" style="display:none">NUEVA PARTIDA</button>
+
+<script>
+const PALOS=['♠','♣','♥','♦'];
+const VALS=['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const ROJA=new Set(['♥','♦']);
+
+function crearMazo(){
+  const m=[];
+  PALOS.forEach(p=>VALS.forEach((v,i)=>m.push({palo:p,val:v,num:i+2})));
+  for(let i=m.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[m[i],m[j]]=[m[j],m[i]];}
+  return m;
+}
+
+let p1Mazo,cpuMazo,jugando,enWar;
+
+function nuevaPartida(){
+  const m=crearMazo();
+  p1Mazo=m.slice(0,26);cpuMazo=m.slice(26);
+  jugando=true;enWar=false;
+  document.getElementById('btn-nuevo').style.display='none';
+  document.getElementById('resultado').textContent='Sacá una carta';
+  document.getElementById('war-area').innerHTML='';
+  renderCardBack('p1-card','🃏','TAP');
+  renderCardBack('cpu-card','🂠','');
+  updateCounts();
+}
+
+function renderCardBack(id,icon,sub){
+  const el=document.getElementById(id);
+  el.className='carta dorso';
+  el.innerHTML=`<span style="font-size:32px">${icon}</span>${sub?`<span style="font-size:10px;color:#39ff14;margin-top:4px">${sub}</span>`:''}`;
+}
+
+function renderCard(id,card){
+  const el=document.getElementById(id);
+  const isRed=ROJA.has(card.palo);
+  el.className=`carta ${isRed?'roja':'negra'}`;
+  el.innerHTML=`<div style="position:absolute;top:6px;left:8px;font-size:12px">${card.val}</div>
+    <div class="palo">${card.palo}</div>
+    <div class="val">${card.val}</div>
+    <div style="position:absolute;bottom:6px;right:8px;font-size:12px;transform:rotate(180deg)">${card.val}</div>`;
+}
+
+function updateCounts(){
+  document.getElementById('p1-count').textContent=p1Mazo.length;
+  document.getElementById('cpu-count').textContent=cpuMazo.length;
+  document.getElementById('p1-score').textContent=p1Mazo.length;
+  document.getElementById('cpu-score').textContent=cpuMazo.length;
+}
+
+function jugar(){
+  if(!jugando||enWar) return;
+  if(p1Mazo.length===0||cpuMazo.length===0) return;
+  const p1c=p1Mazo.shift(),cpuc=cpuMazo.shift();
+  renderCard('p1-card',p1c);renderCard('cpu-card',cpuc);
+  document.getElementById('war-area').innerHTML='';
+  setTimeout(()=>{
+    if(p1c.num>cpuc.num){
+      document.getElementById('resultado').textContent='✅ GANÁS EL TURNO!';
+      document.getElementById('resultado').style.color='#39ff14';
+      document.getElementById('p1-card').classList.add('ganadora');
+      document.getElementById('cpu-card').classList.add('perdedora');
+      p1Mazo.push(p1c,cpuc);
+    } else if(cpuc.num>p1c.num){
+      document.getElementById('resultado').textContent='❌ GANA LA CPU';
+      document.getElementById('resultado').style.color='#ff3366';
+      document.getElementById('cpu-card').classList.add('ganadora');
+      document.getElementById('p1-card').classList.add('perdedora');
+      cpuMazo.push(p1c,cpuc);
+    } else {
+      // Empate — WAR
+      war([p1c],[cpuc]);return;
+    }
+    updateCounts();checkEnd();
+  },500);
+}
+
+function war(p1Stack,cpuStack){
+  enWar=true;
+  document.getElementById('resultado').textContent='⚔️ GUERRA!';
+  document.getElementById('resultado').style.color='#ff6600';
+  const warArea=document.getElementById('war-area');
+  warArea.innerHTML='<span class="war-label">⚔️ GUERRA ⚔️</span>';
+  // Cada uno pone 2 cartas boca abajo
+  const bet=Math.min(2,p1Mazo.length,cpuMazo.length);
+  for(let i=0;i<bet;i++){p1Stack.push(p1Mazo.shift());cpuStack.push(cpuMazo.shift());}
+  if(p1Mazo.length===0||cpuMazo.length===0){
+    // Sin cartas para continuar
+    const winner=p1Mazo.length>cpuMazo.length?'p1':'cpu';
+    finWar(p1Stack,cpuStack,winner);return;
+  }
+  // Carta decisiva
+  const p1c=p1Mazo.shift(),cpuc=cpuMazo.shift();
+  p1Stack.push(p1c);cpuStack.push(cpuc);
+  renderCard('p1-card',p1c);renderCard('cpu-card',cpuc);
+  setTimeout(()=>{
+    if(p1c.num>cpuc.num) finWar(p1Stack,cpuStack,'p1');
+    else if(cpuc.num>p1c.num) finWar(p1Stack,cpuStack,'cpu');
+    else war(p1Stack,cpuStack); // otra guerra!
+  },700);
+}
+
+function finWar(p1Stack,cpuStack,winner){
+  document.getElementById('war-area').innerHTML='';
+  if(winner==='p1'){
+    document.getElementById('resultado').textContent=`✅ GANÁS LA GUERRA (${p1Stack.length+cpuStack.length} cartas!)`;
+    document.getElementById('resultado').style.color='#ffe600';
+    p1Mazo.push(...p1Stack,...cpuStack);
+    document.getElementById('p1-card').classList.add('ganadora');
+  } else {
+    document.getElementById('resultado').textContent=`❌ PIERDE LA GUERRA`;
+    document.getElementById('resultado').style.color='#ff3366';
+    cpuMazo.push(...p1Stack,...cpuStack);
+    document.getElementById('cpu-card').classList.add('ganadora');
+  }
+  enWar=false;updateCounts();checkEnd();
+}
+
+function checkEnd(){
+  if(p1Mazo.length===0){
+    document.getElementById('resultado').textContent='💀 PERDISTE — Sin cartas';
+    document.getElementById('resultado').style.color='#ff3366';
+    jugando=false;document.getElementById('btn-nuevo').style.display='block';
+  } else if(cpuMazo.length===0){
+    document.getElementById('resultado').textContent='🏆 GANASTE — CPU sin cartas!';
+    document.getElementById('resultado').style.color='#ffe600';
+    jugando=false;document.getElementById('btn-nuevo').style.display='block';
+  }
+}
+
+nuevaPartida();
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();jugar();}});
+window.addEventListener('message',e=>{if(e.data?.type==='keydown'&&e.data.key===' ')jugar();});
+</script>
+</body>
+</html>

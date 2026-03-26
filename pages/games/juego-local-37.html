@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ajedrez</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a15;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Courier New',monospace;color:#f0f0f0;padding:10px;}
+h1{color:#ffe600;font-size:14px;letter-spacing:3px;margin-bottom:6px;}
+#info{font-size:12px;color:#aaa;margin-bottom:6px;text-align:center;height:16px;}
+#board{display:grid;grid-template-columns:repeat(8,50px);grid-template-rows:repeat(8,50px);border:2px solid rgba(255,230,0,0.3);border-radius:4px;overflow:hidden;}
+.sq{width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;position:relative;transition:background .1s;}
+.sq.light{background:#1a1a2e;}
+.sq.dark{background:#0d0d1a;}
+.sq.selected{background:rgba(255,230,0,0.25)!important;}
+.sq.move{background:rgba(57,255,20,0.2)!important;}
+.sq.capture{background:rgba(255,51,102,0.25)!important;}
+.sq.check{background:rgba(255,51,102,0.4)!important;}
+#status{margin-top:8px;font-size:13px;font-weight:700;text-align:center;height:20px;}
+#buttons{display:flex;gap:8px;margin-top:8px;}
+.btn{background:rgba(255,230,0,0.08);border:1px solid rgba(255,230,0,0.2);color:#ffe600;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:7px 16px;border-radius:8px;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.btn:hover{box-shadow:0 0 10px rgba(255,230,0,0.3);}
+</style>
+</head>
+<body>
+<h1>♟️ AJEDREZ</h1>
+<div id="info">Turno: Blancas (TÚ)</div>
+<div id="board"></div>
+<div id="status"></div>
+<div id="buttons">
+  <button class="btn" onclick="newGame()">🔄 NUEVO JUEGO</button>
+  <button class="btn" onclick="undoMove()">↩️ DESHACER</button>
+</div>
+<script>
+// Piezas Unicode
+const PIECES={
+  K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙', // blancas
+  k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟', // negras
+};
+
+const INIT=[
+  ['r','n','b','q','k','b','n','r'],
+  ['p','p','p','p','p','p','p','p'],
+  [null,null,null,null,null,null,null,null],
+  [null,null,null,null,null,null,null,null],
+  [null,null,null,null,null,null,null,null],
+  [null,null,null,null,null,null,null,null],
+  ['P','P','P','P','P','P','P','P'],
+  ['R','N','B','Q','K','B','N','R'],
+];
+
+let board,selected,moves,turn,history,gameOver;
+
+function newGame(){
+  board=INIT.map(r=>r.map(c=>c));
+  selected=null;moves=[];turn='white';history=[];gameOver=false;
+  document.getElementById('status').textContent='';
+  document.getElementById('info').textContent='Turno: Blancas (TÚ)';
+  render();
+}
+
+function isWhite(p){return p&&p===p.toUpperCase();}
+function isBlack(p){return p&&p===p.toLowerCase();}
+function isOwn(p){return turn==='white'?isWhite(p):isBlack(p);}
+function isEnemy(p){return turn==='white'?isBlack(p):isWhite(p);}
+
+function inBounds(r,c){return r>=0&&r<8&&c>=0&&c<8;}
+
+function getMoves(r,c){
+  const p=board[r][c];if(!p)return[];
+  const mv=[];const pt=p.toLowerCase();
+  const add=(nr,nc,captOnly=false)=>{
+    if(!inBounds(nr,nc))return false;
+    const t=board[nr][nc];
+    if(t&&isOwn(t))return false;
+    if(!captOnly||t) mv.push([nr,nc]);
+    return !t;
+  };
+  const slide=(dr,dc)=>{let nr=r+dr,nc=c+dc;while(inBounds(nr,nc)){const t=board[nr][nc];if(t&&isOwn(t))break;mv.push([nr,nc]);if(t)break;nr+=dr;nc+=dc;}};
+  if(pt==='p'){
+    const dir=isWhite(p)?-1:1;const startR=isWhite(p)?6:1;
+    if(inBounds(r+dir,c)&&!board[r+dir][c]){mv.push([r+dir,c]);if(r===startR&&!board[r+dir*2][c])mv.push([r+dir*2,c]);}
+    if(inBounds(r+dir,c-1)&&board[r+dir][c-1]&&isEnemy(board[r+dir][c-1]))mv.push([r+dir,c-1]);
+    if(inBounds(r+dir,c+1)&&board[r+dir][c+1]&&isEnemy(board[r+dir][c+1]))mv.push([r+dir,c+1]);
+  } else if(pt==='r'){[[0,1],[0,-1],[1,0],[-1,0]].forEach(([dr,dc])=>slide(dr,dc));}
+  else if(pt==='b'){[[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr,dc])=>slide(dr,dc));}
+  else if(pt==='q'){[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr,dc])=>slide(dr,dc));}
+  else if(pt==='n'){[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc])=>add(r+dr,c+dc));}
+  else if(pt==='k'){[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc])=>add(r+dr,c+dc));}
+  return mv;
+}
+
+function doMove(fr,fc,tr,tc){
+  history.push(board.map(r=>[...r]));
+  const p=board[fr][fc];
+  board[tr][tc]=p;board[fr][fc]=null;
+  // Promoción de peón
+  if(p==='P'&&tr===0)board[tr][tc]='Q';
+  if(p==='p'&&tr===7)board[tr][tc]='q';
+}
+
+function findKing(color){
+  const k=color==='white'?'K':'k';
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(board[r][c]===k)return[r,c];
+  return null;
+}
+
+function inCheck(color){
+  const[kr,kc]=findKing(color)||[0,0];
+  const opp=color==='white'?'black':'white';
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const p=board[r][c];
+    if(!p||(opp==='white'?!isWhite(p):!isBlack(p)))continue;
+    const savedTurn=turn;turn=opp;
+    const mv=getMoves(r,c);turn=savedTurn;
+    if(mv.some(([mr,mc])=>mr===kr&&mc===kc))return true;
+  }
+  return false;
+}
+
+function getLegalMoves(r,c){
+  const raw=getMoves(r,c);const legal=[];
+  for(const[nr,nc]of raw){
+    const saved=board.map(row=>[...row]);doMove(r,c,nr,nc);
+    const check=inCheck(turn);board=saved;
+    if(!check)legal.push([nr,nc]);
+  }
+  return legal;
+}
+
+function aiMove(){
+  // Simple: captura si puede, si no mueve random
+  const pieces=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=board[r][c];if(p&&isBlack(p))pieces.push([r,c]);}
+  pieces.sort(()=>Math.random()-0.5);
+  let best=null,bestScore=-999;
+  for(const[r,c]of pieces){
+    const savedTurn=turn;turn='black';
+    const mv=getLegalMoves(r,c);turn=savedTurn;
+    for(const[nr,nc]of mv){
+      const target=board[nr][nc];
+      const score=target?pieceValue(target):0;
+      if(score>bestScore){bestScore=score;best=[r,c,nr,nc];}
+    }
+  }
+  if(!best){for(const[r,c]of pieces){const savedTurn=turn;turn='black';const mv=getLegalMoves(r,c);turn=savedTurn;if(mv.length){const[nr,nc]=mv[Math.floor(Math.random()*mv.length)];best=[r,c,nr,nc];break;}}}
+  if(best){doMove(best[0],best[1],best[2],best[3]);}
+}
+
+function pieceValue(p){const vals={p:1,n:3,b:3,r:5,q:9,k:100};return vals[p.toLowerCase()]||0;}
+
+function undoMove(){if(history.length<2)return;history.pop();board=history.pop().map(r=>[...r]);turn='white';selected=null;moves=[];gameOver=false;document.getElementById('status').textContent='';document.getElementById('info').textContent='Turno: Blancas (TÚ)';render();}
+
+function clickSquare(r,c){
+  if(gameOver||turn!=='white')return;
+  const p=board[r][c];
+  if(selected){
+    const[sr,sc]=selected;
+    if(moves.some(([mr,mc])=>mr===r&&mc===c)){
+      doMove(sr,sc,r,c);selected=null;moves=[];
+      // Verificar mate
+      turn='black';
+      if(checkMate('black')){gameOver=true;document.getElementById('status').textContent='🏆 ¡GANASTE por jaque mate!';document.getElementById('status').style.color='#39ff14';render();return;}
+      render();
+      setTimeout(()=>{aiMove();turn='white';if(checkMate('white')){gameOver=true;document.getElementById('status').textContent='❌ JAQUE MATE - Perdiste';document.getElementById('status').style.color='#ff3366';}else if(inCheck('white')){document.getElementById('info').textContent='⚠️ JAQUE - Protegé tu rey';}else{document.getElementById('info').textContent='Turno: Blancas (TÚ)';}render();},300);
+      return;
+    } else if(p&&isWhite(p)){selected=[r,c];moves=getLegalMoves(r,c);}
+    else{selected=null;moves=[];}
+  } else if(p&&isWhite(p)){selected=[r,c];moves=getLegalMoves(r,c);}
+  render();
+}
+
+function checkMate(color){
+  const savedTurn=turn;turn=color;
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=board[r][c];if(p&&(color==='white'?isWhite(p):isBlack(p))){if(getLegalMoves(r,c).length>0){turn=savedTurn;return false;}}}
+  turn=savedTurn;return true;
+}
+
+function render(){
+  const b=document.getElementById('board');b.innerHTML='';
+  const kingInCheck=inCheck(turn)&&turn==='white'?findKing('white'):null;
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const sq=document.createElement('div');
+    const isLight=(r+c)%2===0;
+    sq.className=`sq ${isLight?'light':'dark'}`;
+    const isSel=selected&&selected[0]===r&&selected[1]===c;
+    const isMove=moves.some(([mr,mc])=>mr===r&&mc===c);
+    const isCapture=isMove&&board[r][c];
+    const isCheck=kingInCheck&&kingInCheck[0]===r&&kingInCheck[1]===c;
+    if(isCheck)sq.classList.add('check');
+    else if(isSel)sq.classList.add('selected');
+    else if(isCapture)sq.classList.add('capture');
+    else if(isMove)sq.classList.add('move');
+    const p=board[r][c];
+    if(p)sq.textContent=PIECES[p]||p;
+    sq.style.color=isWhite(p)?'#f0f0f0':'#aaaaff';
+    sq.addEventListener('click',()=>clickSquare(r,c));
+    b.appendChild(sq);
+  }
+}
+
+newGame();
+</script>
+</body>
+</html>

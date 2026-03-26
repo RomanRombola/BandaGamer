@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bubble Shooter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a15;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace;}
+h1{color:#ff69b4;font-size:15px;letter-spacing:3px;margin-bottom:5px;}
+#hud{display:flex;gap:18px;margin-bottom:5px;font-size:12px;color:#aaa;}
+#hud b{color:#ff69b4;}
+canvas{border:2px solid rgba(255,105,180,0.2);border-radius:6px;cursor:crosshair;}
+#ctrl{margin-top:6px;font-size:10px;color:#444;letter-spacing:1px;text-align:center;}
+</style>
+</head>
+<body>
+<h1>🫧 BUBBLE SHOOTER</h1>
+<div id="hud"><span>SCORE <b id="sc">0</b></span><span>NIVEL <b id="nl">1</b></span><span>MEJOR <b id="best">0</b></span></div>
+<canvas id="c" width="340" height="480"></canvas>
+<div id="ctrl">Click / tap para disparar · Aim con el mouse</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=340,H=480,R=16,COLS=11,BUBBLE_COLORS=['#ff3366','#ff6600','#ffe600','#39ff14','#00aaff','#a855f7','#ff69b4'];
+let grid,shooter,bullet,aim,score,level,best=0,state,loop,nextColor;
+
+function hexPos(row,col){
+  const offX=(row%2===0)?R:R*2;
+  return{x:offX+col*(R*2)+R,y:40+row*(R*1.75)};
+}
+
+function mkGrid(rows=8){
+  const g=[];
+  for(let r=0;r<rows;r++){
+    const cols=r%2===0?COLS:COLS-1;
+    g[r]=[];
+    for(let c=0;c<cols;c++)g[r][c]=Math.floor(Math.random()*5); // max 5 colors inicialmente
+  }
+  return g;
+}
+
+function randomColor(){return Math.floor(Math.random()*(Math.min(4+level,7)));}
+
+function init(){
+  grid=mkGrid();
+  shooter={x:W/2,y:H-30,color:randomColor()};
+  nextColor=randomColor();
+  bullet=null;aim={x:W/2,y:0};score=0;state='play';
+  document.getElementById('sc').textContent=0;
+  if(loop)cancelAnimationFrame(loop);
+  tick();
+}
+
+function getNeighbors(r,c){
+  const isEven=r%2===0;
+  const maxC=isEven?COLS:COLS-1;
+  const dirs=isEven?[[-1,-1],[-1,0],[0,-1],[0,1],[1,-1],[1,0]]:
+                    [[-1,0],[-1,1],[0,-1],[0,1],[1,0],[1,1]];
+  return dirs.map(([dr,dc])=>[r+dr,c+dc]).filter(([nr,nc])=>nr>=0&&nr<grid.length&&nc>=0&&nc<(grid[nr]?.length||0));
+}
+
+function findGroup(r,c,color,visited=new Set()){
+  const key=`${r},${c}`;
+  if(visited.has(key)||!grid[r]||grid[r][c]!==color)return[];
+  visited.add(key);
+  const group=[{r,c}];
+  getNeighbors(r,c).forEach(([nr,nc])=>group.push(...findGroup(nr,nc,color,visited)));
+  return group;
+}
+
+function findFloating(){
+  const connected=new Set();
+  // BFS desde la fila 0
+  const queue=[];
+  if(grid[0])grid[0].forEach((_,c)=>{if(grid[0][c]!==null){queue.push([0,c]);connected.add(`0,${c}`);}});
+  while(queue.length){
+    const [r,c]=queue.shift();
+    getNeighbors(r,c).forEach(([nr,nc])=>{
+      const key=`${nr},${nc}`;
+      if(!connected.has(key)&&grid[nr]&&grid[nr][nc]!==null){connected.add(key);queue.push([nr,nc]);}
+    });
+  }
+  const floating=[];
+  grid.forEach((row,r)=>row?.forEach((v,c)=>{if(v!==null&&!connected.has(`${r},${c}`))floating.push({r,c});}));
+  return floating;
+}
+
+function snapBullet(){
+  // Encontrar la celda más cercana vacía
+  let bestR=-1,bestC=-1,bestDist=999;
+  for(let r=0;r<grid.length;r++){
+    const maxC=r%2===0?COLS:COLS-1;
+    for(let c=0;c<maxC;c++){
+      if(grid[r]&&(grid[r][c]===null||grid[r][c]===undefined)){
+        const pos=hexPos(r,c);
+        const dist=Math.hypot(bullet.x-pos.x,bullet.y-pos.y);
+        if(dist<bestDist){bestDist=dist;bestR=r;bestC=c;}
+      }
+    }
+  }
+  if(bestR===-1){bullet=null;return;}
+  if(!grid[bestR])grid[bestR]=[];
+  grid[bestR][bestC]=bullet.color;
+  // Verificar grupo
+  const group=findGroup(bestR,bestC,bullet.color);
+  if(group.length>=3){
+    group.forEach(({r,c})=>{grid[r][c]=null;});
+    score+=group.length*10;document.getElementById('sc').textContent=score;
+    // Quitar flotantes
+    const floating=findFloating();
+    floating.forEach(({r,c})=>{grid[r][c]=null;score+=5;});
+    document.getElementById('sc').textContent=score;
+  }
+  // Verificar si llegaron abajo
+  if(grid.some((row,r)=>r>=10&&row?.some(v=>v!==null&&v!==undefined))){state='dead';draw();return;}
+  // Verificar victoria
+  if(grid.every(row=>!row||row.every(v=>v===null||v===undefined))){
+    level++;document.getElementById('nl').textContent=level;
+    if(score>best){best=score;document.getElementById('best').textContent=best;}
+    grid=mkGrid(6+level);
+  }
+  shooter.color=nextColor;nextColor=randomColor();
+  bullet=null;
+}
+
+function shoot(tx,ty){
+  if(bullet||state!=='play') return;
+  const dx=tx-shooter.x,dy=ty-shooter.y;
+  const dist=Math.hypot(dx,dy);
+  if(dy>0) return; // no disparar hacia abajo
+  const spd=9;
+  bullet={x:shooter.x,y:shooter.y,vx:dx/dist*spd,vy:dy/dist*spd,color:shooter.color};
+}
+
+function tick(){
+  if(state!=='play'){return;}
+  if(bullet){
+    bullet.x+=bullet.vx;bullet.y+=bullet.vy;
+    // Rebotar en paredes
+    if(bullet.x<R){bullet.x=R;bullet.vx*=-1;}
+    if(bullet.x>W-R){bullet.x=W-R;bullet.vx*=-1;}
+    // Techo
+    if(bullet.y<R){bullet.y=R;snapBullet();}
+    // Colisión con burbujas
+    if(bullet){
+      let hit=false;
+      grid.forEach((row,r)=>{
+        row?.forEach((v,c)=>{
+          if(v===null||v===undefined||hit) return;
+          const pos=hexPos(r,c);
+          if(Math.hypot(bullet.x-pos.x,bullet.y-pos.y)<R*2){hit=true;snapBullet();}
+        });
+      });
+    }
+  }
+  draw();loop=requestAnimationFrame(tick);
+}
+
+function draw(){
+  ctx.fillStyle='#07070f';ctx.fillRect(0,0,W,H);
+  // Grid de burbujas
+  grid.forEach((row,r)=>{
+    row?.forEach((v,c)=>{
+      if(v===null||v===undefined) return;
+      const pos=hexPos(r,c);
+      const color=BUBBLE_COLORS[v];
+      ctx.shadowColor=color;ctx.shadowBlur=6;
+      ctx.fillStyle=color;ctx.beginPath();ctx.arc(pos.x,pos.y,R-1,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=1;ctx.stroke();
+      // Brillo
+      ctx.fillStyle='rgba(255,255,255,0.25)';ctx.beginPath();ctx.arc(pos.x-4,pos.y-5,5,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+    });
+  });
+  // Línea de mira
+  if(aim){
+    const dx=aim.x-shooter.x,dy=aim.y-shooter.y;
+    const dist=Math.hypot(dx,dy);
+    if(dy<0){
+      ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;ctx.setLineDash([5,5]);
+      ctx.beginPath();ctx.moveTo(shooter.x,shooter.y);ctx.lineTo(shooter.x+dx/dist*60,shooter.y+dy/dist*60);ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+  // Bala
+  if(bullet){
+    const color=BUBBLE_COLORS[bullet.color];
+    ctx.shadowColor=color;ctx.shadowBlur=10;
+    ctx.fillStyle=color;ctx.beginPath();ctx.arc(bullet.x,bullet.y,R-1,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+  }
+  // Shooter
+  const sc=BUBBLE_COLORS[shooter.color];
+  ctx.shadowColor=sc;ctx.shadowBlur=8;
+  ctx.fillStyle=sc;ctx.beginPath();ctx.arc(shooter.x,shooter.y,R+2,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=2;ctx.stroke();
+  // Next
+  const nc=BUBBLE_COLORS[nextColor];
+  ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='9px Courier New';ctx.textAlign='center';
+  ctx.fillText('NEXT',W-28,H-44);
+  ctx.fillStyle=nc;ctx.shadowColor=nc;ctx.shadowBlur=6;
+  ctx.beginPath();ctx.arc(W-28,H-28,10,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+  // Línea de peligro
+  const dangerY=40+10*(R*1.75);
+  ctx.strokeStyle='rgba(255,51,102,0.2)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(0,dangerY);ctx.lineTo(W,dangerY);ctx.stroke();ctx.setLineDash([]);
+  if(state==='dead'){
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ff3366';ctx.font='bold 20px Courier New';ctx.textAlign='center';
+    ctx.fillText('GAME OVER',W/2,H/2-16);
+    ctx.fillStyle='#ff69b4';ctx.font='14px Courier New';ctx.fillText(`Score: ${score}`,W/2,H/2+6);
+    ctx.fillStyle='#aaa';ctx.font='11px Courier New';ctx.fillText('Click para reintentar',W/2,H/2+28);
+  }
+}
+
+cv.addEventListener('mousemove',e=>{const r=cv.getBoundingClientRect();aim={x:e.clientX-r.left,y:e.clientY-r.top};});
+cv.addEventListener('click',e=>{
+  if(state==='dead'){level=1;best=Math.max(best,score);document.getElementById('best').textContent=best;init();return;}
+  const r=cv.getBoundingClientRect();shoot(e.clientX-r.left,e.clientY-r.top);
+});
+cv.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  if(state==='dead'){level=1;init();return;}
+  const r=cv.getBoundingClientRect();const t=e.touches[0];
+  aim={x:t.clientX-r.left,y:t.clientY-r.top};
+  shoot(t.clientX-r.left,t.clientY-r.top);
+},{passive:false});
+init();
+</script>
+</body>
+</html>

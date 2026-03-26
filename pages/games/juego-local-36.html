@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Infinite Runner</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a15;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;overflow:hidden;font-family:'Courier New',monospace;}
+h1{color:#ff6600;font-size:14px;letter-spacing:3px;margin-bottom:5px;}
+#hud{display:flex;gap:16px;margin-bottom:5px;font-size:12px;color:#aaa;}
+#hud b{color:#ff6600;}
+canvas{border:2px solid rgba(255,102,0,0.2);border-radius:6px;display:block;}
+#ctrl{margin-top:6px;font-size:10px;color:#444;letter-spacing:1px;text-align:center;}
+</style>
+</head>
+<body>
+<h1>🏃 INFINITE RUNNER</h1>
+<div id="hud"><span>SCORE <b id="sc">0</b></span><span>MEJOR <b id="best">0</b></span><span>VELOCIDAD <b id="spd">x1.0</b></span></div>
+<canvas id="c" width="400" height="400"></canvas>
+<div id="ctrl">← → cambiar carril · ESPACIO saltar</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=400,H=400;
+const LANES=3,LANE_W=90,LANE_OFFSET=(W-LANES*LANE_W)/2;
+const HORIZON=H*0.35,FLOOR=H*0.82;
+const COLORS={sky:'#050510',ground:'#1a0d05',track:'#2a1a0a',line:'rgba(255,102,0,0.3)',obs:'#ff3366',player:'#00aaff',coin:'#ffe600'};
+
+let player,obstacles,coins,score,best=0,speed,frame,state,loop,keys={},particles=[];
+let camX=1; // carril actual (0,1,2)
+let jumpY=0,jumpVY=0,isJumping=false;
+
+function laneX(lane,z){
+  // Perspectiva: el carril se agranda hacia adelante
+  const t=(z-HORIZON)/(FLOOR-HORIZON); // 0=lejos 1=cerca
+  const centerX=W/2;
+  const spread=LANE_W*t;
+  return centerX+(lane-1)*spread*1.4;
+}
+
+function init(){
+  player={lane:1,z:FLOOR,w:30,h:50};
+  obstacles=[];coins=[];score=0;speed=3;frame=0;
+  jumpY=0;jumpVY=0;isJumping=false;camX=1;
+  particles=[];state='play';
+  document.getElementById('sc').textContent=0;
+  document.getElementById('spd').textContent='x1.0';
+  if(loop)cancelAnimationFrame(loop);
+  tick();
+}
+
+function spawnObs(){
+  const lane=Math.floor(Math.random()*3);
+  const type=Math.random()<0.3?'low':'high'; // low=agacharse, high=saltar
+  obstacles.push({lane,z:HORIZON+5,type,w:40,h:type==='high'?50:25});
+}
+function spawnCoin(){
+  for(let i=0;i<2;i++){
+    if(Math.random()<0.6) coins.push({lane:Math.floor(Math.random()*3),z:HORIZON+5+i*40});
+  }
+}
+
+function tick(){
+  if(state!=='play')return;
+  frame++;
+  speed=3+score*0.003;
+  document.getElementById('spd').textContent=`x${(speed/3).toFixed(1)}`;
+  // Spawn
+  if(frame%45===0)spawnObs();
+  if(frame%30===0)spawnCoin();
+  // Mover obstáculos y monedas
+  const dz=(FLOOR-HORIZON)*speed/100;
+  obstacles.forEach(o=>o.z+=dz);
+  coins.forEach(c=>c.z+=dz);
+  obstacles=obstacles.filter(o=>o.z<=FLOOR+20);
+  coins=coins.filter(c=>c.z<=FLOOR+20);
+  // Salto
+  if(isJumping){jumpVY+=0.8;jumpY+=jumpVY;if(jumpY>=0){jumpY=0;jumpVY=0;isJumping=false;}}
+  // Carril suave
+  const targetX=LANE_OFFSET+camX*LANE_W+LANE_W/2;
+  // Colisiones
+  const px=laneX(player.lane,FLOOR);
+  for(const o of obstacles){
+    if(Math.abs(o.z-FLOOR)<12){
+      const ox=laneX(o.lane,FLOOR);
+      if(Math.abs(px-ox)<35){
+        if(o.type==='high'&&jumpY<-20) continue; // saltó
+        particles.push(...Array.from({length:12},(_,i)=>({x:px,y:FLOOR+jumpY,vx:(Math.random()-0.5)*7,vy:-Math.random()*6-2,life:1,color:COLORS.obs})));
+        state='dead';draw();return;
+      }
+    }
+  }
+  // Monedas
+  for(let i=coins.length-1;i>=0;i--){
+    const c=coins[i];
+    if(Math.abs(c.z-FLOOR)<15){
+      const cx=laneX(c.lane,FLOOR);
+      if(Math.abs(px-cx)<30){coins.splice(i,1);score+=5;document.getElementById('sc').textContent=score;}
+    }
+  }
+  score++;if(score%10===0)document.getElementById('sc').textContent=score;
+  if(score>best){best=score;document.getElementById('best').textContent=best;}
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.3;p.life-=0.05;});
+  particles=particles.filter(p=>p.life>0);
+  draw();loop=requestAnimationFrame(tick);
+}
+
+function draw(){
+  ctx.fillStyle=COLORS.sky;ctx.fillRect(0,0,W,H);
+  // Cielo con gradiente
+  const sky=ctx.createLinearGradient(0,0,0,HORIZON);
+  sky.addColorStop(0,'#050510');sky.addColorStop(1,'#0f0a1a');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,HORIZON);
+  // Suelo
+  const ground=ctx.createLinearGradient(0,HORIZON,0,H);
+  ground.addColorStop(0,'#1a0d05');ground.addColorStop(1,'#0a0805');
+  ctx.fillStyle=ground;ctx.fillRect(0,HORIZON,W,H-HORIZON);
+  // Carriles en perspectiva
+  for(let lane=0;lane<LANES;lane++){
+    const x1=laneX(lane,HORIZON),x2=laneX(lane,FLOOR);
+    ctx.strokeStyle='rgba(255,102,0,0.15)';ctx.lineWidth=1;ctx.setLineDash([8,8]);
+    ctx.beginPath();ctx.moveTo(x1,HORIZON);ctx.lineTo(x2,FLOOR);ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  // Líneas de carretera
+  for(let z=HORIZON;z<FLOOR;z+=30){
+    const t=(z-HORIZON)/(FLOOR-HORIZON);
+    const y=z;const alpha=t*0.4;
+    ctx.strokeStyle=`rgba(255,102,0,${alpha})`;ctx.lineWidth=t*1.5;
+    const lx=laneX(0,z),rx=laneX(LANES-1,z)+laneX(1,z)-laneX(0,z);
+    ctx.beginPath();ctx.moveTo(lx,y);ctx.lineTo(lx+(rx-lx)*2,y);ctx.stroke();
+  }
+  // Monedas
+  coins.forEach(c=>{
+    if(c.z<HORIZON)return;
+    const t=(c.z-HORIZON)/(FLOOR-HORIZON);
+    const cx=laneX(c.lane,c.z),cy=c.z-20*t;
+    const r=5+t*10;
+    ctx.shadowColor=COLORS.coin;ctx.shadowBlur=6*t;
+    ctx.fillStyle=COLORS.coin;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=1;ctx.stroke();
+    ctx.shadowBlur=0;
+  });
+  // Obstáculos
+  obstacles.forEach(o=>{
+    if(o.z<HORIZON)return;
+    const t=(o.z-HORIZON)/(FLOOR-HORIZON);
+    const ox=laneX(o.lane,o.z);
+    const ow=o.w*t*1.5,oh=o.h*t*1.5;
+    const oy=o.z-(o.type==='high'?oh:oh*0.5);
+    ctx.shadowColor=COLORS.obs;ctx.shadowBlur=8*t;
+    ctx.fillStyle=COLORS.obs;
+    ctx.beginPath();ctx.roundRect(ox-ow/2,oy,ow,oh,4);ctx.fill();
+    ctx.shadowBlur=0;
+  });
+  // Player
+  const px=laneX(player.lane,FLOOR);
+  const py=FLOOR+jumpY-player.h;
+  ctx.shadowColor=COLORS.player;ctx.shadowBlur=10;
+  ctx.fillStyle=COLORS.player;
+  // Cuerpo
+  ctx.beginPath();ctx.roundRect(px-15,py,30,50,6);ctx.fill();
+  // Cara
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(px-7,py+14,4,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(px+7,py+14,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#000';ctx.beginPath();ctx.arc(px-6,py+14,2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(px+8,py+14,2,0,Math.PI*2);ctx.fill();
+  // Sombra en suelo
+  ctx.shadowBlur=0;ctx.fillStyle='rgba(0,0,0,0.4)';ctx.beginPath();ctx.ellipse(px,FLOOR,16,5,0,0,Math.PI*2);ctx.fill();
+  // Partículas
+  particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.fillRect(p.x-2,p.y-2,4,4);});ctx.globalAlpha=1;
+  if(state==='wait'){
+    ctx.fillStyle='rgba(0,0,0,0.65)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ff6600';ctx.font='bold 18px Courier New';ctx.textAlign='center';ctx.fillText('INFINITE RUNNER',W/2,H/2-16);
+    ctx.fillStyle='#aaa';ctx.font='12px Courier New';ctx.fillText('ESPACIO para empezar',W/2,H/2+10);
+  }
+  if(state==='dead'){
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ff3366';ctx.font='bold 20px Courier New';ctx.textAlign='center';ctx.fillText('GAME OVER',W/2,H/2-24);
+    ctx.fillStyle='#ff6600';ctx.font='14px Courier New';ctx.fillText(`Score: ${score}`,W/2,H/2+2);
+    ctx.fillStyle='#aaa';ctx.font='11px Courier New';ctx.fillText('ESPACIO para reintentar',W/2,H/2+24);
+  }
+}
+
+function jump(){if(!isJumping&&state==='play'){jumpVY=-14;isJumping=true;}}
+let lastLaneKey=0;
+document.addEventListener('keydown',e=>{
+  const now=Date.now();
+  if(e.code==='Space'){e.preventDefault();if(state==='wait'||state==='dead'){state='play';init();}else jump();}
+  if((e.key==='ArrowLeft'||e.key==='a'||e.key==='A')&&now-lastLaneKey>150){e.preventDefault();player.lane=Math.max(0,player.lane-1);lastLaneKey=now;}
+  if((e.key==='ArrowRight'||e.key==='d'||e.key==='D')&&now-lastLaneKey>150){e.preventDefault();player.lane=Math.min(2,player.lane+1);lastLaneKey=now;}
+  camX=player.lane;
+});
+cv.addEventListener('touchstart',e=>{e.preventDefault();if(state==='wait'||state==='dead'){state='play';init();return;}const r=cv.getBoundingClientRect();const tx=e.touches[0].clientX-r.left;if(tx<W/3)player.lane=Math.max(0,player.lane-1);else if(tx>W*2/3)player.lane=Math.min(2,player.lane+1);else jump();camX=player.lane;},{passive:false});
+window.addEventListener('message',e=>{if(!e.data)return;if(e.data.type==='keydown'){if(e.data.key===' '){if(state==='wait'||state==='dead'){state='play';init();}else jump();}if(e.data.key==='ArrowLeft')player.lane=Math.max(0,player.lane-1);if(e.data.key==='ArrowRight')player.lane=Math.min(2,player.lane+1);}});
+state='wait';draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ahorcado</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a15;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Courier New',monospace;color:#f0f0f0;padding:12px;}
+h1{color:#ff3366;font-size:14px;letter-spacing:3px;margin-bottom:8px;}
+#game-area{display:flex;gap:20px;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;justify-content:center;}
+canvas{border:1px solid rgba(255,51,102,0.2);border-radius:8px;}
+#word-area{display:flex;flex-direction:column;align-items:center;gap:12px;}
+#word{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.letter-slot{width:28px;height:36px;border-bottom:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#f0f0f0;}
+#hint{font-size:12px;color:#666;letter-spacing:1px;text-align:center;}
+#wrong-letters{font-size:13px;color:#ff3366;text-align:center;min-height:20px;}
+#keyboard{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;max-width:320px;}
+.key{width:32px;height:32px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#f0f0f0;font-family:'Courier New',monospace;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.key:hover:not(:disabled){border-color:rgba(255,51,102,0.5);background:rgba(255,51,102,0.1);}
+.key:disabled{opacity:.25;cursor:default;}
+.key.correct{background:rgba(57,255,20,0.2);border-color:#39ff14;color:#39ff14;}
+.key.wrong{background:rgba(255,51,102,0.15);border-color:#ff3366;color:#ff3366;}
+#msg{font-size:14px;font-weight:700;text-align:center;height:22px;margin-bottom:6px;}
+.btn{background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.25);color:#ff3366;font-family:'Courier New',monospace;font-size:11px;font-weight:700;padding:8px 20px;border-radius:8px;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.btn:hover{box-shadow:0 0 10px rgba(255,51,102,0.3);}
+#stats{display:flex;gap:18px;font-size:12px;color:#aaa;margin-bottom:8px;}
+#stats b{color:#ff3366;}
+</style>
+</head>
+<body>
+<h1>💀 AHORCADO</h1>
+<div id="stats"><span>VICTORIAS <b id="wins">0</b></span><span>DERROTAS <b id="losses">0</b></span><span>RACHA <b id="streak">0</b></span></div>
+<div id="game-area">
+  <canvas id="c" width="150" height="180"></canvas>
+  <div id="word-area">
+    <div id="hint"></div>
+    <div id="word"></div>
+    <div id="wrong-letters"></div>
+  </div>
+</div>
+<div id="msg"></div>
+<div id="keyboard"></div>
+<button class="btn" onclick="newWord()" style="margin-top:10px">🔄 SIGUIENTE</button>
+
+<script>
+const WORDS=[
+  {word:'DINOSAURIO',hint:'Animal prehistórico'},
+  {word:'COMPUTADORA',hint:'Dispositivo electrónico'},
+  {word:'VIDEOJUEGO',hint:'Entretenimiento digital'},
+  {word:'ASTRONAUTA',hint:'Viaja al espacio'},
+  {word:'CHOCOLATE',hint:'Dulce marrón'},
+  {word:'MARIPOSA',hint:'Insecto con alas coloridas'},
+  {word:'SUBMARINO',hint:'Navega bajo el agua'},
+  {word:'TELESCOPIO',hint:'Para ver estrellas'},
+  {word:'FOTOGRAFIA',hint:'Arte visual'},
+  {word:'LABERINTO',hint:'Puzzle de pasillos'},
+  {word:'ELECTRICIDAD',hint:'Energía invisible'},
+  {word:'MONSTRUO',hint:'Criatura de fantasía'},
+  {word:'CASTILLO',hint:'Fortaleza medieval'},
+  {word:'GALAXIA',hint:'Sistema de estrellas'},
+  {word:'PIRAMIDE',hint:'Construcción egipcia'},
+  {word:'VOLCAN',hint:'Montaña que erupciona'},
+  {word:'FANTASIA',hint:'Mundo imaginario'},
+  {word:'ALGORITMO',hint:'Secuencia de pasos lógicos'},
+  {word:'AVENTURA',hint:'Experiencia emocionante'},
+  {word:'UNIVERSO',hint:'Todo lo que existe'},
+];
+
+const MAX_ERRORS=6;
+let currentWord,guessed,errors,wins=0,losses=0,streak=0,gameOver;
+
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+
+function drawHangman(e){
+  ctx.fillStyle='#07070f';ctx.fillRect(0,0,150,180);
+  ctx.strokeStyle='rgba(255,51,102,0.7)';ctx.lineWidth=3;ctx.lineCap='round';
+  // Horca
+  ctx.beginPath();ctx.moveTo(20,170);ctx.lineTo(130,170);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(40,170);ctx.lineTo(40,20);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(40,20);ctx.lineTo(100,20);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(100,20);ctx.lineTo(100,40);ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.fillStyle='rgba(255,255,255,0.6)';
+  if(e>=1){ctx.beginPath();ctx.arc(100,52,12,0,Math.PI*2);ctx.stroke();}
+  if(e>=2){ctx.beginPath();ctx.moveTo(100,64);ctx.lineTo(100,110);ctx.stroke();}
+  if(e>=3){ctx.beginPath();ctx.moveTo(100,75);ctx.lineTo(75,100);ctx.stroke();}
+  if(e>=4){ctx.beginPath();ctx.moveTo(100,75);ctx.lineTo(125,100);ctx.stroke();}
+  if(e>=5){ctx.beginPath();ctx.moveTo(100,110);ctx.lineTo(75,140);ctx.stroke();}
+  if(e>=6){ctx.beginPath();ctx.moveTo(100,110);ctx.lineTo(125,140);ctx.stroke();}
+  if(e>=MAX_ERRORS){ctx.fillStyle='#ff3366';ctx.beginPath();ctx.arc(100,52,12,0,Math.PI*2);ctx.fill();}
+}
+
+function renderWord(){
+  const w=document.getElementById('word');w.innerHTML='';
+  currentWord.word.split('').forEach(l=>{
+    const div=document.createElement('div');div.className='letter-slot';
+    if(guessed.has(l))div.textContent=l;
+    else div.textContent='';
+    w.appendChild(div);
+  });
+}
+
+function buildKeyboard(){
+  const kb=document.getElementById('keyboard');kb.innerHTML='';
+  'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('').forEach(l=>{
+    const btn=document.createElement('button');btn.className='key';btn.textContent=l;btn.id=`key-${l}`;
+    btn.addEventListener('click',()=>guess(l));
+    kb.appendChild(btn);
+  });
+}
+
+function guess(l){
+  if(gameOver)return;
+  const btn=document.getElementById(`key-${l}`);if(!btn||btn.disabled)return;
+  btn.disabled=true;
+  if(currentWord.word.includes(l)){
+    guessed.add(l);btn.classList.add('correct');renderWord();
+    if(currentWord.word.split('').every(c=>guessed.has(c))){
+      wins++;streak++;document.getElementById('wins').textContent=wins;document.getElementById('streak').textContent=streak;
+      document.getElementById('msg').textContent='🏆 ¡GANASTE!';document.getElementById('msg').style.color='#39ff14';
+      gameOver=true;
+    }
+  } else {
+    errors++;btn.classList.add('wrong');drawHangman(errors);
+    document.getElementById('wrong-letters').textContent='Errores: '+[...document.querySelectorAll('.key.wrong')].map(k=>k.textContent).join(' ');
+    if(errors>=MAX_ERRORS){
+      losses++;streak=0;document.getElementById('losses').textContent=losses;document.getElementById('streak').textContent=0;
+      document.getElementById('msg').textContent=`💀 Era: ${currentWord.word}`;document.getElementById('msg').style.color='#ff3366';
+      currentWord.word.split('').forEach(l=>guessed.add(l));renderWord();gameOver=true;
+    }
+  }
+}
+
+function newWord(){
+  const w=WORDS[Math.floor(Math.random()*WORDS.length)];
+  currentWord=w;guessed=new Set();errors=0;gameOver=false;
+  document.getElementById('hint').textContent=`Pista: ${w.hint}`;
+  document.getElementById('wrong-letters').textContent='';
+  document.getElementById('msg').textContent='';
+  drawHangman(0);renderWord();buildKeyboard();
+}
+
+document.addEventListener('keydown',e=>{
+  const l=e.key.toUpperCase();
+  if(/^[A-ZÑ]$/.test(l)){guess(l);}
+});
+window.addEventListener('message',e=>{if(e.data?.type==='keydown'){const l=e.data.key?.toUpperCase();if(/^[A-ZÑ]$/.test(l))guess(l);}});
+newWord();
+</script>
+</body>
+</html>

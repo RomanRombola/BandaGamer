@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Typing Banda</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0a15;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;overflow:hidden;font-family:'Courier New',monospace;color:#f0f0f0;padding:12px;}
+h1{color:#00aaff;font-size:15px;letter-spacing:3px;margin-bottom:10px;}
+#stats{display:flex;gap:18px;margin-bottom:12px;font-size:13px;color:#aaa;flex-wrap:wrap;justify-content:center;}
+#stats b{color:#00aaff;}
+#timer-bar-wrap{width:100%;max-width:500px;height:6px;background:rgba(255,255,255,0.07);border-radius:3px;margin-bottom:12px;overflow:hidden;}
+#timer-bar{height:100%;background:linear-gradient(90deg,#00aaff,#39ff14);border-radius:3px;transition:width .1s linear;}
+#text-display{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px 16px;font-size:17px;line-height:1.8;max-width:500px;width:100%;margin-bottom:10px;min-height:80px;letter-spacing:0.5px;}
+.char-default{color:#555;}
+.char-correct{color:#39ff14;}
+.char-wrong{color:#ff3366;text-decoration:underline;}
+.char-current{color:#ffe600;border-bottom:2px solid #ffe600;}
+#input{width:100%;max-width:500px;background:rgba(0,170,255,0.06);border:2px solid rgba(0,170,255,0.2);border-radius:10px;padding:10px 14px;font-size:15px;font-family:'Courier New',monospace;color:#f0f0f0;outline:none;transition:border-color .2s;}
+#input:focus{border-color:rgba(0,170,255,0.5);}
+#result{margin-top:12px;text-align:center;display:none;padding:14px;background:rgba(0,170,255,0.07);border:1px solid rgba(0,170,255,0.2);border-radius:10px;max-width:500px;width:100%;}
+.result-val{font-size:28px;font-weight:700;color:#00aaff;}
+.result-lbl{font-size:11px;color:#555;letter-spacing:2px;}
+.btn{background:linear-gradient(135deg,#003a5a,#006090);border:1px solid rgba(0,170,255,0.3);color:#00aaff;font-family:'Courier New',monospace;font-size:12px;font-weight:700;padding:9px 22px;border-radius:8px;cursor:pointer;letter-spacing:1px;margin-top:10px;transition:all .2s;}
+.btn:hover{box-shadow:0 0 12px rgba(0,170,255,0.4);}
+</style>
+</head>
+<body>
+<h1>⌨️ TYPING SPEED</h1>
+<div id="stats">
+  <span>WPM <b id="wpm">0</b></span>
+  <span>PRECISIÓN <b id="acc">100%</b></span>
+  <span>TIEMPO <b id="time">60s</b></span>
+  <span>MEJOR <b id="best">0</b> WPM</span>
+</div>
+<div id="timer-bar-wrap"><div id="timer-bar" style="width:100%"></div></div>
+<div id="text-display" id="text-display"></div>
+<input type="text" id="input" placeholder="Empezá a escribir para iniciar..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+<div id="result">
+  <div style="display:flex;gap:30px;justify-content:center;margin-bottom:8px">
+    <div style="text-align:center"><div class="result-val" id="r-wpm">0</div><div class="result-lbl">WPM</div></div>
+    <div style="text-align:center"><div class="result-val" id="r-acc">0%</div><div class="result-lbl">PRECISIÓN</div></div>
+    <div style="text-align:center"><div class="result-val" id="r-chars">0</div><div class="result-lbl">CARACTERES</div></div>
+  </div>
+  <button class="btn" onclick="resetGame()">🔄 REINTENTAR</button>
+</div>
+
+<script>
+const TEXTS=[
+  "El veloz zorro marrón salta sobre el perro perezoso y sigue su camino por el bosque.",
+  "La tecnología avanza a pasos agigantados y cada día surgen nuevas herramientas digitales.",
+  "Programar es el arte de convertir ideas en realidad usando solo palabras y lógica pura.",
+  "Los videojuegos son una forma de arte que combina música, gráficos y narrativa interactiva.",
+  "La inteligencia artificial está cambiando el mundo tal como lo conocemos de forma radical.",
+  "Para ser un buen programador hay que aprender a pensar de manera lógica y estructurada.",
+  "El universo es tan grande que nuestra mente humana apenas puede comprender su magnitud.",
+  "Cada línea de código que escribimos es un paso más hacia la creación de algo increíble.",
+  "La práctica constante es la clave del éxito en cualquier habilidad que uno quiera dominar.",
+  "Banda Gamer es el mejor portal para jugar con tus amigos y pasarla bien en cualquier momento.",
+];
+
+const TIME_LIMIT=60;
+let currentText='',charIdx=0,startTime=null,timer=null,mistakes=0,started=false,best=0;
+
+function getRandomText(){return TEXTS[Math.floor(Math.random()*TEXTS.length)];}
+
+function renderText(){
+  const el=document.getElementById('text-display');
+  el.innerHTML=currentText.split('').map((c,i)=>{
+    let cls='char-default';
+    if(i<charIdx) cls='char-correct';
+    if(i===charIdx) cls='char-current';
+    return `<span class="${cls}">${c==' '?'&nbsp;':c}</span>`;
+  }).join('');
+}
+
+function calcWPM(){
+  if(!startTime) return 0;
+  const elapsed=(Date.now()-startTime)/1000/60;
+  return Math.round((charIdx/5)/elapsed)||0;
+}
+
+function updateStats(){
+  const wpm=calcWPM();
+  const total=charIdx+mistakes;
+  const acc=total>0?Math.round((charIdx/total)*100):100;
+  document.getElementById('wpm').textContent=wpm;
+  document.getElementById('acc').textContent=acc+'%';
+}
+
+function startTimer(){
+  let remaining=TIME_LIMIT;
+  document.getElementById('time').textContent=remaining+'s';
+  timer=setInterval(()=>{
+    remaining--;
+    const pct=remaining/TIME_LIMIT*100;
+    document.getElementById('timer-bar').style.width=pct+'%';
+    document.getElementById('timer-bar').style.background=remaining>20?'linear-gradient(90deg,#00aaff,#39ff14)':remaining>10?'#ffe600':'#ff3366';
+    document.getElementById('time').textContent=remaining+'s';
+    if(remaining<=0){clearInterval(timer);endGame();}
+  },1000);
+}
+
+function endGame(){
+  const wpm=calcWPM();
+  const total=charIdx+mistakes;
+  const acc=total>0?Math.round((charIdx/total)*100):100;
+  if(wpm>best){best=wpm;document.getElementById('best').textContent=best;}
+  document.getElementById('r-wpm').textContent=wpm;
+  document.getElementById('r-acc').textContent=acc+'%';
+  document.getElementById('r-chars').textContent=charIdx;
+  document.getElementById('input').disabled=true;
+  document.getElementById('result').style.display='block';
+}
+
+function resetGame(){
+  clearInterval(timer);started=false;charIdx=0;mistakes=0;startTime=null;
+  currentText=getRandomText();
+  renderText();
+  document.getElementById('wpm').textContent=0;
+  document.getElementById('acc').textContent='100%';
+  document.getElementById('time').textContent=TIME_LIMIT+'s';
+  document.getElementById('timer-bar').style.width='100%';
+  document.getElementById('input').value='';
+  document.getElementById('input').disabled=false;
+  document.getElementById('result').style.display='none';
+  document.getElementById('input').focus();
+}
+
+document.getElementById('input').addEventListener('input',function(e){
+  const val=this.value;
+  if(!started&&val.length>0){started=true;startTime=Date.now();startTimer();}
+  if(!started) return;
+  const lastChar=val[val.length-1];
+  if(lastChar===currentText[charIdx]){charIdx++;this.value='';if(charIdx>=currentText.length){clearInterval(timer);endGame();}}
+  else{mistakes++;this.style.borderColor='rgba(255,51,102,0.6)';setTimeout(()=>this.style.borderColor='rgba(0,170,255,0.2)',300);}
+  renderText();updateStats();
+});
+
+currentText=getRandomText();renderText();
+document.getElementById('input').focus();
+</script>
+</body>
+</html>
