@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180">
+  <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0a0a15"/><stop offset="100%" style="stop-color:#1a1a30"/></linearGradient></defs>
+  <rect width="320" height="180" fill="url(#g)"/>
+  <rect width="320" height="180" fill="none" stroke="#00aaff" stroke-width="2" stroke-opacity="0.3"/>
+  <path d="M0 30L320 30M0 60L320 60M0 90L320 90M0 120L320 120M0 150L320 150M40 0L40 180M80 0L80 180M120 0L120 180M160 0L160 180M200 0L200 180M240 0L240 180M280 0L280 180" stroke="#00aaff" stroke-width="0.4" stroke-opacity="0.08"/>
+  <circle cx="160" cy="82" r="45" fill="#00aaff" opacity="0.06"/>
+  <text x="160" y="92" font-family="serif" font-size="52" text-anchor="middle" dominant-baseline="middle">⌨️</text>
+  <rect x="0" y="140" width="320" height="40" fill="#00aaff" opacity="0.15"/>
+  <rect x="0" y="140" width="320" height="2" fill="#00aaff" opacity="0.5"/>
+  <text x="160" y="165" font-family="Arial,sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#fff" opacity="0.95">Typing Banda</text>
+  <rect x="8" y="8" width="46" height="18" rx="4" fill="#00aaff" opacity="0.25"/>
+  <text x="31" y="20" font-family="Arial,sans-serif" font-size="9" font-weight="bold" text-anchor="middle" fill="#00aaff">LOCAL</text>
+</svg>
