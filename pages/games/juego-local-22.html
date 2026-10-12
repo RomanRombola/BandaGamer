@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Piedra Papel Tijera</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+<style>
+#wrap { width: min(720px, 100%); display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 10px; }
+#arena { display: flex; align-items: center; justify-content: center; gap: clamp(16px, 6vw, 60px); min-height: 200px; }
+.hand { width: clamp(110px, 26vw, 170px); aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: clamp(60px, 14vw, 96px); background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.12), rgba(255,255,255,.02)); border: 2px solid rgba(255,255,255,.12); position: relative; }
+.hand.you { border-color: rgba(46,242,255,.5); box-shadow: 0 0 30px rgba(46,242,255,.2); }
+.hand.cpu { border-color: rgba(255,61,208,.5); box-shadow: 0 0 30px rgba(255,61,208,.2); }
+.hand.win { animation: winp .6s ease; border-color: #39ff88; box-shadow: 0 0 40px rgba(57,255,136,.5); }
+.hand.lose { opacity: .45; filter: grayscale(.6); }
+.hand.shake { animation: shake .3s ease-in-out 3; }
+@keyframes shake { 50% { transform: translateY(-22px) rotate(-8deg); } }
+@keyframes winp { 50% { transform: scale(1.12); } }
+.hand small { position: absolute; bottom: -26px; font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 2px; color: #8b8ba3; }
+#vs { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 22px; color: #ffd400; text-shadow: 0 0 14px rgba(255,212,0,.6); }
+#res { min-height: 34px; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(16px, 3.5vw, 22px); letter-spacing: 2px; text-align: center; }
+#why { min-height: 20px; color: #8b8ba3; font-weight: 600; text-align: center; }
+#picks { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.pk { width: 86px; height: 96px; border-radius: 16px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 38px; transition: transform .1s, border-color .15s; }
+.pk span { font-size: 11px; font-family: 'Orbitron', sans-serif; letter-spacing: 1px; }
+.pk:hover { transform: translateY(-4px); border-color: #2ef2ff; }
+.pk:disabled { opacity: .4; transform: none; cursor: default; }
+#dots { display: flex; gap: 6px; }
+#dots i { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.1); }
+#dots i.y { background: #2ef2ff; box-shadow: 0 0 8px #2ef2ff; } #dots i.c { background: #ff3dd0; box-shadow: 0 0 8px #ff3dd0; } #dots i.d { background: #8b8ba3; }
+#brain { font-size: 12px; color: #8b8ba3; text-align: center; }
+</style>
+</head>
+<body>
+<div id="bg-stage">
+  <div id="wrap">
+    <div id="dots"></div>
+    <div id="arena"><div class="hand you" id="hy">✊<small>VOS</small></div><div id="vs">VS</div><div class="hand cpu" id="hc">✊<small>CPU</small></div></div>
+    <div id="res">¡Elegí!</div>
+    <div id="why"></div>
+    <div id="picks"></div>
+    <div id="brain"></div>
+  </div>
+</div>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  PIEDRA, PAPEL O TIJERA — BandaGamer
+//  La CPU aprende tus patrones (cadena de Markov sobre tus últimas jugadas)
+//  Modo clásico o extendido (Lagarto-Spock) · al mejor de 7 · racha de partidos
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, sfx: SFX } = BG;
+const ALL = {
+  r: { e: '✊', n: 'PIEDRA', beats: { s: 'aplasta', l: 'aplasta' } },
+  p: { e: '✋', n: 'PAPEL', beats: { r: 'envuelve', k: 'refuta' } },
+  s: { e: '✌️', n: 'TIJERA', beats: { p: 'corta', l: 'decapita' } },
+  l: { e: '🦎', n: 'LAGARTO', beats: { k: 'envenena', p: 'come' } },
+  k: { e: '🖖', n: 'SPOCK', beats: { s: 'rompe', r: 'vaporiza' } },
+};
+BG.init({
+  id: 'rps', title: 'PIEDRA PAPEL TIJERA', icon: '✊', accent: '#2ef2ff', accent2: '#ff3dd0', pausable: false,
+  subtitle: 'Al mejor de 7. Cuidado: la CPU aprende de tus jugadas y trata de anticiparte.',
+  hud: [{ id: 'score', label: 'Marcador', value: '0 - 0' }, { id: 'streak', label: 'Racha', color: '#39ff88' }, { id: 'mode', label: 'Modo', color: '#ffd400', value: 'CLÁSICO' }],
+  help: 'Teclas: <kbd>1</kbd> piedra · <kbd>2</kbd> papel · <kbd>3</kbd> tijera · <kbd>4</kbd> lagarto · <kbd>5</kbd> spock',
+});
+let ext = BG.load('ext', false), you, cpu, history = [], busy = false, streak = BG.load('streak', 0), rounds;
+const moves = () => ext ? ['r', 'p', 's', 'l', 'k'] : ['r', 'p', 's'];
+const beats = (a, b) => b in ALL[a].beats;
+
+// Predicción: cuenta qué jugaste después de tus últimas 1-2 jugadas y elige lo que le gana
+function cpuPick() {
+  const ms = moves();
+  if (history.length < 3 || Math.random() < .15) return U.pick(ms);
+  const scores = Object.fromEntries(ms.map(m => [m, .1]));
+  for (const ord of [2, 1]) {
+    if (history.length <= ord) continue;
+    const ctxKey = history.slice(-ord).join('');
+    for (let i = ord; i < history.length; i++) if (history.slice(i - ord, i).join('') === ctxKey) scores[history[i]] += ord * 1.5;
+  }
+  history.forEach((m, i) => scores[m] += .2 * (i / history.length));   // frecuencia general (pesa más lo reciente)
+  const guess = ms.reduce((a, b) => scores[a] > scores[b] ? a : b);
+  const counters = ms.filter(m => beats(m, guess));
+  return U.pick(counters);
+}
+function newMatch() {
+  you = 0; cpu = 0; rounds = []; busy = false;
+  document.getElementById('res').textContent = '¡Elegí!'; document.getElementById('why').textContent = '';
+  buildPicks(); dots(); hud(); BG.start();
+}
+function hud() { BG.hud.set('score', `${you} - ${cpu}`); BG.hud.set('streak', streak); BG.hud.set('mode', ext ? 'EXTENDIDO' : 'CLÁSICO'); }
+function buildPicks() {
+  document.getElementById('picks').innerHTML = moves().map((m, i) => `<button class="pk" data-m="${m}">${ALL[m].e}<span>${ALL[m].n}</span></button>`).join('');
+  document.querySelectorAll('.pk').forEach(b => b.onclick = () => play(b.dataset.m));
+  document.getElementById('brain').textContent = history.length >= 3 ? `🧠 La CPU ya analizó ${history.length} de tus jugadas` : '🧠 La CPU todavía no te conoce…';
+}
+function dots() { document.getElementById('dots').innerHTML = Array.from({ length: 7 }, (_, i) => `<i class="${rounds[i] || ''}"></i>`).join(''); }
+function play(m) {
+  if (busy) return; busy = true;
+  const c = cpuPick();
+  const hy = document.getElementById('hy'), hc = document.getElementById('hc');
+  [hy, hc].forEach(h => { h.classList.remove('win', 'lose'); h.firstChild.nodeValue = '✊'; h.classList.remove('shake'); void h.offsetWidth; h.classList.add('shake'); });
+  document.querySelectorAll('.pk').forEach(b => b.disabled = true);
+  const words = ['PIEDRA…', 'PAPEL…', 'TIJERA…'];
+  words.forEach((w, i) => setTimeout(() => { document.getElementById('res').textContent = w; SFX.tone({ f: 330 + i * 110, dur: .08, type: 'square', vol: .1 }); }, i * 300));
+  setTimeout(() => {
+    hy.firstChild.nodeValue = ALL[m].e; hc.firstChild.nodeValue = ALL[c].e;
+    history.push(m); if (history.length > 60) history.shift();
+    const res = document.getElementById('res'), why = document.getElementById('why');
+    if (m === c) { res.textContent = 'EMPATE'; res.style.color = '#8b8ba3'; why.textContent = 'Los dos eligieron ' + ALL[m].n.toLowerCase(); rounds.push('d'); SFX.play('swap'); }
+    else if (beats(m, c)) { you++; res.textContent = '¡GANASTE LA RONDA!'; res.style.color = '#39ff88'; why.textContent = `${ALL[m].n} ${ALL[m].beats[c]} a ${ALL[c].n}`.toLowerCase(); hy.classList.add('win'); hc.classList.add('lose'); rounds.push('y'); SFX.play('coin'); }
+    else { cpu++; res.textContent = 'GANÓ LA CPU'; res.style.color = '#ff3dd0'; why.textContent = `${ALL[c].n} ${ALL[c].beats[m]} a ${ALL[m].n}`.toLowerCase(); hc.classList.add('win'); hy.classList.add('lose'); rounds.push('c'); SFX.play('error'); }
+    dots(); hud();
+    if (you >= 4 || cpu >= 4) setTimeout(endMatch, 900);
+    else setTimeout(() => { busy = false; buildPicks(); }, 700);
+  }, 950);
+}
+function endMatch() {
+  const won = you > cpu;
+  streak = won ? streak + 1 : 0; BG.save('streak', streak); hud();
+  let r = null; if (won) r = BG.submitScore(streak, { won: true, mode: ext ? 'ext' : 'default' });
+  SFX.play(won ? 'win' : 'lose'); BG.stop();
+  BG.ui.gameOver({ win: won, icon: won ? '🏆' : '🤖', title: won ? '¡GANASTE EL PARTIDO!' : 'GANÓ LA CPU', sub: `${you} a ${cpu}`, score: won ? streak : null, scoreLabel: 'PARTIDOS SEGUIDOS',
+    isRecord: r && (r.isRecord || r.first), stats: [{ label: 'Mejor racha', value: BG.getBest(ext ? 'ext' : 'default') || 0 }], retryLabel: '↻ OTRO PARTIDO', onRetry: newMatch, onMenu: showMenu });
+}
+function showMenu() {
+  BG.ui.show({ icon: '✊', title: 'PIEDRA PAPEL TIJERA', sub: BG.game.subtitle,
+    buttons: [
+      { label: '✊ CLÁSICO', small: 'Piedra, papel y tijera', primary: !ext, onClick: () => { ext = false; BG.save('ext', false); BG.ui.hide(); newMatch(); } },
+      { label: '🖖 EXTENDIDO', small: 'Con Lagarto y Spock (5 opciones)', primary: ext, onClick: () => { ext = true; BG.save('ext', true); BG.ui.hide(); newMatch(); } },
+    ],
+    html: ext ? '' : '', help: BG.game.help + '<br>En el extendido: tijera corta papel, papel envuelve piedra, piedra aplasta lagarto, lagarto envenena a Spock, Spock rompe tijera, tijera decapita lagarto, lagarto come papel, papel refuta a Spock, Spock vaporiza piedra y piedra aplasta tijera.' });
+}
+BG.input.onKey((e, code, down) => { if (!down || e.repeat || BG.ui.open) return; const i = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4 }[code]; if (i != null && moves()[i]) play(moves()[i]); });
+if (BG.thumb) { ext = true; you = 3; cpu = 2; rounds = ['y', 'c', 'y', 'd', 'c', 'y']; buildPicks(); dots(); document.getElementById('hy').firstChild.nodeValue = '🖖'; document.getElementById('hc').firstChild.nodeValue = '✌️'; document.getElementById('hy').classList.add('win'); document.getElementById('res').textContent = '¡GANASTE LA RONDA!'; document.getElementById('res').style.color = '#39ff88'; }
+else BG.ready.then(showMenu);
+</script>
+</body>
+</html>

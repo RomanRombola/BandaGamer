@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Piano Tiles</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  PIANO TILES — BandaGamer
+//  Clásico: 50 teclas lo más rápido posible · Arcade: infinito y cada vez más
+//  rápido · Zen: todas las que puedas en 30 s · cada tecla suena como una nota
+//  de una melodía de dominio público · teclado D F J K
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 400, H = 640, LANES = 4, LW = W / LANES, RH = 150, KEYS = ['KeyD', 'KeyF', 'KeyJ', 'KeyK'];
+const MODES = {
+  classic: { name: 'CLÁSICO', desc: '50 teclas contra reloj', order: 'asc' },
+  arcade: { name: 'ARCADE', desc: 'Infinito y cada vez más rápido', order: 'desc' },
+  zen: { name: 'ZEN', desc: 'Todas las que puedas en 30 segundos', order: 'desc' },
+};
+// Melodías de dominio público (notas MIDI)
+const SONGS = [
+  { name: 'Himno a la Alegría', n: [64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62, 64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 62, 60, 60] },
+  { name: 'Para Elisa', n: [76, 75, 76, 75, 76, 71, 74, 72, 69, 60, 64, 69, 71, 64, 68, 71, 72, 64, 76, 75, 76, 75, 76, 71, 74, 72, 69, 60, 64, 69, 71, 64, 72, 71, 69] },
+  { name: 'Cumpleaños Feliz', n: [60, 60, 62, 60, 65, 64, 60, 60, 62, 60, 67, 65, 60, 60, 72, 69, 65, 64, 62, 70, 70, 69, 65, 67, 65] },
+  { name: 'Arroz con Leche', n: [67, 72, 72, 74, 76, 74, 72, 74, 71, 67, 67, 71, 71, 72, 74, 72, 71, 72, 67, 72, 72, 74, 76, 74, 72, 74, 71] },
+  { name: 'Canon (Pachelbel)', n: [78, 76, 74, 73, 71, 69, 71, 73, 74, 73, 71, 69, 67, 66, 67, 64, 66, 67, 69, 71, 73, 74, 76, 78, 79, 78, 76] },
+];
+const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+
+BG.init({
+  id: 'pianotiles', title: 'PIANO TILES', icon: '🎹', accent: '#c04dff', accent2: '#2ef2ff',
+  subtitle: 'Tocá solo las teclas de color, de abajo hacia arriba. ¡No toques las blancas!',
+  hud: [{ id: 'score', label: 'Teclas' }, { id: 'time', label: 'Tiempo', color: '#2ef2ff', value: '0.00' }, { id: 'song', label: 'Canción', color: '#ffd400', value: '—' }],
+  help: '<kbd>D</kbd> <kbd>F</kbd> <kbd>J</kbd> <kbd>K</kbd> para cada columna (o clic/toque)',
+  onRestart: () => start(mode), onMenu: () => showMenu(),
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+
+let mode = BG.load('mode', 'arcade'), rows, scroll, speed, count, state = 'menu', t0, elapsed, song, noteI, fail = null, startedT = false, t = 0;
+function newRow(i) { return { lane: U.randInt(0, LANES - 1), hit: false, y: -i * RH }; }
+function start(m) {
+  mode = m || mode; BG.save('mode', mode);
+  rows = Array.from({ length: 8 }, (_, i) => newRow(i - 1)); rows[0].lane = -1; rows[0].hit = true; // fila de inicio vacía
+  rows.forEach((r, i) => r.y = H - RH * (i + 1));
+  scroll = 0; speed = 0; count = 0; elapsed = 0; startedT = false; fail = null;
+  song = U.pick(SONGS); noteI = 0;
+  BG.hud.setAll({ score: 0, time: mode === 'zen' ? '30.00' : '0.00', song: song.name.length > 14 ? song.name.slice(0, 13) + '…' : song.name });
+  FX.clear(); state = 'play'; BG.start();
+}
+function showMenu() {
+  state = 'menu'; BG.stop();
+  if (!rows) { start(mode); BG.stop(); state = 'menu'; }
+  BG.ui.show({ icon: '🎹', title: 'PIANO TILES', sub: BG.game.subtitle,
+    buttons: Object.entries(MODES).map(([k, m]) => { const b = BG.getBest(k); return { label: m.name, small: `${m.desc} · ${b == null ? 'sin récord' : 'Récord ' + (k === 'classic' ? (b / 1000).toFixed(2) + ' s' : b)}`, primary: k === mode, onClick: () => { BG.ui.hide(); start(k); } }; }),
+    help: BG.game.help });
+}
+function lowest() { return rows.filter(r => !r.hit).sort((a, b) => b.y - a.y)[0]; }
+function tap(lane, py) {
+  if (state !== 'play' || BG.paused) return;
+  const target = lowest();
+  if (!target) return;
+  // ¿tocó la fila objetivo o una casilla blanca?
+  const rowAtTap = py == null ? target : rows.find(r => py >= r.y + scroll && py < r.y + scroll + RH);
+  if (rowAtTap && rowAtTap !== target && !rowAtTap.hit && rowAtTap.lane === lane) return;   // tecla de más arriba: ignorar
+  if (lane !== target.lane) { lose({ lane, y: (rowAtTap || target).y }); return; }
+  target.hit = true; count++;
+  if (!startedT) { startedT = true; t0 = performance.now(); if (mode === 'arcade') speed = 330; }
+  const f = midi(song.n[noteI++ % song.n.length]);
+  SFX.tone({ f, dur: .45, type: 'triangle', vol: .3 }); SFX.tone({ f: f * 2, dur: .25, type: 'sine', vol: .07 });
+  FX.burst(lane * LW + LW / 2, target.y + scroll + RH / 2, { n: 10, color: ['#c04dff', '#2ef2ff', '#fff'], speed: 160, life: .4 });
+  BG.hud.set('score', count, true);
+  if (mode === 'classic') {
+    scroll += RH;   // en clásico la pantalla avanza con cada acierto
+    if (count >= 50) return win();
+  }
+  if (count % 25 === 0 && mode !== 'classic') { BG.ui.toast(`¡${count}!`, '#c04dff'); }
+}
+function lose(f) {
+  state = 'over'; fail = f; BG.stop();
+  SFX.tone({ f: 110, dur: .6, type: 'sawtooth', vol: .25 }); SFX.tone({ f: 116, dur: .6, type: 'sawtooth', vol: .2 });
+  FX.shake(6, .3);
+  setTimeout(() => {
+    let r = null, scoreTxt = String(count);
+    if (mode !== 'classic' && count > 0) r = BG.submitScore(count, { mode });
+    BG.ui.gameOver({ icon: '🎹', title: mode === 'classic' ? 'TECLA EQUIVOCADA' : '¡FIN!', score: count, scoreText: scoreTxt, scoreLabel: 'TECLAS',
+      isRecord: r && (r.isRecord || r.first), stats: [{ label: 'Modo', value: MODES[mode].name }, { label: 'Récord', value: fmtBest() }], onRetry: () => start(mode), onMenu: showMenu });
+  }, 900);
+}
+function win() {
+  state = 'over'; BG.stop();
+  const ms = Math.round(performance.now() - t0);
+  const r = BG.submitScore(ms, { mode: 'classic', order: 'asc', won: true });
+  SFX.play('win');
+  setTimeout(() => BG.ui.gameOver({ win: true, icon: '🎹', title: '¡50 TECLAS!', score: ms, scoreText: (ms / 1000).toFixed(2) + ' s', scoreLabel: 'TIEMPO',
+    isRecord: r.isRecord || r.first, stats: [{ label: 'Récord', value: fmtBest() }, { label: 'Teclas/seg', value: (50 / (ms / 1000)).toFixed(1) }], onRetry: () => start(mode), onMenu: showMenu }), 500);
+}
+function fmtBest() { const b = BG.getBest(mode); return b == null ? '—' : mode === 'classic' ? (b / 1000).toFixed(2) + ' s' : String(b); }
+
+function update(dt) {
+  t += dt;
+  if (state !== 'play') return;
+  if (startedT) {
+    elapsed = (performance.now() - t0) / 1000;
+    if (mode === 'zen') { const left = Math.max(0, 30 - elapsed); BG.hud.set('time', left.toFixed(2)); if (left <= 0) { state = 'over'; BG.stop(); const r = BG.submitScore(count, { mode: 'zen' }); SFX.play('win'); setTimeout(() => BG.ui.gameOver({ win: true, icon: '🧘', title: '¡TIEMPO!', score: count, scoreLabel: 'TECLAS', isRecord: r.isRecord || r.first, stats: [{ label: 'Récord', value: fmtBest() }, { label: 'Teclas/seg', value: (count / 30).toFixed(1) }], onRetry: () => start(mode), onMenu: showMenu }), 500); return; } }
+    else BG.hud.set('time', elapsed.toFixed(2));
+  }
+  if (mode === 'arcade' && startedT) { speed += dt * 9; scroll += speed * dt; }
+  if (mode === 'zen' && startedT) { scroll += (300 + count * 4) * dt; }
+  // reciclar filas que salieron por abajo / agregar arriba
+  const topY = Math.min(...rows.map(r => r.y));
+  if (topY + scroll > -RH) rows.push({ lane: U.randInt(0, LANES - 1), hit: false, y: topY - RH });
+  for (const r of rows) if (r.y + scroll > H) { if (!r.hit && mode !== 'classic') { lose({ lane: r.lane, y: r.y, missed: true }); scroll -= RH * .8; return; } }
+  rows = rows.filter(r => r.y + scroll < H + RH);
+}
+function render() {
+  ctx.fillStyle = '#0b0b16'; ctx.fillRect(0, 0, W, H);
+  if (!rows) return;
+  ctx.save(); FX.applyShake(ctx);
+  for (let l = 0; l < LANES; l++) { ctx.fillStyle = l % 2 ? '#f2f2fa' : '#e8e8f4'; ctx.fillRect(l * LW, 0, LW, H); }
+  ctx.strokeStyle = 'rgba(0,0,0,.12)'; ctx.lineWidth = 1;
+  for (let l = 1; l < LANES; l++) { ctx.beginPath(); ctx.moveTo(l * LW, 0); ctx.lineTo(l * LW, H); ctx.stroke(); }
+  for (const r of rows) {
+    const y = r.y + scroll;
+    ctx.strokeStyle = 'rgba(0,0,0,.08)'; ctx.beginPath(); ctx.moveTo(0, y + RH); ctx.lineTo(W, y + RH); ctx.stroke();
+    if (r.lane < 0) continue;
+    const x = r.lane * LW;
+    if (!r.hit) {
+      const g = ctx.createLinearGradient(0, y, 0, y + RH); g.addColorStop(0, '#2b1b55'); g.addColorStop(1, '#14122e');
+      ctx.fillStyle = g; ctx.fillRect(x + 2, y + 2, LW - 4, RH - 4);
+      ctx.fillStyle = 'rgba(192,77,255,.85)'; ctx.fillRect(x + 2, y + RH - 10, LW - 4, 8);
+      if (r === lowest() && !startedT) D.text(ctx, 'EMPEZÁ', x + LW / 2, y + RH / 2, { size: 13, color: '#fff' });
+    } else {
+      ctx.fillStyle = 'rgba(192,77,255,.18)'; ctx.fillRect(x + 2, y + 2, LW - 4, RH - 4);
+    }
+  }
+  if (fail) {
+    const y = fail.y + scroll, x = fail.lane * LW;
+    ctx.fillStyle = Math.floor(t * 8) % 2 ? '#ff3d6e' : '#ff8aa3'; ctx.fillRect(x + 2, y + 2, LW - 4, RH - 4);
+  }
+  // guía de teclas
+  if (!BG.isTouch) for (let l = 0; l < LANES; l++) D.text(ctx, KEYS[l].slice(3), l * LW + LW / 2, H - 16, { size: 13, color: 'rgba(0,0,0,.25)' });
+  FX.draw(ctx);
+  ctx.restore();
+}
+view.canvas.addEventListener('pointerdown', e => { const p = view.toLocal(e.clientX, e.clientY); tap(Math.floor(p.x / LW), p.y); });
+BG.input.onKey((e, code, down) => { if (!down || e.repeat) return; const l = KEYS.indexOf(code); if (l >= 0) tap(l, null); });
+
+if (BG.thumb) { start('arcade'); BG.stop(); state = 'thumb'; rows.forEach((r, i) => { if (i > 0 && i < 3) r.hit = true; }); startedT = true; update = () => {}; }
+else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

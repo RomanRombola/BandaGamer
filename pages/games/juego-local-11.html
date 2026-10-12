@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Flappy Bird</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  FLAPPY — BandaGamer
+//  Parallax de 4 capas con ciclo día → atardecer → noche · tubos que se mueven
+//  a partir de 25 puntos · monedas · medallas · pájaro con alas animadas
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 360, H = 640, GROUND = 560;
+const GRAV = 1500, FLAP = -430, PIPE_W = 64, SPEED0 = 150;
+const SKINS = [
+  { name: 'Clásico', body: '#ffcc00', belly: '#fff3b0', wing: '#ff9d00' },
+  { name: 'Brasa', body: '#ff4d4d', belly: '#ffd0c8', wing: '#c81e3c' },
+  { name: 'Hielo', body: '#4dd8ff', belly: '#dff8ff', wing: '#1e8ad8' },
+  { name: 'Lima', body: '#7dff4d', belly: '#eaffd8', wing: '#2fb81e' },
+  { name: 'Uva', body: '#b36bff', belly: '#efe0ff', wing: '#7a32d8' },
+];
+const MEDALS = [[80, '💎', 'PLATINO'], [40, '🥇', 'ORO'], [20, '🥈', 'PLATA'], [10, '🥉', 'BRONCE']];
+
+BG.init({
+  id: 'flappy', title: 'FLAPPY', icon: '🐦', accent: '#ffcc00', accent2: '#ff7a00',
+  subtitle: 'Tocá para aletear. Pasá entre los tubos. No es tan fácil como parece.',
+  hud: [{ id: 'score', label: 'Puntos' }, { id: 'coins', label: 'Monedas', color: '#ffe066' }, { id: 'best', label: 'Récord', color: '#8be9ff' }],
+  help: '<kbd>Espacio</kbd> / <kbd>↑</kbd> / clic para aletear · <kbd>P</kbd> pausa',
+  helpTouch: 'Tocá la pantalla para aletear.',
+  onRestart: () => start(), onMenu: () => showMenu(),
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+
+let bird, pipes, coins, score, coinCount, state = 'menu', t = 0, scroll = 0, speed, spawnX, deadT = 0, skin = BG.load('skin', 0), flashT = 0;
+const clouds = Array.from({ length: 6 }, (_, i) => ({ x: i * 80 + U.rand(40), y: U.rand(40, 220), s: U.rand(.6, 1.3) }));
+const stars = D.stars(60, W, 360, 3);
+const city = Array.from({ length: 14 }, (_, i) => ({ x: i * 32, w: U.rand(24, 34), h: U.rand(40, 110) }));
+const hills = Array.from({ length: 8 }, (_, i) => ({ x: i * 70, r: U.rand(50, 80) }));
+
+function reset() {
+  bird = { x: 96, y: 300, vy: 0, rot: 0, wing: 0, squash: 0 };
+  pipes = []; coins = []; score = 0; coinCount = 0; speed = SPEED0; spawnX = W + 60; deadT = 0;
+  BG.hud.setAll({ score: 0, coins: 0, best: BG.getBest() || 0 });
+}
+function start() {
+  reset(); FX.clear(); state = 'ready'; BG.start();
+}
+function showMenu() {
+  reset(); state = 'menu'; BG.stop();
+  const skinBtns = SKINS.map((s, i) => ({ label: (i === skin ? '● ' : '') + s.name, sel: i === skin, onClick: () => { skin = i; BG.save('skin', i); showMenu(); } }));
+  BG.ui.menu({
+    buttons: [{ label: '▶ JUGAR', primary: true, onClick: start }],
+    html: '<div class="bg-label">Color del pájaro</div>',
+    onShow: card => {
+      const row = document.createElement('div'); row.className = 'bg-seg';
+      SKINS.forEach((s, i) => {
+        const b = document.createElement('button');
+        b.className = 'bg-btn' + (i === skin ? ' sel' : ''); b.style.minWidth = '54px'; b.style.padding = '8px';
+        b.innerHTML = `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${s.body};box-shadow:0 0 8px ${s.body}"></span>`;
+        b.title = s.name;
+        b.onclick = () => { skin = i; BG.save('skin', i); row.querySelectorAll('.bg-btn').forEach((x, j) => x.classList.toggle('sel', j === i)); SFX.play('select'); };
+        row.appendChild(b);
+      });
+      card.querySelector('.bg-label').after(row);
+    },
+  });
+  void skinBtns;
+}
+
+function flap() {
+  if (BG.paused || BG.ui.open) return;
+  if (state === 'ready') { state = 'play'; }
+  if (state !== 'play') return;
+  bird.vy = FLAP; bird.squash = 1;
+  SFX.play('flap');
+  FX.burst(bird.x - 10, bird.y + 4, { n: 5, color: ['#ffffff', SKINS[skin].belly], speed: 70, angle: Math.PI * .8, spread: .5, life: .35, size: 2.5 });
+}
+BG.input.on('action', flap).on('up', flap);
+view.canvas.addEventListener('pointerdown', e => { e.preventDefault(); flap(); });
+
+function spawnPipe() {
+  const lvl = Math.min(score, 60);
+  const gap = Math.max(118, 168 - lvl * 1.1);
+  const minTop = 70, maxTop = GROUND - gap - 70;
+  const prev = pipes.length ? pipes[pipes.length - 1].top : (minTop + maxTop) / 2;
+  const top = U.clamp(prev + U.rand(-170, 170), minTop, maxTop);
+  const moving = score >= 25 && U.chance(Math.min(.6, (score - 20) / 60));
+  pipes.push({ x: spawnX, top, gap, base: top, moving, phase: U.rand(Math.PI * 2), amp: moving ? U.rand(25, 55) : 0, passed: false });
+  if (U.chance(.45)) coins.push({ x: spawnX + PIPE_W / 2 + U.rand(80, 110), y: top + gap / 2 + U.rand(-30, 30), t: U.rand(6) , got: false });
+}
+
+function die() {
+  if (state !== 'play') return;
+  state = 'dead'; deadT = 0; BG.stop();
+  SFX.play('hit'); setTimeout(() => SFX.play('lose'), 250);
+  FX.shake(8, .35); FX.flash('#ffffff', .6);
+  FX.burst(bird.x, bird.y, { n: 24, color: [SKINS[skin].body, SKINS[skin].wing, '#fff'], speed: 220, life: .7, gravity: 400 });
+  const r = BG.submitScore(score);
+  setTimeout(() => {
+    const m = MEDALS.find(([n]) => score >= n);
+    BG.hud.set('best', BG.getBest() || 0);
+    BG.ui.gameOver({
+      icon: m ? m[1] : '🐦', title: 'GAME OVER', score, isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+      sub: m ? `Medalla de ${m[2]}` : (score < 10 ? `Te faltan ${10 - score} para la medalla de bronce` : ''),
+      stats: [{ label: 'Récord', value: U.fmt(BG.getBest() || score) }, { label: 'Monedas', value: coinCount }],
+      onRetry: start, onMenu: showMenu,
+    });
+  }, 1100);
+}
+
+function update(dt) {
+  if (BG.thumb) return;
+  t += dt;
+  if (state === 'menu' || state === 'ready') {
+    bird.y = 300 + Math.sin(t * 4) * 10; bird.wing += dt * 10; bird.rot = 0;
+    scroll += SPEED0 * dt;
+    return;
+  }
+  if (state === 'play') {
+    speed = SPEED0 + Math.min(score, 60) * 1.4;
+    scroll += speed * dt;
+    bird.vy = Math.min(bird.vy + GRAV * dt, 620);
+    bird.y += bird.vy * dt;
+    bird.wing += dt * (bird.vy < 0 ? 26 : 9);
+    bird.squash = Math.max(0, bird.squash - dt * 5);
+    bird.rot = U.clamp(bird.vy / 600, -0.45, 1.3);
+    if (bird.y < -20) bird.y = -20;
+    // tubos
+    spawnX -= speed * dt;
+    if (!pipes.length || pipes[pipes.length - 1].x < W - 200) { spawnX = W + 20; spawnPipe(); }
+    for (const p of pipes) {
+      p.x -= speed * dt;
+      if (p.moving) { p.phase += dt * 1.6; p.top = U.clamp(p.base + Math.sin(p.phase) * p.amp, 50, GROUND - p.gap - 50); }
+      if (!p.passed && p.x + PIPE_W < bird.x - 12) {
+        p.passed = true; score++; BG.hud.set('score', score, true); SFX.play('coin');
+        if (score % 10 === 0) { BG.ui.toast(score === 10 ? '¡MEDALLA DE BRONCE!' : score === 20 ? '¡PLATA!' : score === 40 ? '¡ORO!' : score === 80 ? '¡PLATINO!' : `¡${score}!`, '#ffcc00'); FX.flash('#ffcc00', .15); }
+      }
+      // colisión (caja reducida = más justa)
+      const bx = bird.x, by = bird.y, r = 13;
+      if (bx + r > p.x + 3 && bx - r < p.x + PIPE_W - 3 && (by - r < p.top || by + r > p.top + p.gap)) { die(); break; }
+    }
+    pipes = pipes.filter(p => p.x > -PIPE_W - 10);
+    for (const c of coins) {
+      c.x -= speed * dt; c.t += dt * 6;
+      if (!c.got && Math.hypot(c.x - bird.x, c.y - bird.y) < 24) {
+        c.got = true; coinCount++; BG.hud.set('coins', coinCount, true);
+        SFX.play('blip'); FX.burst(c.x, c.y, { n: 10, color: ['#ffe066', '#fff'], speed: 120, life: .4 });
+        FX.text(c.x, c.y - 10, '+1', { color: '#ffe066', size: 14 });
+      }
+    }
+    coins = coins.filter(c => c.x > -20 && !c.got);
+    if (bird.y + 13 >= GROUND) { bird.y = GROUND - 13; die(); }
+  } else if (state === 'dead') {
+    deadT += dt;
+    if (bird.y + 13 < GROUND) { bird.vy = Math.min(bird.vy + GRAV * dt, 800); bird.y = Math.min(GROUND - 13, bird.y + bird.vy * dt); bird.rot = Math.min(1.5, bird.rot + dt * 5); }
+  }
+}
+
+// ── Dibujo ────────────────────────────────────────────────────────────────
+function skyPalette() {
+  // ciclo por puntaje: día (0-19), atardecer (20-39), noche (40+), y vuelve
+  const phase = (Math.floor(score / 20)) % 3;
+  return [
+    ['#4fc3f7', '#b3ecff', '#e8fbff'],
+    ['#ff7e5f', '#feb47b', '#ffe0b2'],
+    ['#0b1026', '#1b2350', '#3a2f6b'],
+  ][phase];
+}
+function render() {
+  const pal = skyPalette(), night = pal[0] === '#0b1026';
+  const g = ctx.createLinearGradient(0, 0, 0, GROUND);
+  g.addColorStop(0, pal[0]); g.addColorStop(.6, pal[1]); g.addColorStop(1, pal[2]);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  FX.applyShake(ctx);
+  // estrellas / sol
+  if (night) { for (const s of stars) { ctx.globalAlpha = .4 + .6 * Math.abs(Math.sin(t * 2 + s.tw)); ctx.fillStyle = '#fff'; ctx.fillRect(s.x, s.y, s.z * 2, s.z * 2); } ctx.globalAlpha = 1; D.glowCircle(ctx, 290, 90, 22, '#fff9d6', 30); }
+  else D.glowCircle(ctx, 290, 100, 26, pal[0] === '#ff7e5f' ? '#ffdd8a' : '#fffbe0', 40);
+  // nubes
+  for (const c of clouds) {
+    const x = ((c.x - scroll * .1 * c.s) % (W + 120) + W + 120) % (W + 120) - 60;
+    ctx.fillStyle = night ? 'rgba(160,170,255,.12)' : 'rgba(255,255,255,.85)';
+    ctx.beginPath(); ctx.arc(x, c.y, 18 * c.s, 0, 7); ctx.arc(x + 20 * c.s, c.y - 8 * c.s, 22 * c.s, 0, 7); ctx.arc(x + 42 * c.s, c.y, 17 * c.s, 0, 7); ctx.fill();
+  }
+  // ciudad lejana
+  ctx.fillStyle = night ? '#1a1f45' : pal[0] === '#ff7e5f' ? 'rgba(160,70,90,.55)' : 'rgba(120,190,220,.6)';
+  for (const b of city) {
+    const x = ((b.x - scroll * .25) % (W + 64) + W + 64) % (W + 64) - 40;
+    ctx.fillRect(x, GROUND - 40 - b.h, b.w, b.h + 40);
+    if (night) { ctx.fillStyle = 'rgba(255,220,120,.6)'; for (let wy = GROUND - 30 - b.h; wy < GROUND - 40; wy += 12) for (let wx = x + 4; wx < x + b.w - 4; wx += 8) if ((wx * 7 + wy * 3) % 5 < 2) ctx.fillRect(wx, wy, 3, 5); ctx.fillStyle = '#1a1f45'; }
+  }
+  // colinas
+  ctx.fillStyle = night ? '#16304a' : '#5fcf7a';
+  for (const h of hills) {
+    const x = ((h.x - scroll * .5) % (W + 140) + W + 140) % (W + 140) - 70;
+    ctx.beginPath(); ctx.arc(x, GROUND + 10, h.r, Math.PI, 0); ctx.fill();
+  }
+  // tubos
+  for (const p of pipes) drawPipe(p, night);
+  // monedas
+  for (const c of coins) {
+    const w = Math.abs(Math.cos(c.t)) * 10 + 1.5;
+    ctx.fillStyle = '#ffd23f'; ctx.strokeStyle = '#b8860b'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(c.x, c.y, w, 11, 0, 0, 7); ctx.fill(); ctx.stroke();
+  }
+  // suelo
+  ctx.fillStyle = night ? '#3b2f2a' : '#ded895'; ctx.fillRect(0, GROUND, W, H - GROUND);
+  ctx.fillStyle = night ? '#2b6b3a' : '#73bf2e'; ctx.fillRect(0, GROUND, W, 14);
+  ctx.fillStyle = night ? '#245a31' : '#5ea024';
+  for (let x = -((scroll) % 24); x < W; x += 24) { ctx.beginPath(); ctx.moveTo(x, GROUND + 14); ctx.lineTo(x + 12, GROUND + 14); ctx.lineTo(x + 6, GROUND + 6); ctx.fill(); }
+  ctx.fillStyle = 'rgba(0,0,0,.08)'; for (let x = -((scroll) % 36); x < W; x += 36) ctx.fillRect(x, GROUND + 26, 18, 6);
+  drawBird();
+  FX.draw(ctx);
+  // puntaje grande en pantalla
+  if (state === 'play' || state === 'dead') D.text(ctx, String(score), W / 2, 70, { size: 46, color: '#fff', stroke: 'rgba(0,0,0,.55)', strokeW: 7 });
+  if (state === 'ready') {
+    D.text(ctx, '¡PREPARATE!', W / 2, 190, { size: 26, color: '#fff', stroke: 'rgba(0,0,0,.5)', strokeW: 6 });
+    D.text(ctx, BG.isTouch ? 'TOCÁ PARA VOLAR' : 'ESPACIO o CLIC PARA VOLAR', W / 2, 400, { size: 13, color: '#fff', stroke: 'rgba(0,0,0,.5)', strokeW: 4, alpha: .6 + Math.sin(t * 5) * .4 });
+    D.text(ctx, '👆', W / 2, 360, { size: 30, family: 'body' });
+  }
+  ctx.restore();
+  FX.drawFlash(ctx, W, H);
+}
+function drawPipe(p, night) {
+  const body = night ? ['#1f7a3a', '#3fbf62', '#155a2a'] : ['#4caf50', '#8be36b', '#2e7d32'];
+  const gr = ctx.createLinearGradient(p.x, 0, p.x + PIPE_W, 0);
+  gr.addColorStop(0, body[2]); gr.addColorStop(.35, body[1]); gr.addColorStop(1, body[2]);
+  ctx.fillStyle = gr;
+  ctx.fillRect(p.x, -10, PIPE_W, p.top + 10);
+  ctx.fillRect(p.x, p.top + p.gap, PIPE_W, GROUND - p.top - p.gap);
+  ctx.fillRect(p.x - 5, p.top - 26, PIPE_W + 10, 26);
+  ctx.fillRect(p.x - 5, p.top + p.gap, PIPE_W + 10, 26);
+  ctx.strokeStyle = 'rgba(0,40,0,.55)'; ctx.lineWidth = 2;
+  ctx.strokeRect(p.x - 5, p.top - 26, PIPE_W + 10, 26); ctx.strokeRect(p.x - 5, p.top + p.gap, PIPE_W + 10, 26);
+  ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(p.x + 8, -10, 6, p.top - 16); ctx.fillRect(p.x + 8, p.top + p.gap + 26, 6, GROUND - p.top - p.gap - 26);
+  if (p.moving) { ctx.fillStyle = 'rgba(255,60,60,.8)'; ctx.fillRect(p.x + PIPE_W / 2 - 3, p.top - 18, 6, 10); ctx.fillRect(p.x + PIPE_W / 2 - 3, p.top + p.gap + 8, 6, 10); }
+}
+function drawBird() {
+  const s = SKINS[skin], b = bird;
+  ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot);
+  const sq = 1 + b.squash * .18; ctx.scale(sq, 1 / sq);
+  // cuerpo
+  ctx.fillStyle = s.body; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(0, 0, 17, 13.5, 0, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = s.belly; ctx.beginPath(); ctx.ellipse(-2, 5, 11, 6.5, 0, 0, 7); ctx.fill();
+  // ala animada
+  const wy = Math.sin(b.wing) * 6;
+  ctx.fillStyle = s.wing; ctx.beginPath(); ctx.ellipse(-6, wy * .4, 9, 6 + Math.abs(wy) * .3, -.3 + wy * .05, 0, 7); ctx.fill(); ctx.stroke();
+  // ojo
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(8, -5, 6, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(state === 'dead' ? 9 : 10, -5, 2.6, 0, 7); ctx.fill();
+  if (state === 'dead') { ctx.strokeStyle = '#111'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(5, -9); ctx.lineTo(12, -2); ctx.moveTo(12, -9); ctx.lineTo(5, -2); ctx.stroke(); }
+  // pico
+  ctx.fillStyle = '#ff6a2a'; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(13, 0); ctx.lineTo(24, 2); ctx.lineTo(13, 7); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+// ── Arranque ──────────────────────────────────────────────────────────────
+reset();
+if (BG.thumb) {
+  state = 'play'; score = 14; scroll = 400;
+  pipes = [{ x: 170, top: 200, gap: 150, passed: true }, { x: 370, top: 280, gap: 150 }];
+  coins = [{ x: 300, y: 330, t: 1 }];
+  bird = { x: 110, y: 270, vy: -200, rot: -.3, wing: 1, squash: 0 };
+  BG.stop();
+} else BG.ready.then(showMenu);
+BG.loop(update, render);
+</script>
+</body>
+</html>

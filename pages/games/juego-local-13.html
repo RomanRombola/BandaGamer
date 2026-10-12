@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Doodle Jump</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  DOODLE SALTO — BandaGamer
+//  Plataformas: normal · móvil · frágil · de un uso · con resorte
+//  Jetpack y hélice · monstruos (pisalos o dispará hacia arriba)
+//  El fondo pasa de cuaderno de día → atardecer → noche → espacio
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 400, H = 640, GRAV = 1500, JUMP = -760, SPRING = -1250, PLW = 64, PLH = 14;
+const THEMES = [
+  { at: 0, bg: ['#fdf6e3', '#f3ead0'], line: 'rgba(80,140,220,.18)', ink: '#2b2b40' },
+  { at: 3000, bg: ['#ffd7a8', '#ff9e7a'], line: 'rgba(160,60,60,.15)', ink: '#3a1f2a' },
+  { at: 7000, bg: ['#22264d', '#0f1230'], line: 'rgba(120,140,255,.15)', ink: '#e8e8ff' },
+  { at: 12000, bg: ['#0a0018', '#000000'], line: 'rgba(200,100,255,.12)', ink: '#ffffff' },
+];
+
+BG.init({
+  id: 'doodle', title: 'DOODLE SALTO', icon: '🐸', accent: '#39d353', accent2: '#ffd400',
+  subtitle: 'Saltá de plataforma en plataforma lo más alto que puedas.',
+  hud: [{ id: 'score', label: 'Altura' }, { id: 'best', label: 'Récord', color: '#2ef2ff' }],
+  help: '<kbd>←</kbd><kbd>→</kbd> o <kbd>A</kbd><kbd>D</kbd> moverte · <kbd>Espacio</kbd>/<kbd>↑</kbd> disparar · <kbd>P</kbd> pausa',
+  helpTouch: 'Tocá a la izquierda o derecha para moverte · tocá ● para disparar.',
+  touch: { dpad: 'h', buttons: [{ action: 'action', label: '●' }] },
+  onRestart: () => start(), onMenu: () => showMenu(),
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+
+let pl, plats, monsters, shots, items, camY, maxH, state = 'menu', t = 0, genY, touchDir = 0, deadT = 0;
+
+function theme() { let th = THEMES[0]; for (const x of THEMES) if (maxH >= x.at) th = x; return th; }
+function makePlat(y) {
+  const h = maxH;
+  const r = Math.random();
+  let type = 'normal';
+  if (h > 600 && r < Math.min(.28, h / 12000)) type = 'move';
+  else if (h > 1200 && r < .38 + Math.min(.12, h / 30000)) type = 'break';
+  else if (h > 2500 && r < .48) type = 'once';
+  const p = { x: U.rand(6, W - PLW - 6), y, type, vx: type === 'move' ? U.pick([-1, 1]) * U.rand(50, 90 + Math.min(80, h / 100)) : 0, broken: false, used: false, fall: 0 };
+  if (type !== 'break' && Math.random() < .08) p.spring = { x: U.rand(8, PLW - 22), comp: 0 };
+  else if (type === 'normal' && h > 400 && Math.random() < .025) items.push({ type: U.chance(.5) ? 'jet' : 'heli', x: p.x + PLW / 2, y: y - 18, plat: p });
+  return p;
+}
+function genUpTo(top) {
+  while (genY > top) {
+    const gap = U.clamp(52 + maxH / 90, 52, 150) * U.rand(.75, 1.15);
+    genY -= gap;
+    const p = makePlat(genY);
+    plats.push(p);
+    // las frágiles no cuentan: garantizar que siempre haya una plataforma real alcanzable
+    if (p.type === 'break') { genY += gap * .45; plats.push({ ...makePlat(genY), type: 'normal', vx: 0, spring: null }); }
+    if (maxH > 1500 && Math.random() < Math.min(.06, maxH / 60000)) monsters.push({ x: U.rand(30, W - 30), y: genY - 70, vx: U.rand(-40, 40), t: U.rand(6), alive: true, kind: U.pick(['blob', 'eye', 'bat']) });
+  }
+}
+function start() {
+  pl = { x: W / 2, y: H - 100, vx: 0, vy: JUMP, face: 1, jet: 0, heli: 0, squash: 0, shootT: 0, dead: false };
+  plats = [{ x: W / 2 - PLW / 2, y: H - 40, type: 'normal', vx: 0 }];
+  monsters = []; shots = []; items = []; camY = 0; maxH = 0; genY = H - 40; deadT = 0;
+  genUpTo(-H);
+  BG.hud.setAll({ score: 0, best: BG.getBest() || 0 });
+  FX.clear(); state = 'play'; BG.start();
+}
+function showMenu() {
+  state = 'menu'; BG.stop();
+  if (!plats) { start(); BG.stop(); state = 'menu'; }
+  BG.ui.menu({ buttons: [{ label: '▶ JUGAR', primary: true, onClick: start }] });
+}
+function die(reason) {
+  if (pl.dead) return;
+  pl.dead = true; state = 'dead'; deadT = 0; BG.stop();
+  SFX.play(reason === 'monster' ? 'hurt' : 'lose');
+  if (reason === 'monster') { pl.vy = -300; FX.shake(6, .3); }
+  const score = Math.floor(maxH / 10);
+  const r = BG.submitScore(score);
+  setTimeout(() => BG.ui.gameOver({
+    icon: reason === 'monster' ? '👾' : '🐸', title: reason === 'monster' ? '¡TE ATRAPARON!' : '¡TE CAÍSTE!', score, scoreLabel: 'ALTURA',
+    isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Récord', value: U.fmt(BG.getBest() || score) }], onRetry: start, onMenu: showMenu,
+  }), 1100);
+}
+function shoot() {
+  if (pl.dead || pl.shootT > 0) return;
+  pl.shootT = .22;
+  shots.push({ x: pl.x, y: pl.y - 26, vy: -900 });
+  SFX.play('shoot');
+}
+BG.input.on('action', () => state === 'play' && shoot()).on('up', () => state === 'play' && shoot());
+
+function update(dt) {
+  t += dt;
+  if (state === 'menu') return;
+  const I = BG.input;
+  // movimiento horizontal (con inercia suave) y aparición del otro lado
+  const ax = touchDir || I.axisX();
+  if (!pl.dead) { if (ax) pl.face = ax; pl.vx = U.lerp(pl.vx, ax * 340, Math.min(1, dt * 10)); }
+  pl.x += pl.vx * dt;
+  if (pl.x < -20) pl.x = W + 20; if (pl.x > W + 20) pl.x = -20;
+  // vuelo
+  if (pl.jet > 0) { pl.jet -= dt; pl.vy = -950; if (Math.random() < .9) FX.burst(pl.x - pl.face * 10, pl.y + 20, { n: 2, color: ['#ff9a1f', '#ffd400', '#888'], speed: 120, angle: Math.PI / 2, spread: .4, life: .4, size: 4 }); if (pl.jet <= 0) pl.vy = -400; }
+  else if (pl.heli > 0) { pl.heli -= dt; pl.vy = -620; if (pl.heli <= 0) pl.vy = -300; }
+  else pl.vy += GRAV * dt;
+  const prevY = pl.y;
+  pl.y += pl.vy * dt;
+  pl.squash = Math.max(0, pl.squash - dt * 6); pl.shootT = Math.max(0, pl.shootT - dt);
+  // aterrizaje en plataformas (solo cayendo)
+  if (!pl.dead && pl.vy > 0 && !pl.jet && !pl.heli) {
+    for (const p of plats) {
+      if (p.broken || p.used && p.type === 'once') continue;
+      const feetPrev = prevY + 22, feet = pl.y + 22;
+      if (feetPrev <= p.y + 2 && feet >= p.y && pl.x + 14 > p.x && pl.x - 14 < p.x + PLW) {
+        if (p.type === 'break') { p.broken = true; SFX.play('flip'); FX.burst(p.x + PLW / 2, p.y, { n: 10, color: ['#8b5a2b', '#c08040'], speed: 120, life: .5, gravity: 600, shape: 'square' }); continue; }
+        pl.y = p.y - 22;
+        if (p.spring && pl.x > p.x + p.spring.x - 6 && pl.x < p.x + p.spring.x + 20) { pl.vy = SPRING; p.spring.comp = 1; SFX.play('jump'); SFX.tone({ f: 200, f2: 900, dur: .3, type: 'sine', vol: .2 }); }
+        else { pl.vy = JUMP; SFX.tone({ f: 320, f2: 640, dur: .1, type: 'square', vol: .09 }); }
+        pl.squash = 1;
+        if (p.type === 'once') { p.used = true; FX.burst(p.x + PLW / 2, p.y, { n: 14, color: ['#fff', '#cfe8ff'], speed: 110, life: .4 }); }
+        break;
+      }
+    }
+  }
+  // plataformas que se mueven / caen
+  for (const p of plats) {
+    if (p.type === 'move') { p.x += p.vx * dt; if (p.x < 4 || p.x > W - PLW - 4) p.vx *= -1; }
+    if (p.broken) { p.fall += dt; p.y += 500 * dt * p.fall * 3; }
+    if (p.spring) p.spring.comp = Math.max(0, p.spring.comp - dt * 4);
+  }
+  // ítems
+  for (const it of items) { if (it.plat && it.plat.type === 'move') it.x = it.plat.x + PLW / 2; if (!it.got && !pl.dead && Math.abs(it.x - pl.x) < 22 && Math.abs(it.y - pl.y) < 30) { it.got = true; if (it.type === 'jet') pl.jet = 2.6; else pl.heli = 2.2; SFX.play('power'); BG.ui.toast(it.type === 'jet' ? '¡JETPACK!' : '¡HÉLICE!', '#ffd400'); } }
+  // monstruos
+  for (const m of monsters) {
+    if (!m.alive) continue;
+    m.t += dt; m.x += m.vx * dt; if (m.x < 24 || m.x > W - 24) m.vx *= -1;
+    const my = m.y + Math.sin(m.t * 3) * 8;
+    if (!pl.dead && Math.abs(m.x - pl.x) < 30 && Math.abs(my - pl.y) < 30) {
+      if (pl.jet > 0 || pl.heli > 0) { m.alive = false; FX.burst(m.x, my, { n: 20, color: ['#c04dff', '#fff'], speed: 200 }); SFX.play('hit'); }
+      else if (pl.vy > 0 && pl.y < my - 6) { m.alive = false; pl.vy = JUMP * 1.1; SFX.play('pop'); FX.burst(m.x, my, { n: 20, color: ['#c04dff', '#39ff88', '#fff'], speed: 200 }); maxH += 100; }
+      else die('monster');
+    }
+    for (const s of shots) if (m.alive && Math.abs(s.x - m.x) < 24 && Math.abs(s.y - my) < 24) { m.alive = false; s.dead = true; SFX.play('hit'); FX.burst(m.x, my, { n: 18, color: ['#c04dff', '#fff'], speed: 200 }); FX.text(m.x, my, '+50', { color: '#c04dff' }); maxH += 50; }
+  }
+  for (const s of shots) s.y += s.vy * dt;
+  shots = shots.filter(s => !s.dead && s.y > camY - 40);
+  // cámara: sube con el jugador (nunca baja)
+  const target = pl.y - H * .42;
+  if (target < camY) camY = target;
+  const h = Math.max(maxH, Math.floor(-(camY) + 0));
+  if (h > maxH) maxH = h;
+  BG.hud.set('score', Math.floor(maxH / 10));
+  genUpTo(camY - H);
+  plats = plats.filter(p => p.y < camY + H + 60);
+  monsters = monsters.filter(m => m.y < camY + H + 80);
+  items = items.filter(i => !i.got && i.y < camY + H + 60);
+  // caída
+  if (!pl.dead && pl.y > camY + H + 40) die('fall');
+  if (pl.dead) { deadT += dt; if (pl.y < camY + H * 2) camY = U.lerp(camY, pl.y - H * .5, dt * 2); }
+}
+
+// ── Dibujo ────────────────────────────────────────────────────────────────
+function drawPlayer() {
+  const x = pl.x, y = pl.y - camY;
+  ctx.save(); ctx.translate(x, y); ctx.scale(pl.face, 1);
+  const sq = 1 + pl.squash * .2; ctx.scale(1 / sq, sq * (pl.squash ? .92 : 1));
+  const th = theme();
+  // patas
+  ctx.strokeStyle = th.ink; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  const leg = pl.vy < 0 ? 4 : 8;
+  for (const lx of [-8, -1, 6]) { ctx.beginPath(); ctx.moveTo(lx, 12); ctx.lineTo(lx - 2, 12 + leg); ctx.stroke(); }
+  // cuerpo
+  ctx.fillStyle = '#9be15d'; ctx.strokeStyle = th.ink; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(-15, 14); ctx.quadraticCurveTo(-18, -18, 2, -20); ctx.quadraticCurveTo(18, -18, 14, 4); ctx.lineTo(14, 14); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // franjas
+  ctx.strokeStyle = 'rgba(40,120,40,.6)'; ctx.lineWidth = 2;
+  for (const sy of [4, 9]) { ctx.beginPath(); ctx.moveTo(-14, sy); ctx.lineTo(14, sy); ctx.stroke(); }
+  // trompa / cañón
+  ctx.fillStyle = '#9be15d'; ctx.strokeStyle = th.ink; ctx.lineWidth = 2.5;
+  if (pl.shootT > 0) { ctx.beginPath(); ctx.rect(-3, -34, 8, 16); ctx.fill(); ctx.stroke(); }
+  else { ctx.beginPath(); ctx.rect(12, -10, 14, 8); ctx.fill(); ctx.stroke(); }
+  // ojo
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(4, -9, 4.5, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(5.5, -9, 2, 0, 7); ctx.fill();
+  // accesorios de vuelo
+  if (pl.jet > 0) { ctx.fillStyle = '#9aa0b5'; ctx.fillRect(-24, -8, 9, 22); ctx.strokeRect(-24, -8, 9, 22); }
+  if (pl.heli > 0) { ctx.strokeStyle = th.ink; ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(0, -28); ctx.stroke(); const w = Math.cos(t * 40) * 18; ctx.beginPath(); ctx.moveTo(-w, -29); ctx.lineTo(w, -29); ctx.stroke(); }
+  if (pl.dead && state === 'dead') { ctx.strokeStyle = '#ff3d6e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(1, -12); ctx.lineTo(8, -6); ctx.moveTo(8, -12); ctx.lineTo(1, -6); ctx.stroke(); }
+  ctx.restore();
+}
+function drawPlat(p) {
+  const y = p.y - camY; if (y < -20 || y > H + 20) return;
+  const col = { normal: ['#7ed957', '#3f9c2a'], move: ['#5ec8ff', '#2a7fc0'], break: ['#c08a4a', '#7a5226'], once: ['#ffffff', '#b9c8d8'] }[p.type];
+  ctx.save(); ctx.translate(p.x, y);
+  if (p.broken) { ctx.rotate(p.fall * 2); ctx.globalAlpha = Math.max(0, 1 - p.fall * 1.5); }
+  const g = ctx.createLinearGradient(0, 0, 0, PLH); g.addColorStop(0, col[0]); g.addColorStop(1, col[1]);
+  ctx.fillStyle = g; ctx.strokeStyle = theme().ink; ctx.lineWidth = 2;
+  D.rr(ctx, 0, 0, PLW, PLH, 7); ctx.fill(); ctx.stroke();
+  if (p.type === 'break') { ctx.beginPath(); ctx.moveTo(PLW * .35, 0); ctx.lineTo(PLW * .45, PLH * .6); ctx.lineTo(PLW * .4, PLH); ctx.moveTo(PLW * .65, 0); ctx.lineTo(PLW * .58, PLH); ctx.stroke(); }
+  if (p.spring) {
+    const c = p.spring.comp, sx = p.spring.x;
+    ctx.strokeStyle = '#888'; ctx.lineWidth = 2; ctx.beginPath();
+    const hgt = 14 - c * 6 + (c ? 0 : 0);
+    for (let i = 0; i <= 4; i++) { const yy = -i * hgt / 4; ctx.lineTo(sx + (i % 2 ? 14 : 0), yy); }
+    ctx.stroke(); ctx.fillStyle = '#ffd400'; ctx.fillRect(sx - 2, -hgt - 4, 18, 4);
+  }
+  ctx.restore();
+}
+function drawMonster(m) {
+  const y = m.y - camY + Math.sin(m.t * 3) * 8; if (y < -40 || y > H + 40) return;
+  ctx.save(); ctx.translate(m.x, y);
+  const wob = Math.sin(m.t * 8) * 3;
+  if (m.kind === 'blob') { ctx.fillStyle = '#c04dff'; ctx.beginPath(); ctx.ellipse(0, 0, 26 + wob, 20 - wob * .5, 0, 0, 7); ctx.fill(); }
+  else if (m.kind === 'eye') { ctx.fillStyle = '#ff3d6e'; ctx.beginPath(); ctx.arc(0, 0, 22, 0, 7); ctx.fill(); for (let i = 0; i < 8; i++) { const a = i / 8 * 7 + m.t; ctx.strokeStyle = '#ff3d6e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 20, Math.sin(a) * 20); ctx.lineTo(Math.cos(a) * 30, Math.sin(a) * 30); ctx.stroke(); } }
+  else { ctx.fillStyle = '#4a4a6a'; ctx.beginPath(); ctx.ellipse(0, 0, 14, 12, 0, 0, 7); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -2); ctx.lineTo(-34, -12 + wob * 3); ctx.lineTo(-26, 6); ctx.closePath(); ctx.moveTo(10, -2); ctx.lineTo(34, -12 + wob * 3); ctx.lineTo(26, 6); ctx.closePath(); ctx.fill(); }
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-7, -4, 6, 0, 7); ctx.arc(7, -4, 6, 0, 7); ctx.fill();
+  ctx.fillStyle = '#111'; const lx = U.clamp((pl.x - m.x) / 60, -2, 2); ctx.beginPath(); ctx.arc(-7 + lx, -3, 2.5, 0, 7); ctx.arc(7 + lx, -3, 2.5, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#111'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 6, 6, .2, Math.PI - .2); ctx.stroke();
+  ctx.restore();
+}
+function render() {
+  const th = theme();
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, th.bg[0]); g.addColorStop(1, th.bg[1]);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // hoja cuadriculada que se desplaza con la cámara
+  ctx.strokeStyle = th.line; ctx.lineWidth = 1;
+  const off = ((-camY * .5) % 20 + 20) % 20;
+  ctx.beginPath();
+  for (let x = 10; x < W; x += 20) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let y = off; y < H; y += 20) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.stroke();
+  if (maxH >= 7000) for (let i = 0; i < 40; i++) { const sx = (i * 97) % W, sy = ((i * 61 - camY * .2) % H + H) % H; ctx.fillStyle = `rgba(255,255,255,${.3 + (i % 3) * .2})`; ctx.fillRect(sx, sy, 2, 2); }
+  if (!plats) return;
+  ctx.save(); FX.applyShake(ctx);
+  for (const p of plats) drawPlat(p);
+  for (const it of items) { const y = it.y - camY; D.text(ctx, it.type === 'jet' ? '🚀' : '🧢', it.x, y + Math.sin(t * 4) * 3, { size: 22, family: 'body' }); }
+  for (const m of monsters) if (m.alive) drawMonster(m);
+  for (const s of shots) { ctx.fillStyle = th.ink; ctx.beginPath(); ctx.arc(s.x, s.y - camY, 5, 0, 7); ctx.fill(); }
+  ctx.save(); ctx.translate(0, -camY); FX.draw(ctx); ctx.restore();
+  if (state !== 'menu') drawPlayer();
+  ctx.restore();
+  // marca del récord
+  const best = BG.getBest();
+  if (best && state === 'play') {
+    const ry = (-best * 10 + H * .42) - camY;   // altura del jugador cuando hizo el récord
+    if (ry > 0 && ry < H) { ctx.strokeStyle = 'rgba(255,61,110,.7)'; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.moveTo(0, ry); ctx.lineTo(W, ry); ctx.stroke(); ctx.setLineDash([]); D.text(ctx, 'RÉCORD', W - 40, ry - 8, { size: 9, color: '#ff3d6e' }); }
+  }
+}
+
+// ── Táctil: mitad izquierda / derecha de la pantalla ──────────────────────
+const tps = new Map();
+const recompute = () => { let d = 0; tps.forEach(v => d += v); touchDir = U.clamp(d, -1, 1); };
+view.canvas.addEventListener('pointerdown', e => { if (state !== 'play') return; const p = view.toLocal(e.clientX, e.clientY); tps.set(e.pointerId, p.x < W / 2 ? -1 : 1); recompute(); });
+view.canvas.addEventListener('pointermove', e => { if (!tps.has(e.pointerId)) return; const p = view.toLocal(e.clientX, e.clientY); tps.set(e.pointerId, p.x < W / 2 ? -1 : 1); recompute(); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => view.canvas.addEventListener(ev, e => { tps.delete(e.pointerId); recompute(); }));
+
+// ── Arranque ──────────────────────────────────────────────────────────────
+if (BG.thumb) {
+  start(); BG.stop(); state = 'thumb'; maxH = 3200;
+  camY = -300; pl.y = -300 + 330; pl.vy = -300; pl.face = 1;
+  plats = [{ x: 60, y: -300 + 520, type: 'normal' }, { x: 230, y: -300 + 440, type: 'move', vx: 0 }, { x: 120, y: -300 + 380, type: 'normal', spring: { x: 20, comp: 0 } }, { x: 280, y: -300 + 300, type: 'break' }, { x: 40, y: -300 + 220, type: 'once' }, { x: 200, y: -300 + 150, type: 'normal' }, { x: 300, y: -300 + 80, type: 'move', vx: 0 }];
+  monsters = [{ x: 310, y: -300 + 190, t: 0, alive: true, kind: 'blob' }]; items = [{ type: 'jet', x: 232, y: -300 + 130 }];
+  update = () => {};
+} else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>2048</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+<style>
+#wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+#board { position: relative; background: #12122a; border-radius: 16px; box-shadow: 0 0 0 1px rgba(255,170,0,.25), 0 16px 50px rgba(0,0,0,.6), inset 0 0 40px rgba(0,0,0,.4); touch-action: none; }
+.cell { position: absolute; border-radius: 10px; background: rgba(255,255,255,.045); box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); }
+.tile { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-family: 'Orbitron', sans-serif; font-weight: 900; color: #fff;
+  transition: transform .11s ease-in-out; will-change: transform; z-index: 2; }
+.tile .in { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+.tile.new .in { animation: pop .18s ease .06s both; }
+.tile.merged .in { animation: bump .2s ease; }
+.tile.dying { z-index: 1; }
+@keyframes pop { from { transform: scale(0); } 70% { transform: scale(1.08); } to { transform: scale(1); } }
+@keyframes bump { 50% { transform: scale(1.18); } }
+#bar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+#bar .bg-btn { padding: 9px 14px; font-size: 12px; }
+.plus { position: absolute; pointer-events: none; font-family: 'Orbitron', sans-serif; font-weight: 900; color: #ffd36b; text-shadow: 0 0 10px rgba(255,180,0,.8); animation: up .8s ease forwards; z-index: 5; }
+@keyframes up { to { transform: translateY(-50px); opacity: 0; } }
+</style>
+</head>
+<body>
+<div id="bg-stage">
+  <div id="wrap">
+    <div id="board"></div>
+    <div id="bar">
+      <button class="bg-btn" id="b-undo">↶ DESHACER</button>
+      <button class="bg-btn" id="b-new">↻ NUEVA</button>
+      <button class="bg-btn" id="b-menu">☰ MODOS</button>
+    </div>
+  </div>
+</div>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  2048 — BandaGamer
+//  Tableros 3×3 · 4×4 · 5×5 · 6×6 con récord propio · animaciones de deslizamiento
+//  y fusión · deshacer · la partida se guarda sola · swipe en celulares
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, sfx: SFX } = BG;
+const MODES = { 3: { name: '3×3 MINI', undo: 5 }, 4: { name: '4×4 CLÁSICO', undo: 3 }, 5: { name: '5×5 GRANDE', undo: 3 }, 6: { name: '6×6 GIGANTE', undo: 3 } };
+const COLORS = {
+  2: ['#3a3a5c', '#4a4a72'], 4: ['#45457a', '#5b4f96'], 8: ['#ff8a3d', '#ff5f6d'], 16: ['#ff6a3d', '#ff3d6e'], 32: ['#ff3d6e', '#d6307a'],
+  64: ['#ff2a4f', '#b81e3c'], 128: ['#ffd23f', '#ff9d00'], 256: ['#ffc400', '#ff7a00'], 512: ['#a6ff3d', '#2fd85a'], 1024: ['#2ef2ff', '#2b7bff'],
+  2048: ['#c04dff', '#ff3dd0'], 4096: ['#ff3dd0', '#ff2a4f'], 8192: ['#00ffa3', '#00a3ff'],
+};
+
+BG.init({
+  id: '2048', title: '2048', icon: '🔢', accent: '#ffb300', accent2: '#ff5f6d', scroll: true,
+  subtitle: 'Deslizá y juntá fichas iguales hasta llegar a 2048. ¿Y después?',
+  hud: [{ id: 'score', label: 'Puntos' }, { id: 'best', label: 'Récord', color: '#2ef2ff' }, { id: 'max', label: 'Ficha máx.', color: '#c04dff' }],
+  help: '<kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> o <kbd>WASD</kbd> para mover · <kbd>U</kbd> deshacer',
+  helpTouch: 'Deslizá el dedo sobre el tablero.',
+  pausable: false,
+});
+
+const boardEl = document.getElementById('board');
+let N = BG.load('size', 4), grid, tiles, score, undoLeft, history, wonShown, over, busy = false, idSeq = 0;
+let CELL = 80, GAP = 10;
+
+function layout() {
+  const st = BG.stage.getBoundingClientRect();
+  const avail = Math.min(st.width - 24, st.height - 80, 560);
+  GAP = Math.max(6, Math.round(avail * (N <= 4 ? .028 : .02)));
+  CELL = Math.floor((avail - GAP * (N + 1)) / N);
+  const size = CELL * N + GAP * (N + 1);
+  boardEl.style.width = boardEl.style.height = size + 'px';
+  boardEl.querySelectorAll('.cell').forEach(c => c.remove());
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const d = document.createElement('div'); d.className = 'cell';
+    Object.assign(d.style, { width: CELL + 'px', height: CELL + 'px', left: GAP + c * (CELL + GAP) + 'px', top: GAP + r * (CELL + GAP) + 'px' });
+    boardEl.appendChild(d);
+  }
+  tiles.forEach(t => place(t, true));
+}
+const pos = n => GAP + n * (CELL + GAP);
+function fontFor(v) { const len = String(v).length; return Math.round(CELL * (len <= 2 ? .44 : len === 3 ? .36 : len === 4 ? .29 : .23)); }
+function paint(t) {
+  const [a, b] = COLORS[t.v] || ['#ffffff', '#c04dff'];
+  const inner = t.el.firstChild;
+  inner.textContent = t.v;
+  inner.style.background = `linear-gradient(135deg, ${a}, ${b})`;
+  inner.style.boxShadow = t.v >= 128 ? `0 0 ${Math.min(30, 6 + Math.log2(t.v) * 2)}px ${a}aa, inset 0 -3px 0 rgba(0,0,0,.2)` : 'inset 0 -3px 0 rgba(0,0,0,.2)';
+  inner.style.fontSize = fontFor(t.v) + 'px';
+  inner.style.color = t.v <= 4 ? '#e4e4ff' : '#fff';
+}
+function place(t, instant) {
+  t.el.style.width = t.el.style.height = CELL + 'px';
+  if (instant) { t.el.style.transition = 'none'; requestAnimationFrame(() => { t.el.style.transition = ''; }); }
+  t.el.style.transform = `translate(${pos(t.c)}px, ${pos(t.r)}px)`;
+}
+function makeTile(r, c, v, isNew) {
+  const el = document.createElement('div'); el.className = 'tile' + (isNew ? ' new' : '');
+  el.appendChild(document.createElement('div')).className = 'in';
+  const t = { id: ++idSeq, r, c, v, el };
+  boardEl.appendChild(el); paint(t); place(t, true);
+  tiles.push(t); grid[r][c] = t;
+  return t;
+}
+function addRandom() {
+  const empty = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!grid[r][c]) empty.push([r, c]);
+  if (!empty.length) return;
+  const [r, c] = U.pick(empty);
+  makeTile(r, c, Math.random() < .9 ? 2 : 4, true);
+}
+
+function snapshot() { return { g: grid.map(row => row.map(t => t ? t.v : 0)), score }; }
+function restore(s) {
+  tiles.forEach(t => t.el.remove()); tiles = [];
+  grid = Array.from({ length: N }, () => Array(N).fill(null));
+  s.g.forEach((row, r) => row.forEach((v, c) => { if (v) makeTile(r, c, v, false); }));
+  score = s.score; hud();
+}
+function save() { BG.save('game' + N, { ...snapshot(), undoLeft, wonShown, over }); }
+
+function newGame(size) {
+  if (size) { N = size; BG.save('size', N); }
+  tiles && tiles.forEach(t => t.el.remove());
+  tiles = []; grid = Array.from({ length: N }, () => Array(N).fill(null));
+  score = 0; undoLeft = MODES[N].undo; history = []; wonShown = false; over = false;
+  layout(); addRandom(); addRandom(); hud(); save();
+  BG.start();
+}
+function loadOrNew(size) {
+  N = size || N;
+  const s = BG.load('game' + N, null);
+  if (s && s.g && s.g.length === N && !s.over) {
+    tiles && tiles.forEach(t => t.el.remove());
+    tiles = []; grid = Array.from({ length: N }, () => Array(N).fill(null));
+    history = []; layout(); restore(s); undoLeft = s.undoLeft ?? MODES[N].undo; wonShown = !!s.wonShown; over = false;
+    hud(); BG.start();
+  } else newGame(N);
+}
+function maxTile() { return tiles.reduce((m, t) => Math.max(m, t.v), 0); }
+function hud(bump) {
+  BG.hud.set('score', score, bump);
+  BG.hud.set('best', Math.max(BG.getBest('n' + N) || 0, score));
+  BG.hud.set('max', maxTile());
+  document.getElementById('b-undo').textContent = `↶ DESHACER (${undoLeft})`;
+  document.getElementById('b-undo').disabled = !history.length || undoLeft <= 0;
+}
+
+function move(dir) {
+  if (busy || over || BG.ui.open) return;
+  const d = { left: [0, -1], right: [0, 1], up: [-1, 0], down: [1, 0] }[dir];
+  const before = snapshot();
+  const order = [...Array(N).keys()];
+  const rows = d[0] === 1 ? [...order].reverse() : order, cols = d[1] === 1 ? [...order].reverse() : order;
+  let moved = false, gained = 0;
+  const mergedSet = new Set(), dying = [];
+  for (const r of rows) for (const c of cols) {
+    const t = grid[r][c]; if (!t) continue;
+    let nr = r, nc = c;
+    while (nr + d[0] >= 0 && nr + d[0] < N && nc + d[1] >= 0 && nc + d[1] < N && !grid[nr + d[0]][nc + d[1]]) { nr += d[0]; nc += d[1]; }
+    const nx = nr + d[0], ny = nc + d[1];
+    const next = (nx >= 0 && nx < N && ny >= 0 && ny < N) ? grid[nx][ny] : null;
+    if (next && next.v === t.v && !mergedSet.has(next)) {
+      grid[r][c] = null; t.r = nx; t.c = ny; dying.push(t); t.el.classList.add('dying');
+      next.v *= 2; mergedSet.add(next); gained += next.v; moved = true;
+    } else if (nr !== r || nc !== c) {
+      grid[r][c] = null; grid[nr][nc] = t; t.r = nr; t.c = nc; moved = true;
+    }
+  }
+  if (!moved) { boardEl.animate([{ transform: 'translateX(0)' }, { transform: `translate(${d[1] * 5}px, ${d[0] * 5}px)` }, { transform: 'translateX(0)' }], { duration: 120 }); return; }
+  history.push(before); if (history.length > 20) history.shift();
+  busy = true;
+  tiles.forEach(t => { t.el.classList.remove('new', 'merged'); place(t); });
+  SFX.play('swap');
+  setTimeout(() => {
+    dying.forEach(t => { t.el.remove(); tiles.splice(tiles.indexOf(t), 1); });
+    mergedSet.forEach(t => {
+      paint(t); void t.el.offsetWidth; t.el.classList.add('merged');
+      if (t.v >= 128) SFX.play('combo', Math.log2(t.v) - 4);
+      if (t.v >= 512) BG.fx && sparkle(t);
+    });
+    if (gained) { score += gained; plus(gained); if (mergedSet.size) SFX.play('pop'); }
+    addRandom(); hud(!!gained); busy = false;
+    const mx = maxTile();
+    if (mx >= 2048 && !wonShown) { wonShown = true; save(); win(); return; }
+    if (!canMove()) { lose(); return; }
+    save();
+  }, 115);
+}
+function plus(n) {
+  const p = document.createElement('div'); p.className = 'plus'; p.textContent = '+' + n;
+  p.style.left = '50%'; p.style.top = '-6px'; p.style.transform = 'translateX(-50%)';
+  p.style.fontSize = Math.min(28, 14 + Math.log2(n)) + 'px';
+  boardEl.appendChild(p); setTimeout(() => p.remove(), 800);
+}
+function sparkle(t) {
+  for (let i = 0; i < 10; i++) {
+    const s = document.createElement('div'); s.className = 'plus'; s.textContent = '✦';
+    s.style.left = pos(t.c) + CELL / 2 + U.rand(-CELL / 2, CELL / 2) + 'px'; s.style.top = pos(t.r) + CELL / 2 + U.rand(-CELL / 2, CELL / 2) + 'px';
+    s.style.fontSize = '14px'; boardEl.appendChild(s); setTimeout(() => s.remove(), 800);
+  }
+}
+function canMove() {
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const t = grid[r][c]; if (!t) return true;
+    if (c + 1 < N && grid[r][c + 1] && grid[r][c + 1].v === t.v) return true;
+    if (r + 1 < N && grid[r + 1][c] && grid[r + 1][c].v === t.v) return true;
+  }
+  return false;
+}
+function undo() {
+  if (busy || !history.length || undoLeft <= 0 || BG.ui.open) return;
+  undoLeft--; restore(history.pop()); over = false; hud(); save(); SFX.play('back');
+}
+function win() {
+  SFX.play('win');
+  BG.ui.show({
+    icon: '🏆', title: '¡2048!', tone: 'good', sub: '¡Lo lograste! Podés seguir jugando para superar tu récord.',
+    score, scoreLabel: 'PUNTOS',
+    buttons: [{ label: '▶ SEGUIR JUGANDO', primary: true, onClick: () => BG.ui.hide() }, { label: '↻ NUEVA PARTIDA', onClick: () => { submit(); newGame(); } }],
+  });
+}
+function submit() { return BG.submitScore(score, { mode: 'n' + N }); }
+function lose() {
+  over = true; save(); BG.stop();
+  const r = submit();
+  SFX.play('lose');
+  setTimeout(() => BG.ui.gameOver({
+    icon: '🔢', title: 'SIN MOVIMIENTOS', score, isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Récord', value: U.fmt(BG.getBest('n' + N) || score) }, { label: 'Ficha máx.', value: maxTile() }, { label: 'Modo', value: MODES[N].name }],
+    onRetry: () => newGame(), onMenu: showMenu,
+    buttons: undoLeft > 0 && history.length ? [{ label: `↶ DESHACER (${undoLeft})`, onClick: () => { BG.ui.hide(); BG.start(); undo(); } }] : null,
+  }), 500);
+}
+function showMenu() {
+  BG.ui.show({
+    icon: '🔢', title: '2048', sub: 'Elegí el tamaño del tablero. Cada uno tiene su propio récord y su partida guardada.',
+    buttons: Object.keys(MODES).map(k => {
+      const b = BG.getBest('n' + k), saved = BG.load('game' + k, null);
+      return {
+        label: MODES[k].name + (Number(k) === N ? ' ●' : ''), primary: Number(k) === N,
+        small: (b ? 'Récord ' + U.fmt(b) : 'Sin récord') + (saved && !saved.over && saved.score ? ` · continuar (${U.fmt(saved.score)})` : ''),
+        onClick: () => { BG.ui.hide(); loadOrNew(Number(k)); },
+      };
+    }),
+    help: BG.isTouch ? BG.game.helpTouch : BG.game.help,
+    onBack: () => BG.ui.hide(),
+  });
+}
+
+// ── Controles ─────────────────────────────────────────────────────────────
+['left', 'right', 'up', 'down'].forEach(d => BG.input.on(d, () => move(d)));
+BG.input.onKey((e, code, down) => { if (down && code === 'KeyU' && !e.repeat) undo(); });
+BG.input.swipe(boardEl, d => move(d), 22);
+document.getElementById('b-undo').onclick = undo;
+document.getElementById('b-new').onclick = () => { if (score > 0 && !over) submit(); newGame(); SFX.play('select'); };
+document.getElementById('b-menu').onclick = showMenu;
+new ResizeObserver(() => { if (tiles) layout(); }).observe(BG.stage);
+
+// ── Arranque ──────────────────────────────────────────────────────────────
+tiles = []; grid = [];
+if (BG.thumb) {
+  N = 4; tiles = []; grid = Array.from({ length: 4 }, () => Array(4).fill(null)); layout();
+  [[2, 4, 8, 16], [32, 64, 128, 256], [512, 1024, 2048, 4], [2, 8, 0, 2]].forEach((row, r) => row.forEach((v, c) => v && makeTile(r, c, v)));
+  document.getElementById('bar').style.display = 'none';
+} else {
+  BG.ready.then(() => loadOrNew(N));
+}
+</script>
+</body>
+</html>

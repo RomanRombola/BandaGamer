@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tetris</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  TETRIS — BandaGamer
+//  Rotación SRS con wall-kicks · bolsa de 7 · hold · 5 siguientes · lock delay
+//  T-spins · combos · back-to-back · modos Maratón / Sprint 40 / Ultra 2:00
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+
+const COLS = 10, ROWS = 20, HID = 2, TOT = ROWS + HID, CS = 30;
+const W = 536, H = 672, BX = 118, BY = 36;          // tablero en coordenadas lógicas
+const DAS = 0.16, ARR = 0.035, LOCK = 0.5, MAX_RESETS = 15, CLEAR_T = 0.32;
+const MODES = {
+  marathon: { name: 'MARATÓN', rec: 'default', order: 'desc' },
+  sprint:   { name: 'SPRINT 40', rec: 'sprint', order: 'asc' },
+  ultra:    { name: 'ULTRA 2:00', rec: 'ultra', order: 'desc' },
+};
+const COLORS = { I: '#00e5ff', O: '#ffd400', T: '#c04dff', S: '#33f26b', Z: '#ff3d5a', J: '#3d7bff', L: '#ff9a1f', G: '#4a4a63' };
+const SHAPES = {
+  I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+  J: [[1,0,0],[1,1,1],[0,0,0]],
+  L: [[0,0,1],[1,1,1],[0,0,0]],
+  O: [[1,1],[1,1]],
+  S: [[0,1,1],[1,1,0],[0,0,0]],
+  T: [[0,1,0],[1,1,1],[0,0,0]],
+  Z: [[1,1,0],[0,1,1],[0,0,0]],
+};
+// Las 4 rotaciones de cada pieza (girar la matriz cuadrada = centro SRS)
+const ROT = {};
+for (const t in SHAPES) {
+  ROT[t] = [SHAPES[t]];
+  for (let i = 1; i < 4; i++) { const p = ROT[t][i - 1]; ROT[t].push(p[0].map((_, c) => p.map(r => r[c]).reverse())); }
+}
+// Tablas de wall-kick SRS (x, y con y hacia ARRIBA, como en la guía oficial)
+const KJ = {
+  '01': [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]], '10': [[0,0],[1,0],[1,-1],[0,2],[1,2]],
+  '12': [[0,0],[1,0],[1,-1],[0,2],[1,2]],     '21': [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+  '23': [[0,0],[1,0],[1,1],[0,-2],[1,-2]],    '32': [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+  '30': [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],  '03': [[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+};
+const KI = {
+  '01': [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],   '10': [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+  '12': [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],   '21': [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
+  '23': [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],   '32': [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+  '30': [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],   '03': [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],
+};
+
+BG.init({
+  id: 'tetris', title: 'TETRIS', icon: '🧱', accent: '#00b7ff', accent2: '#b44dff', music: true,
+  subtitle: 'Rotación SRS, hold, T-spins y 3 modos de juego.',
+  hud: [
+    { id: 'score', label: 'Puntos' },
+    { id: 'level', label: 'Nivel', color: '#ffd400' },
+    { id: 'lines', label: 'Líneas', color: '#33f26b' },
+    { id: 'time', label: 'Tiempo', color: '#ff9a1f', value: '0:00' },
+  ],
+  help: '<kbd>←</kbd><kbd>→</kbd> mover · <kbd>↑</kbd>/<kbd>X</kbd> girar · <kbd>Z</kbd> girar al revés<br><kbd>↓</kbd> bajar · <kbd>Espacio</kbd> caída instantánea · <kbd>C</kbd> guardar · <kbd>P</kbd> pausa',
+  helpTouch: 'Tocá el tablero para girar · arrastrá para mover · deslizá rápido ↓ para soltar · ↑ para guardar',
+  touch: { dpad: 'full', buttons: [{ action: 'rotCCW', label: '⟲' }, { action: 'rotCW', label: '⟳' }, { action: 'hold', label: 'HOLD', wide: true }] },
+  onRestart: () => startGame(mode),
+  onMenu: () => showMenu(),
+});
+BG.input.map = {
+  left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'], soft: ['ArrowDown', 'KeyS'], hard: ['Space'],
+  rotCW: ['ArrowUp', 'KeyX', 'KeyW'], rotCCW: ['KeyZ', 'ControlLeft', 'ControlRight', 'KeyQ'],
+  hold: ['KeyC', 'ShiftLeft', 'ShiftRight', 'KeyE'], pause: ['KeyP', 'Escape'], confirm: ['Enter', 'NumpadEnter', 'Space'],
+};
+
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+
+// ── Estado ────────────────────────────────────────────────────────────────
+let board, queue, cur, hold, holdUsed, score, level, lines, combo, b2b, mode = 'marathon';
+let timer, gravAcc, lockT, lockResets, lowestY, lastRot, lastKick, clearing, over, softDrop;
+let das = { dir: 0, t: 0, arr: 0 }, countdown = 0, overAnim = 0, actionText = null, bgT = 0;
+let stats = { tetris: 0, tspin: 0, maxCombo: 0, pieces: 0 };
+
+const emptyRow = () => Array(COLS).fill(null);
+function refill() { while (queue.length < 7) queue.push(...U.shuffle(['I', 'J', 'L', 'O', 'S', 'T', 'Z'])); }
+function fits(m, x, y) {
+  for (let r = 0; r < m.length; r++) for (let c = 0; c < m[r].length; c++) {
+    if (!m[r][c]) continue;
+    const bx = x + c, by = y + r;
+    if (bx < 0 || bx >= COLS || by >= TOT) return false;
+    if (by >= 0 && board[by][bx]) return false;
+  }
+  return true;
+}
+const grounded = () => !fits(cur.m, cur.x, cur.y + 1);
+function gravSec() { const lv = mode === 'sprint' ? 1 : Math.min(level, 20); return Math.pow(0.8 - (lv - 1) * 0.007, lv - 1); }
+
+function spawn(type) {
+  cur = { type, rot: 0, m: ROT[type][0], x: type === 'O' ? 4 : 3, y: 0 };
+  if (!fits(cur.m, cur.x, cur.y)) { finish(false); return; }
+  if (fits(cur.m, cur.x, cur.y + 1)) cur.y++;
+  lockT = 0; lockResets = 0; lowestY = cur.y; gravAcc = 0; lastRot = false;
+}
+function nextPiece() { refill(); spawn(queue.shift()); holdUsed = false; }
+
+function onMoved() {   // reinicio del lock delay al mover/girar apoyado en el piso
+  if (grounded() && lockResets < MAX_RESETS) { lockT = 0; lockResets++; }
+}
+function move(dx) {
+  if (!cur || !fits(cur.m, cur.x + dx, cur.y)) return false;
+  cur.x += dx; lastRot = false; onMoved(); SFX.play('tick'); return true;
+}
+function rotate(dir) {
+  if (!cur) return false;
+  if (cur.type === 'O') { SFX.play('swap'); return false; }
+  const from = cur.rot, to = (from + dir + 4) % 4, m = ROT[cur.type][to];
+  const kicks = (cur.type === 'I' ? KI : KJ)['' + from + to];
+  for (let i = 0; i < kicks.length; i++) {
+    const nx = cur.x + kicks[i][0], ny = cur.y - kicks[i][1];
+    if (fits(m, nx, ny)) {
+      cur.x = nx; cur.y = ny; cur.rot = to; cur.m = m; lastRot = true; lastKick = i;
+      if (cur.y > lowestY) { lowestY = cur.y; lockResets = 0; }
+      onMoved(); SFX.play('swap'); return true;
+    }
+  }
+  return false;
+}
+function dropDist() { let d = 0; while (fits(cur.m, cur.x, cur.y + d + 1)) d++; return d; }
+function hardDrop() {
+  if (!cur) return;
+  const d = dropDist();
+  // estela de la caída
+  forCells(cur, (bx, by) => { if (by >= HID) FX.burst(BX + bx * CS + CS / 2, BY + (by - HID) * CS + CS / 2, { n: 2, color: COLORS[cur.type], speed: 40, life: .35, size: 3 }); });
+  cur.y += d; score += d * 2; if (d > 0) lastRot = false;
+  FX.shake(d > 6 ? 4 : 2, .12);
+  lock(true);
+}
+function doHold() {
+  if (!cur) return;
+  if (holdUsed) { SFX.play('error'); return; }
+  const t = cur.type;
+  if (hold) { const h = hold; hold = t; spawn(h); } else { hold = t; nextPiece(); }
+  holdUsed = true; SFX.play('whoosh');
+}
+function forCells(p, fn) { p.m.forEach((row, r) => row.forEach((v, c) => { if (v) fn(p.x + c, p.y + r); })); }
+
+// T-spin: regla de las 3 esquinas (+ "mini" según las esquinas del frente)
+function tspinType() {
+  if (cur.type !== 'T' || !lastRot) return null;
+  const cx = cur.x + 1, cy = cur.y + 1;
+  const occ = (x, y) => x < 0 || x >= COLS || y >= TOT || (y >= 0 && !!board[y][x]);
+  const corners = [occ(cx - 1, cy - 1), occ(cx + 1, cy - 1), occ(cx + 1, cy + 1), occ(cx - 1, cy + 1)]; // TL TR BR BL
+  if (corners.filter(Boolean).length < 3) return null;
+  const front = [[0, 1], [1, 2], [2, 3], [3, 0]][cur.rot];
+  if ((corners[front[0]] && corners[front[1]]) || lastKick === 4) return 'full';
+  return 'mini';
+}
+
+function lock(fromHard) {
+  const ts = tspinType();
+  let above = true;
+  forCells(cur, (bx, by) => { if (by >= 0) board[by][bx] = cur.type; if (by >= HID) above = false; });
+  stats.pieces++;
+  const full = [];
+  for (let r = 0; r < TOT; r++) if (board[r].every(Boolean)) full.push(r);
+  if (above && !full.length) { cur = null; finish(false); return; }   // lock out
+  SFX.play(fromHard ? 'drop' : 'place');
+  scoreClear(full.length, ts);
+  const type = cur.type;
+  cur = null;
+  if (full.length) {
+    clearing = { rows: full, t: 0 };
+    full.forEach(r => {
+      for (let c = 0; c < COLS; c++) FX.burst(BX + c * CS + CS / 2, BY + (r - HID) * CS + CS / 2, { n: 3, color: [COLORS[board[r][c]] || '#fff', '#fff'], speed: 220, life: .7, gravity: 300, size: 3.5 });
+    });
+    FX.flash('#ffffff', full.length >= 4 ? .35 : .12);
+    if (full.length >= 4) FX.shake(7, .35);
+    SFX.play('line', full.length);
+  } else nextPiece();
+  void type;
+}
+
+const NAMES = ['', 'SINGLE', 'DOUBLE', 'TRIPLE', 'TETRIS'];
+function scoreClear(n, ts) {
+  const lv = mode === 'sprint' ? 1 : level;
+  let base = 0, label = '';
+  if (ts === 'full') { base = [400, 800, 1200, 1600][n]; label = 'T-SPIN ' + (NAMES[n] || ''); }
+  else if (ts === 'mini') { base = [100, 200, 400][n] || 400; label = 'T-SPIN MINI ' + (NAMES[n] || ''); }
+  else base = [0, 100, 300, 500, 800][n];
+  const difficult = n === 4 || (ts && n > 0);
+  if (n > 0) {
+    let pts = base * lv;
+    if (difficult && b2b) { pts = Math.floor(pts * 1.5); label = 'B2B ' + (label || NAMES[n]); }
+    b2b = difficult ? true : false;
+    combo++;
+    if (combo > 0) pts += 50 * combo * lv;
+    stats.maxCombo = Math.max(stats.maxCombo, combo);
+    if (n === 4) stats.tetris++;
+    if (ts) stats.tspin++;
+    score += pts;
+    lines += n;
+    const txt = label || NAMES[n];
+    showAction(txt, combo > 0 ? `COMBO ×${combo + 1}` : '', pts);
+    if (combo > 0) SFX.play('combo', combo);
+    // nivel
+    if (mode === 'marathon') {
+      const nl = Math.floor(lines / 10) + 1;
+      if (nl > level) { level = nl; BG.ui.toast(`¡NIVEL ${level}!`, '#ffd400'); SFX.play('levelup'); FX.flash('#ffd400', .2); }
+    }
+    if (mode === 'sprint' && lines >= 40) { lines = 40; setTimeout(() => finish(true), 350); }
+  } else {
+    combo = -1;
+    if (ts) { score += base * lv; showAction(label, '', base * lv); SFX.play('power'); }
+  }
+  BG.hud.set('score', score, true); BG.hud.set('level', level); BG.hud.set('lines', mode === 'sprint' ? `${lines}/40` : lines);
+}
+function showAction(main, sub, pts) {
+  actionText = { main, sub, pts, t: 0 };
+  FX.text(BX + COLS * CS / 2, BY + ROWS * CS / 2 - 40, '+' + U.fmt(pts), { color: '#fff', size: 22, life: 1.1, vy: -30 });
+}
+
+function collapse() {
+  const rows = clearing.rows.sort((a, b) => a - b);
+  rows.forEach(r => { board.splice(r, 1); board.unshift(emptyRow()); });
+  clearing = null;
+  if (board.every(r => r.every(v => !v))) {         // tablero vacío
+    const bonus = 3000 * (mode === 'sprint' ? 1 : level);
+    score += bonus; BG.hud.set('score', score, true);
+    BG.ui.toast('¡PERFECT CLEAR! +' + U.fmt(bonus), '#33f26b'); SFX.play('win');
+  }
+  if (!over) nextPiece();
+}
+
+// ── Partida ───────────────────────────────────────────────────────────────
+function startGame(m) {
+  mode = m || mode;
+  board = Array.from({ length: TOT }, emptyRow);
+  queue = []; refill(); hold = null; holdUsed = false; cur = null;
+  score = 0; level = 1; lines = 0; combo = -1; b2b = false; timer = 0; clearing = null; over = false; overAnim = 0;
+  stats = { tetris: 0, tspin: 0, maxCombo: 0, pieces: 0 }; actionText = null;
+  das = { dir: 0, t: 0, arr: 0 };
+  FX.clear();
+  BG.hud.setAll({ score: 0, level: 1, lines: mode === 'sprint' ? '0/40' : 0, time: mode === 'ultra' ? '2:00' : '0:00' });
+  BG.hud.show('level', mode !== 'sprint');
+  BG.start();
+  countdown = 1.8; lastCount = 3;
+  SFX.play('countdown');
+  BG.music.play(SONG);
+}
+let lastCount = 3;
+function finish(completed) {
+  if (over) return;
+  over = true; cur = null; BG.stop(); BG.music.stop();
+  const M = MODES[mode];
+  let r = null, scoreText = null, scoreLabel = 'PUNTOS', title, tone, win = false;
+  if (mode === 'sprint') {
+    if (completed) {
+      const ms = Math.round(timer * 1000);
+      r = BG.submitScore(ms, { mode: M.rec, order: 'asc', won: true });
+      scoreText = fmtMs(ms); scoreLabel = 'TIEMPO'; title = '¡40 LÍNEAS!'; win = true;
+    } else { title = 'TOPE ALCANZADO'; scoreText = `${lines}/40`; scoreLabel = 'LÍNEAS'; }
+  } else {
+    r = BG.submitScore(score, { mode: M.rec, won: completed });
+    title = mode === 'ultra' && completed ? '¡TIEMPO!' : 'GAME OVER'; win = mode === 'ultra' && completed;
+  }
+  SFX.play(win ? 'win' : 'lose');
+  setTimeout(() => {
+    const best = BG.getBest(M.rec);
+    BG.ui.gameOver({
+      title, win, tone: win ? 'good' : 'bad', icon: win ? '🏆' : '🧱',
+      score, scoreText, scoreLabel, isRecord: r && (r.isRecord || r.first),
+      recordText: r && r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+      stats: [
+        { label: 'Récord', value: best == null ? '—' : (mode === 'sprint' ? fmtMs(best) : U.fmt(best)) },
+        { label: 'Líneas', value: lines }, { label: 'Tetris', value: stats.tetris },
+        { label: 'T-Spins', value: stats.tspin }, { label: 'Combo máx', value: Math.max(0, stats.maxCombo + 1) },
+        { label: 'Tiempo', value: U.fmtTime(timer) },
+      ],
+      onRetry: () => startGame(mode), onMenu: showMenu,
+    });
+  }, 1000);
+}
+const fmtMs = ms => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}.${String(Math.floor(ms / 10) % 100).padStart(2, '0')}`;
+
+function showMenu() {
+  BG.stop(); BG.music.stop();
+  if (!board) { board = Array.from({ length: TOT }, emptyRow); queue = []; refill(); }
+  const rec = k => { const b = BG.getBest(MODES[k].rec); return b == null ? 'sin récord' : 'Récord: ' + (k === 'sprint' ? fmtMs(b) : U.fmt(b)); };
+  BG.ui.menu({
+    buttons: [
+      { label: '▶ MARATÓN', small: 'Subí de nivel cada 10 líneas · ' + rec('marathon'), primary: true, onClick: () => startGame('marathon') },
+      { label: '⚡ SPRINT 40', small: '40 líneas lo más rápido posible · ' + rec('sprint'), onClick: () => startGame('sprint') },
+      { label: '⏱ ULTRA 2:00', small: 'Máximo puntaje en 2 minutos · ' + rec('ultra'), onClick: () => startGame('ultra') },
+    ],
+    stats: null,
+  });
+}
+
+// ── Bucle ─────────────────────────────────────────────────────────────────
+function update(dt) {
+  bgT += dt;
+  if (actionText && !BG.thumb) { actionText.t += dt; if (actionText.t > 1.6) actionText = null; }
+  if (over) { overAnim = Math.min(TOT, overAnim + dt * 30); return; }
+  if (!BG.playing) return;
+  const I = BG.input;
+  if (countdown > 0) {
+    countdown -= dt;
+    const n = Math.ceil(countdown / 0.6);
+    if (n !== lastCount && n > 0) { lastCount = n; SFX.play('countdown'); }
+    if (countdown <= 0) { SFX.play('go'); nextPiece(); }
+    ['left', 'right', 'hard', 'rotCW', 'rotCCW', 'hold', 'up'].forEach(a => I.pressed(a));
+    return;
+  }
+  timer += dt;
+  BG.hud.set('time', mode === 'ultra' ? U.fmtTime(Math.ceil(120 - timer)) : U.fmtTime(timer));
+  if (mode === 'ultra' && timer >= 120) { finish(true); return; }
+  if (clearing) {
+    clearing.t += dt;
+    ['left', 'right', 'hard', 'up'].forEach(a => I.pressed(a));   // no acumular caídas durante la animación
+    if (clearing.t >= CLEAR_T) collapse();
+    return;
+  }
+  if (!cur) return;
+  if (I.pressed('hold')) doHold();
+  if (!cur) return;
+  if (I.pressed('rotCW')) rotate(1);
+  if (I.pressed('rotCCW')) rotate(-1);
+  if (I.pressed('hard') || I.pressed('up')) { hardDrop(); return; }
+  // movimiento horizontal con DAS/ARR
+  if (I.pressed('left')) { move(-1); das = { dir: -1, t: 0, arr: 0 }; }
+  if (I.pressed('right')) { move(1); das = { dir: 1, t: 0, arr: 0 }; }
+  const dir = (I.isDown('right') ? 1 : 0) - (I.isDown('left') ? 1 : 0);
+  if (!dir) das.dir = 0;
+  else if (dir === das.dir) {
+    das.t += dt;
+    if (das.t >= DAS) { das.arr += dt; while (das.arr >= ARR) { das.arr -= ARR; if (!move(dir)) { das.arr = 0; break; } } }
+  } else das = { dir, t: 0, arr: 0 };
+  softDrop = I.isDown('soft') || I.isDown('down') || touchSoft;
+  // gravedad
+  const g = gravSec(), interval = softDrop ? Math.min(g, 0.033) : g;
+  gravAcc += dt;
+  while (gravAcc >= interval) {
+    gravAcc -= interval;
+    if (fits(cur.m, cur.x, cur.y + 1)) {
+      cur.y++; lastRot = false;
+      if (softDrop) { score += 1; BG.hud.set('score', score); }
+      if (cur.y > lowestY) { lowestY = cur.y; lockResets = 0; lockT = 0; }
+    } else { gravAcc = 0; break; }
+  }
+  if (grounded()) { lockT += dt; if (lockT >= LOCK || (lockResets >= MAX_RESETS && lockT >= 0.05)) lock(false); }
+  else lockT = 0;
+}
+
+// ── Dibujo ────────────────────────────────────────────────────────────────
+const spriteCache = new Map();
+view.onResize = () => spriteCache.clear();
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  if (amt > 0) { r += (255 - r) * amt; g += (255 - g) * amt; b += (255 - b) * amt; } else { r *= 1 + amt; g *= 1 + amt; b *= 1 + amt; }
+  return `rgb(${r | 0},${g | 0},${b | 0})`;
+}
+function sprite(color, size) {
+  const px = Math.max(4, Math.round(size * view.scale)), key = color + '|' + px;
+  let s = spriteCache.get(key);
+  if (!s) {
+    s = document.createElement('canvas'); s.width = s.height = px;
+    const c = s.getContext('2d'), k = px / size; c.scale(k, k);
+    const g = c.createLinearGradient(0, 0, size, size);
+    g.addColorStop(0, shade(color, .35)); g.addColorStop(.5, color); g.addColorStop(1, shade(color, -.35));
+    D.rr(c, 1, 1, size - 2, size - 2, size * .2); c.fillStyle = g; c.fill();
+    c.globalAlpha = .45; c.fillStyle = '#fff'; D.rr(c, size * .18, size * .12, size * .64, size * .16, size * .08); c.fill();
+    c.globalAlpha = .9; c.strokeStyle = shade(color, .55); c.lineWidth = 1.2; D.rr(c, 1.6, 1.6, size - 3.2, size - 3.2, size * .2); c.stroke();
+    spriteCache.set(key, s);
+  }
+  return s;
+}
+function block(x, y, color, size = CS, alpha = 1) {
+  if (alpha < 1) ctx.globalAlpha = alpha;
+  ctx.drawImage(sprite(color, size), x, y, size, size);
+  if (alpha < 1) ctx.globalAlpha = 1;
+}
+function miniPiece(type, cx, cy, size) {
+  const m = ROT[type][0];
+  let minR = 9, maxR = -1, minC = 9, maxC = -1;
+  m.forEach((row, r) => row.forEach((v, c) => { if (v) { minR = Math.min(minR, r); maxR = Math.max(maxR, r); minC = Math.min(minC, c); maxC = Math.max(maxC, c); } }));
+  const w = (maxC - minC + 1) * size, h = (maxR - minR + 1) * size;
+  m.forEach((row, r) => row.forEach((v, c) => { if (v) block(cx - w / 2 + (c - minC) * size, cy - h / 2 + (r - minR) * size, COLORS[type], size); }));
+}
+function panel(x, y, w, h, label) {
+  ctx.fillStyle = 'rgba(16,16,34,.85)'; D.rr(ctx, x, y, w, h, 12); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,183,255,.25)'; ctx.lineWidth = 1.5; ctx.stroke();
+  if (label) D.text(ctx, label, x + w / 2, y + 14, { size: 10, color: '#8b8ba3' });
+}
+
+function render() {
+  // fondo
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0b0b1f'); bg.addColorStop(1, '#05050d');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  for (let i = 0; i < 26; i++) {      // partículas de fondo
+    const x = (i * 97.3) % W, y = (i * 53.1 + bgT * (12 + (i % 5) * 6)) % H;
+    ctx.fillStyle = `rgba(120,160,255,${.05 + (i % 4) * .03})`; ctx.fillRect(x, H - y, 2, 2);
+  }
+  ctx.save();
+  FX.applyShake(ctx);
+  // paneles laterales
+  panel(10, BY, 98, 92, 'GUARDAR');
+  if (hold) { ctx.globalAlpha = holdUsed ? .35 : 1; miniPiece(hold, 59, BY + 54, 20); ctx.globalAlpha = 1; }
+  panel(428, BY, 98, 330, 'SIGUIENTE');
+  if (queue) queue.slice(0, 5).forEach((t, i) => miniPiece(t, 477, BY + 58 + i * 60 - (i ? 0 : 4), i ? 17 : 22));
+  panel(10, BY + 104, 98, 196, MODES[mode].name);
+  const info = [];
+  if (mode === 'sprint') info.push(['FALTAN', Math.max(0, 40 - (lines || 0))]);
+  if (mode === 'ultra') info.push(['QUEDAN', U.fmtTime(Math.max(0, 120 - (timer || 0)))]);
+  if (mode === 'marathon') info.push(['PRÓX. NIVEL', `${10 - ((lines || 0) % 10)} lín.`]);
+  info.push(['PIEZAS', stats.pieces || 0]);
+  info.push(['COMBO', combo > 0 ? '×' + (combo + 1) : '—']);
+  info.push(['B2B', b2b ? 'SÍ' : '—']);
+  info.forEach(([k, v], i) => {
+    D.text(ctx, k, 59, BY + 140 + i * 40, { size: 9, color: '#8b8ba3' });
+    D.text(ctx, String(v), 59, BY + 156 + i * 40, { size: 15, color: i === 0 ? '#ffd400' : '#e8e8ff' });
+  });
+  // tablero
+  const bw = COLS * CS, bh = ROWS * CS;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,183,255,.45)'; ctx.shadowBlur = 24;
+  ctx.fillStyle = 'rgba(6,6,16,.94)'; D.rr(ctx, BX - 4, BY - 4, bw + 8, bh + 8, 10); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(0,183,255,.5)'; ctx.lineWidth = 2; D.rr(ctx, BX - 4, BY - 4, bw + 8, bh + 8, 10); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.035)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let c = 1; c < COLS; c++) { ctx.moveTo(BX + c * CS + .5, BY); ctx.lineTo(BX + c * CS + .5, BY + bh); }
+  for (let r = 1; r < ROWS; r++) { ctx.moveTo(BX, BY + r * CS + .5); ctx.lineTo(BX + bw, BY + r * CS + .5); }
+  ctx.stroke();
+  // piezas apoyadas
+  if (board) {
+    for (let r = HID; r < TOT; r++) for (let c = 0; c < COLS; c++) {
+      const v = board[r][c]; if (!v) continue;
+      if (clearing && clearing.rows.includes(r)) continue;
+      const gray = over && r >= TOT - overAnim;
+      block(BX + c * CS, BY + (r - HID) * CS, gray ? COLORS.G : COLORS[v]);
+    }
+  }
+  // filas que se borran: destello que se cierra hacia el centro
+  if (clearing) {
+    const k = clearing.t / CLEAR_T;
+    clearing.rows.forEach(r => {
+      const y = BY + (r - HID) * CS, w = bw * (1 - U.ease.inOutQuad(k));
+      ctx.fillStyle = `rgba(255,255,255,${.9 - k * .6})`;
+      ctx.shadowColor = '#fff'; ctx.shadowBlur = 18;
+      ctx.fillRect(BX + (bw - w) / 2, y + 2, w, CS - 4);
+      ctx.shadowBlur = 0;
+    });
+  }
+  // fantasma + pieza actual
+  if (cur && !over) {
+    const d = dropDist();
+    ctx.strokeStyle = COLORS[cur.type]; ctx.globalAlpha = .55; ctx.lineWidth = 2;
+    forCells(cur, (bx, by) => {
+      const gy = by + d; if (gy < HID) return;
+      D.rr(ctx, BX + bx * CS + 3, BY + (gy - HID) * CS + 3, CS - 6, CS - 6, 5); ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+    const lockFade = grounded() ? 1 - (lockT / LOCK) * .35 : 1;
+    ctx.save(); ctx.shadowColor = COLORS[cur.type]; ctx.shadowBlur = 14;
+    forCells(cur, (bx, by) => { if (by >= HID) block(BX + bx * CS, BY + (by - HID) * CS, COLORS[cur.type], CS, lockFade); });
+    ctx.restore();
+  }
+  // texto de acción (TETRIS, T-SPIN, COMBO…)
+  if (actionText) {
+    const k = actionText.t, a = k < 1.2 ? 1 : 1 - (k - 1.2) / .4, s = k < .15 ? .6 + k / .15 * .4 : 1;
+    D.text(ctx, actionText.main, BX + bw / 2, BY + bh / 2 - 6, { size: 26 * s, color: '#fff', glow: '#00b7ff', blur: 20, alpha: a, stroke: 'rgba(0,0,0,.5)' });
+    if (actionText.sub) D.text(ctx, actionText.sub, BX + bw / 2, BY + bh / 2 + 24, { size: 15, color: '#ffd400', alpha: a });
+  }
+  // cuenta regresiva
+  if (BG.playing && countdown > 0) {
+    const n = Math.ceil(countdown / 0.6), f = (countdown % 0.6) / 0.6;
+    D.text(ctx, n > 0 ? String(n) : '¡YA!', BX + bw / 2, BY + bh / 2, { size: 54 + f * 20, color: '#fff', glow: '#b44dff', blur: 24, alpha: .4 + f * .6 });
+  }
+  FX.draw(ctx);
+  ctx.restore();
+  FX.drawFlash(ctx, W, H);
+}
+
+// ── Gestos táctiles sobre el tablero ──────────────────────────────────────
+let touchSoft = false;
+if (BG.isTouch) {
+  let tp = null;
+  const cellPx = () => view.canvas.getBoundingClientRect().width / W * CS;
+  view.canvas.addEventListener('pointerdown', e => { tp = { x: e.clientX, y: e.clientY, t: performance.now(), lx: e.clientX, moved: false }; });
+  view.canvas.addEventListener('pointermove', e => {
+    if (!tp || !cur || !BG.playing || BG.paused) return;
+    const step = cellPx() * .85, dx = e.clientX - tp.lx;
+    if (Math.abs(dx) >= step) { const n = Math.trunc(dx / step); for (let i = 0; i < Math.abs(n); i++) move(Math.sign(n)); tp.lx += n * step; tp.moved = true; }
+    touchSoft = (e.clientY - tp.y) > cellPx() * 1.5 && Math.abs(e.clientY - tp.y) > Math.abs(e.clientX - tp.x);
+  });
+  view.canvas.addEventListener('pointerup', e => {
+    if (!tp) return;
+    const dt = performance.now() - tp.t, dx = e.clientX - tp.x, dy = e.clientY - tp.y;
+    touchSoft = false;
+    if (BG.playing && !BG.paused && cur) {
+      if (!tp.moved && Math.hypot(dx, dy) < 12 && dt < 280) rotate(1);
+      else if (dy > 70 && dt < 260 && Math.abs(dy) > Math.abs(dx) * 1.6) hardDrop();
+      else if (dy < -60 && dt < 320 && Math.abs(dy) > Math.abs(dx) * 1.6) doHold();
+    }
+    tp = null;
+  });
+}
+
+// ── Música (original, en La menor) ────────────────────────────────────────
+const SONG = {
+  bpm: 140,
+  tracks: [
+    { type: 'square', vol: .32, notes: 'A4 . C5 . E5 . A5 . G5 . E5 . C5 . D5 . E5 - - . D5 . C5 . B4 - - . G4 . B4 . C5 . E5 . A5 . C6 . B5 . A5 . G5 . E5 . F5 - E5 . D5 . C5 . B4 . G#4 . A4 - - .' },
+    { type: 'triangle', vol: .55, notes: 'A2 . A3 . A2 . A3 . F2 . F3 . F2 . F3 . C3 . C4 . C3 . C4 . G2 . G3 . G2 . G3 . A2 . A3 . A2 . A3 . F2 . F3 . F2 . F3 . D3 . D4 . D3 . D4 . E2 . E3 . E2 . E3 .' },
+    { drum: true, vol: .5, notes: 'K . H . S . H . K . K . S . H . K . H . S . H . K . K . S . H . K . H . S . H . K . K . S . H . K . H . S . H . K . S . S S S S' },
+  ],
+};
+
+// ── Arranque ──────────────────────────────────────────────────────────────
+board = Array.from({ length: TOT }, emptyRow); queue = []; refill();
+if (BG.thumb) {     // escena de muestra para la miniatura
+  const demo = ['ZZ.TTTLLL.', 'ZSSTIIIIJJ', 'SSOOLLTJJJ', 'IOOJLTTTZZ', 'IJJJLSSZZO', 'ILLLSSOOOO'];
+  demo.forEach((row, i) => [...row].forEach((ch, c) => { if (ch !== '.') board[TOT - 6 + i][c] = ch; }));
+  cur = { type: "T", rot: 2, m: ROT.T[2], x: 4, y: 12 }; lockT = 0; hold = "I"; score = 12840; level = 4; lines = 31; combo = 2; b2b = true;
+  stats.pieces = 88; actionText = { main: 'TETRIS', sub: 'COMBO ×3', pts: 3200, t: .5 };
+} else {
+  score = 0; level = 1; lines = 0; combo = -1; b2b = false;
+  BG.ready.then(showMenu);
+}
+BG.loop(update, render);
+</script>
+</body>
+</html>
