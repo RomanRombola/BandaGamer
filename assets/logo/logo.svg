@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d0d1a"/>
+      <stop offset="100%" style="stop-color:#1a1a35"/>
+    </linearGradient>
+    <linearGradient id="mainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6600"/>
+      <stop offset="50%" style="stop-color:#ff9900"/>
+      <stop offset="100%" style="stop-color:#ffe600"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ff3300"/>
+      <stop offset="100%" style="stop-color:#ff6600"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Fondo con forma de escudo/badge gamer -->
+  <path d="M32 4 L56 14 L56 38 Q56 54 32 62 Q8 54 8 38 L8 14 Z" fill="url(#bgGrad)"/>
+  <path d="M32 4 L56 14 L56 38 Q56 54 32 62 Q8 54 8 38 L8 14 Z" 
+        fill="none" stroke="url(#mainGrad)" stroke-width="1.5"/>
+  
+  <!-- Letra B estilizada con trazo naranja -->
+  <text x="13" y="42" 
+        font-family="Arial Black, Impact, sans-serif" 
+        font-weight="900" 
+        font-size="28"
+        fill="url(#mainGrad)">B</text>
+  
+  <!-- G más pequeña superpuesta abajo-derecha -->
+  <text x="30" y="48" 
+        font-family="Arial Black, Impact, sans-serif" 
+        font-weight="900" 
+        font-size="20"
+        fill="#ffffff"
+        opacity="0.9">G</text>
+
+  <!-- Punto decorativo naranja arriba -->
+  <circle cx="32" cy="10" r="3" fill="#ff6600"/>
+  <circle cx="32" cy="10" r="1.5" fill="#ffe600"/>
+  
+  <!-- Línea decorativa inferior -->
+  <line x1="18" y1="52" x2="46" y2="52" stroke="url(#mainGrad)" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
