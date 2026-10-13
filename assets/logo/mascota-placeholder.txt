@@ -1,0 +1,18 @@
+MASCOTA GOR2GAMES
+=================
+
+Acá va la imagen de la mascota oficial de Gor2Games.
+
+Descripción del personaje:
+- Personaje caricaturesco, obeso y amigable
+- Auriculares gamer grandes
+- Joystick en mano
+- Pizza o snacks al lado
+- Fondo con luces de neón y setup gamer
+
+Para reemplazar el placeholder del header:
+1. Guardá la imagen como "mascota.png" en esta carpeta (assets/logo/)
+2. En index.html, reemplazá el div.logo-icon por:
+   <img src="assets/logo/mascota.png" alt="Mascota Gor2Games" style="width:40px;height:40px;border-radius:10px;">
+3. En pages/juego.html, reemplazá el div.logo-icon por:
+   <img src="../assets/logo/mascota.png" alt="Mascota Gor2Games" style="width:40px;height:40px;border-radius:10px;">
