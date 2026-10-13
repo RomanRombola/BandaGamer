@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Salta Rana</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  SALTA RANA — BandaGamer (estilo Frogger)
+//  Cruzá la ruta sin que te pisen y el río saltando sobre troncos y tortugas
+//  (¡algunas se sumergen!) hasta los 5 nidos. Mosca de bonus, cocodrilos desde el
+//  nivel 3, cronómetro por vida y cada nivel más rápido.
+//  Idea basada en "Frogger" de 90s-games (MIT © 2026 Prateek), reescrito desde cero
+//  (el original tenía los carriles de autos superpuestos con el río).
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const C = 40, COLS = 13, W = C * COLS, TOP = 64, ROWS = 14, H = TOP + C * ROWS + 16;
+const HOME = 0, RIVER = [1, 2, 3, 4, 5], MEDIAN = 6, ROAD = [7, 8, 9, 10, 11, 12], START = 13;
+const BAYS = [1, 3.5, 6, 8.5, 11].map(c => (c + .5) * C);
+const LIFE_T = 32;
+
+BG.init({
+  id: 'saltarana', title: 'SALTA RANA', icon: '🐸', accent: '#39ff88', accent2: '#ffd400', music: true,
+  post: { bloom: .18, vignette: .3, thumbFx: true },
+  subtitle: 'Cruzá la ruta y el río hasta llegar a los 5 nidos. Cuidado con las tortugas que se sumergen.',
+  hud: [{ id: 'score', label: 'Puntos' }, { id: 'level', label: 'Nivel', color: '#ffd400' }, { id: 'lives', label: 'Vidas', color: '#39ff88', value: '🐸🐸🐸' }],
+  help: '<kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> o WASD para saltar · <kbd>P</kbd> pausa',
+  helpTouch: 'Deslizá o tocá arriba/abajo/costados de la rana para saltar',
+  touch: { dpad: 'full' },
+  onRestart: () => start(), onMenu: () => showMenu(),
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+const rowY = r => TOP + r * C;
+
+let lanes = [], frog = null, homes = [false, false, false, false, false], fly = null, croc = null, score = 0, lives = 3, level = 1, timeLeft = LIFE_T, best = START, state = 'menu', t = 0, deathT = 0, deathKind = '', queue = [], nextLife = 10000;
+
+// ── Carriles ──────────────────────────────────────────────────────────────
+function buildLanes() {
+  const k = 1 + (level - 1) * .16;
+  const defs = [
+    // río (de arriba hacia abajo)
+    { row: 1, type: 'river', kind: 'log', len: 3, gap: 3, dir: 1, sp: 46 },
+    { row: 2, type: 'river', kind: 'turtle', len: 2, gap: 2, dir: -1, sp: 62, dive: level >= 1 },
+    { row: 3, type: 'river', kind: level >= 3 ? 'croc' : 'log', len: 5, gap: 4, dir: 1, sp: 72 },
+    { row: 4, type: 'river', kind: 'log', len: 2, gap: 3, dir: 1, sp: 38 },
+    { row: 5, type: 'river', kind: 'turtle', len: 3, gap: 2, dir: -1, sp: 50, dive: level >= 2 },
+    // ruta
+    { row: 7, type: 'road', kind: 'truck', len: 2.2, gap: 4, dir: -1, sp: 46 },
+    { row: 8, type: 'road', kind: 'race', len: 1, gap: 6, dir: 1, sp: 150 },
+    { row: 9, type: 'road', kind: 'car', len: 1.1, gap: 3.4, dir: -1, sp: 64 },
+    { row: 10, type: 'road', kind: 'bus', len: 2.6, gap: 4.4, dir: 1, sp: 40 },
+    { row: 11, type: 'road', kind: 'car2', len: 1.1, gap: 3, dir: 1, sp: 56 },
+    { row: 12, type: 'road', kind: 'moto', len: .8, gap: 4, dir: -1, sp: 84 },
+  ];
+  lanes = defs.map(d => {
+    const span = W + C * 6, objs = [];
+    const unit = (d.len + d.gap) * C; let x = U.rand(0, unit);
+    while (x < span) { objs.push({ x: x - C * 3, w: d.len * C, ph: U.rand(6), dive: d.dive && Math.random() < .5 }); x += unit * U.rand(.85, 1.25); }
+    return Object.assign({}, d, { sp: d.sp * k * (d.type === 'road' ? 1 : .95), span, objs });
+  });
+}
+function newFrog() { return { x: W / 2, row: START, fromX: W / 2, fromRow: START, hop: 0, face: 'up', ride: null }; }
+
+function start() {
+  score = 0; lives = 3; level = 1; nextLife = 10000; homes = [false, false, false, false, false];
+  BG.hud.setAll({ score: 0, level: 1 }); updLives(); buildLanes(); respawn(); FX.clear();
+  state = 'play'; BG.start(); BG.music.play(SONG);
+}
+function showMenu() { state = 'menu'; BG.stop(); BG.music.stop(); if (!lanes.length) buildLanes(); frog = null; BG.ui.menu({ buttons: [{ label: '▶ A SALTAR', primary: true, onClick: start }] }); }
+function updLives() { BG.hud.set('lives', lives > 0 ? '🐸'.repeat(Math.min(lives, 6)) : '—'); }
+function respawn() { frog = newFrog(); timeLeft = LIFE_T; best = START; queue = []; }
+function addScore(n) { score += n; BG.hud.set('score', score, true); if (score >= nextLife) { nextLife += 10000; lives++; updLives(); BG.ui.toast('¡VIDA EXTRA!', '#39ff88'); SFX.play('power'); } }
+
+function hop(dir) {
+  if (state !== 'play' || !frog) return;
+  if (frog.hop > 0) { if (queue.length < 2) queue.push(dir); return; }
+  const dx = { left: -C, right: C, up: 0, down: 0 }[dir], dr = { left: 0, right: 0, up: -1, down: 1 }[dir];
+  const nr = frog.row + dr, nx = frog.x + dx;
+  frog.face = dir;
+  if (nr > START || nx < C * .4 || nx > W - C * .4) { SFX.tone({ f: 140, dur: .04, type: 'square', vol: .05 }); return; }
+  frog.fromX = frog.x; frog.fromRow = frog.row; frog.x = nx; frog.row = nr; frog.hop = 1; frog.ride = null;
+  SFX.play('jump');
+  if (nr < best) { best = nr; addScore(10); }
+}
+function land() {
+  const r = frog.row;
+  if (r === HOME) {
+    const i = BAYS.findIndex(c => Math.abs(c - frog.x) < C * .55);
+    if (i < 0 || homes[i]) return die('bush');
+    if (croc && croc.bay === i && croc.t > 1.2) return die('croc');
+    homes[i] = true;
+    let pts = 50 + Math.floor(timeLeft) * 10;
+    if (fly && fly.bay === i) { pts += 200; FX.text(BAYS[i], rowY(0), '+200 🪰', { color: '#ffd400', size: 16 }); fly = null; }
+    addScore(pts); SFX.play('coin'); FX.burst(BAYS[i], rowY(0) + C / 2, { n: 20, color: ['#39ff88', '#ffd400', '#fff'], speed: 180, life: .6 });
+    FX.text(BAYS[i], rowY(0) + C, '+' + pts, { color: '#fff', size: 14 });
+    if (homes.every(Boolean)) return levelUp();
+    respawn(); return;
+  }
+  if (RIVER.includes(r)) {
+    const lane = lanes.find(l => l.row === r);
+    const o = lane.objs.find(o => frog.x > o.x + 4 && frog.x < o.x + o.w - 4 && !(o.sub > .7));
+    if (!o) return die('water');
+    if (lane.kind === 'croc' && (lane.dir > 0 ? frog.x > o.x + o.w - C * 1.1 : frog.x < o.x + C * 1.1)) return die('croc');
+    frog.ride = o;
+  }
+}
+function die(kind) {
+  if (state !== 'play') return;
+  state = 'dying'; deathT = 0; deathKind = kind; lives--; updLives(); queue = [];
+  const x = frog.x, y = rowY(frog.row) + C / 2;
+  if (kind === 'water') { SFX.play('drop'); FX.ring(x, y, { color: '#bfefff', max: 40 }); FX.burst(x, y, { n: 18, color: ['#bfefff', '#4ab0ff', '#fff'], speed: 140, life: .5 }); }
+  else { SFX.play('hurt'); FX.shake(7, .3); FX.burst(x, y, { n: 22, color: ['#39ff88', '#1d8f45', '#ff3d6e'], speed: 200, life: .5 }); }
+}
+function levelUp() {
+  state = 'clear'; deathT = 0; addScore(1000); SFX.play('levelup'); FX.flash('#39ff88', .3);
+  BG.ui.toast(`¡5 NIDOS! NIVEL ${level + 1}`, '#ffd400');
+}
+function over() {
+  state = 'over'; BG.stop(); BG.music.stop(); SFX.play('lose');
+  const r = BG.submitScore(score);
+  BG.ui.gameOver({ icon: '🐸', title: 'GAME OVER', score, isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Nivel', value: level }, { label: 'Récord', value: U.fmt(BG.getBest() || score) }], onRetry: start, onMenu: showMenu });
+}
+
+// ── Actualización ─────────────────────────────────────────────────────────
+function update(dt) {
+  t += dt;
+  for (const l of lanes) for (const o of l.objs) {
+    o.x += l.dir * l.sp * dt;
+    if (l.dir > 0 && o.x > W + C * 3) o.x -= l.span; else if (l.dir < 0 && o.x + o.w < -C * 3) o.x += l.span;
+    if (o.dive) { o.ph += dt; const c = (o.ph % 7) / 7; o.sub = c < .55 ? 0 : c < .65 ? (c - .55) * 10 : c < .85 ? 1 : 1 - (c - .85) * 6.6; o.sub = U.clamp(o.sub, 0, 1); }
+  }
+  if (state === 'menu' || state === 'over') return;
+  if (state === 'dying') { deathT += dt; if (deathT > 1.1) { if (lives <= 0) return over(); respawn(); state = 'play'; } return; }
+  if (state === 'clear') { deathT += dt; if (deathT > 1.6) { level++; BG.hud.set('level', level, true); homes = [false, false, false, false, false]; fly = null; croc = null; buildLanes(); respawn(); state = 'play'; } return; }
+  // entrada
+  const I = BG.input;
+  for (const d of ['up', 'down', 'left', 'right']) if (I.pressed(d)) hop(d);
+  // salto
+  if (frog.hop > 0) { frog.hop = Math.max(0, frog.hop - dt / .13); if (frog.hop === 0) { land(); if (state !== 'play') return; if (queue.length) hop(queue.shift()); } }
+  // arrastre del tronco/tortuga
+  if (frog.hop === 0 && RIVER.includes(frog.row)) {
+    const lane = lanes.find(l => l.row === frog.row), o = frog.ride;
+    if (!o || o.sub > .7) return die('water');
+    frog.x += lane.dir * lane.sp * dt;
+    if (frog.x < 6 || frog.x > W - 6) return die('water');
+  }
+  // autos
+  if (ROAD.includes(frog.row) && frog.hop < .5) {
+    const lane = lanes.find(l => l.row === frog.row);
+    if (lane.objs.some(o => frog.x + 13 > o.x + 3 && frog.x - 13 < o.x + o.w - 3)) return die('car');
+  }
+  // tiempo
+  timeLeft -= dt;
+  if (timeLeft <= 0) return die('time');
+  if (timeLeft < 6 && Math.floor(timeLeft * 2) !== Math.floor((timeLeft + dt) * 2)) SFX.play('tick');
+  // mosca y cocodrilo en los nidos
+  if (!fly && Math.random() < dt / 6) { const free = homes.map((h, i) => h ? -1 : i).filter(i => i >= 0); if (free.length) fly = { bay: U.pick(free), t: 0 }; }
+  if (fly) { fly.t += dt; if (fly.t > 5 || homes[fly.bay]) fly = null; }
+  if (level >= 3 && !croc && Math.random() < dt / 8) { const free = homes.map((h, i) => h ? -1 : i).filter(i => i >= 0 && (!fly || fly.bay !== i)); if (free.length) croc = { bay: U.pick(free), t: 0 }; }
+  if (croc) { croc.t += dt; if (croc.t > 4.5 || homes[croc.bay]) croc = null; }
+}
+
+// ── Dibujo ────────────────────────────────────────────────────────────────
+function drawCar(o, l, y) {
+  const x = o.x, w = o.w, h = C - 12, cy = y + 6, f = l.dir > 0;
+  const col = { truck: '#e8e2d0', race: '#ff3d6e', car: '#ffd400', bus: '#ff9a1f', car2: '#4d7cff', moto: '#a855f7' }[l.kind];
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; D.rr(ctx, x + 3, cy + 4, w, h, 6); ctx.fill();
+  if (l.kind === 'moto') {
+    ctx.fillStyle = '#d0d0d8'; D.rr(ctx, x, cy + h / 2 - 3, w, 6, 3); ctx.fill();
+    ctx.fillStyle = col; D.rr(ctx, x + w * .15, cy + h / 2 - 7, w * .7, 14, 6); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x + w / 2 - l.dir * 3, cy + h / 2, 6, 0, 7); ctx.fill();
+    ctx.fillStyle = '#ffd400'; ctx.beginPath(); ctx.arc(x + w / 2 - l.dir * 3, cy + h / 2, 3.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff6b0'; ctx.fillRect(f ? x + w - 2 : x, cy + h / 2 - 2, 2, 4);
+    return;
+  }
+  if (l.kind === 'truck') {
+    const cab = C * .7, cx = f ? x + w - cab : x;
+    ctx.fillStyle = '#c0392b'; D.rr(ctx, cx, cy, cab, h, 5); ctx.fill();
+    ctx.fillStyle = col; D.rr(ctx, f ? x : x + cab + 2, cy - 2, w - cab - 2, h + 4, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.08)'; for (let i = 1; i < 5; i++) ctx.fillRect((f ? x : x + cab + 2) + i * (w - cab) / 5, cy, 2, h);
+    ctx.fillStyle = '#9fd8ff'; ctx.fillRect(f ? cx + cab - 9 : cx + 3, cy + 4, 6, h - 8);
+  } else {
+    ctx.fillStyle = col; D.rr(ctx, x, cy, w, h, l.kind === 'bus' ? 5 : 9); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.25)'; D.rr(ctx, x + 4, cy + 3, w - 8, 4, 2); ctx.fill();
+    ctx.fillStyle = '#9fd8ff';
+    if (l.kind === 'bus') for (let i = 0; i < 5; i++) ctx.fillRect(x + 8 + i * (w - 16) / 5, cy + 5, (w - 16) / 5 - 4, h - 10);
+    else { ctx.fillRect(f ? x + w * .55 : x + w * .2, cy + 4, w * .25, h - 8); ctx.fillStyle = 'rgba(159,216,255,.6)'; ctx.fillRect(f ? x + w * .15 : x + w * .6, cy + 5, w * .2, h - 10); }
+    if (l.kind === 'race') { ctx.fillStyle = '#fff'; ctx.fillRect(x, cy + h / 2 - 2, w, 4); }
+  }
+  ctx.fillStyle = '#fff6b0'; const hx = f ? x + w - 3 : x; ctx.fillRect(hx, cy + 3, 3, 5); ctx.fillRect(hx, cy + h - 8, 3, 5);
+  const g = ctx.createLinearGradient(f ? x + w : x, 0, f ? x + w + 40 : x - 40, 0); g.addColorStop(0, 'rgba(255,246,176,.13)'); g.addColorStop(1, 'rgba(255,246,176,0)');
+  ctx.fillStyle = g; ctx.fillRect(f ? x + w : x - 40, cy, 40, h);
+}
+function drawRiverObj(o, l, y) {
+  const x = o.x, w = o.w;
+  if (l.kind === 'log') {
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; D.rr(ctx, x + 2, y + 10, w, C - 14, 12); ctx.fill();
+    const g = ctx.createLinearGradient(0, y + 6, 0, y + C - 6); g.addColorStop(0, '#a8743e'); g.addColorStop(1, '#6a4420');
+    ctx.fillStyle = g; D.rr(ctx, x, y + 6, w, C - 12, 12); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 2; for (let i = 1; i < w / 22; i++) { ctx.beginPath(); ctx.moveTo(x + i * 22, y + 10); ctx.lineTo(x + i * 22 + 6, y + C - 10); ctx.stroke(); }
+    ctx.fillStyle = '#d8a868'; ctx.beginPath(); ctx.ellipse(x + w - 5, y + C / 2, 5, (C - 12) / 2 - 1, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#8a5a28'; ctx.beginPath(); ctx.ellipse(x + w - 5, y + C / 2, 2.5, 6, 0, 0, 7); ctx.stroke();
+  } else if (l.kind === 'croc') {
+    const f = l.dir > 0;
+    ctx.fillStyle = '#2f7a3a'; D.rr(ctx, x, y + 8, w, C - 16, 10); ctx.fill();
+    ctx.fillStyle = '#255f2d'; for (let i = 0; i < w / 14; i++) ctx.fillRect(x + 6 + i * 14, y + 6, 7, 4);
+    const hx = f ? x + w - C * 1.1 : x;
+    ctx.fillStyle = '#3a9a48'; D.rr(ctx, hx, y + 6, C * 1.1, C - 12, 8); ctx.fill();
+    const open = Math.sin(t * 3 + o.ph) > .3;
+    if (open) { ctx.fillStyle = '#b02030'; ctx.fillRect(f ? hx + C * .5 : hx + 4, y + C / 2 - 3, C * .5, 6); }
+    ctx.fillStyle = '#ffd400'; ctx.beginPath(); ctx.arc(f ? hx + C * .35 : hx + C * .75, y + 12, 3.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(f ? hx + C * .35 : hx + C * .75, y + 12, 1.6, 0, 7); ctx.fill();
+  } else {
+    const n = Math.round(w / C);
+    for (let i = 0; i < n; i++) {
+      const cx = x + (i + .5) * C, cy = y + C / 2, s = 1 - (o.sub || 0) * .6;
+      ctx.globalAlpha = 1 - (o.sub || 0) * .75;
+      ctx.fillStyle = '#7ac74f'; for (const [lx, ly] of [[-12, -9], [12, -9], [-12, 9], [12, 9]]) { ctx.beginPath(); ctx.ellipse(cx + lx * s, cy + ly * s, 5 * s, 3.5 * s, 0, 0, 7); ctx.fill(); }
+      ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.ellipse(cx, cy, 15 * s, 13 * s, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#7a1f17'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, 8 * s, 0, 7); ctx.moveTo(cx - 15 * s, cy); ctx.lineTo(cx + 15 * s, cy); ctx.stroke();
+      ctx.fillStyle = '#7ac74f'; ctx.beginPath(); ctx.arc(cx + l.dir * 16 * s, cy, 5 * s, 0, 7); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    if (o.sub > 0) { ctx.strokeStyle = `rgba(255,255,255,${.5 * o.sub})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x + w / 2, y + C / 2, w / 2, C / 3, 0, 0, 7); ctx.stroke(); }
+  }
+}
+function drawFrog() {
+  if (!frog) return;
+  const k = frog.hop, x = U.lerp(frog.x, frog.fromX, k), y = U.lerp(rowY(frog.row), rowY(frog.fromRow), k) + C / 2;
+  const lift = Math.sin(k * Math.PI) * 10, s = 1 + Math.sin(k * Math.PI) * .18;
+  const ang = { up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 }[frog.face];
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y + 4, 13 * s, 9 * s, 0, 0, 7); ctx.fill();
+  ctx.save(); ctx.translate(x, y - lift); ctx.rotate(ang); ctx.scale(s, s);
+  const legs = k > 0 ? 1.4 : 1;
+  ctx.fillStyle = '#2fbf5a';
+  for (const sx of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sx * 11, 8 * legs, 5, 8 * legs, sx * .5, 0, 7); ctx.fill(); ctx.beginPath(); ctx.ellipse(sx * 10, -8, 4, 6, -sx * .5, 0, 7); ctx.fill(); }
+  const g = ctx.createRadialGradient(-3, -4, 2, 0, 0, 14); g.addColorStop(0, '#7dff9a'); g.addColorStop(1, '#1d9a45');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, 11, 13, 0, 0, 7); ctx.fill();
+  for (const sx of [-1, 1]) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(sx * 6, -9, 4.5, 0, 7); ctx.fill(); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(sx * 6, -10, 2.2, 0, 7); ctx.fill(); }
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(-3, -2, 3, 5, 0, 0, 7); ctx.fill();
+  ctx.restore();
+}
+function render() {
+  ctx.fillStyle = '#0d1a10'; ctx.fillRect(0, 0, W, H);
+  // río
+  const rg = ctx.createLinearGradient(0, rowY(1), 0, rowY(6)); rg.addColorStop(0, '#1a5fa8'); rg.addColorStop(1, '#2a8ad0');
+  ctx.fillStyle = rg; ctx.fillRect(0, rowY(1), W, C * 5);
+  ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 2;
+  for (let r = 1; r <= 5; r++) for (let i = 0; i < 7; i++) { const x = ((i * 90 + t * 30 * (r % 2 ? 1 : -1)) % (W + 90) + W + 90) % (W + 90) - 45, y = rowY(r) + 12 + (i % 2) * 14; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 10, y - 4, x + 20, y); ctx.stroke(); }
+  // nidos
+  ctx.fillStyle = '#2d6a2e'; ctx.fillRect(0, rowY(0) - 8, W, C + 8);
+  ctx.fillStyle = '#3c8a3c'; for (let x = 0; x < W; x += 16) { ctx.beginPath(); ctx.arc(x + 8, rowY(0) - 6 + (x % 32 ? 2 : 0), 10, 0, 7); ctx.fill(); }
+  BAYS.forEach((c, i) => {
+    ctx.fillStyle = '#1a5fa8'; D.rr(ctx, c - C * .55, rowY(0) + 2, C * 1.1, C - 2, 10); ctx.fill();
+    ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.arc(c, rowY(0) + C / 2 + 2, 14, .3, Math.PI * 2 - .3); ctx.lineTo(c, rowY(0) + C / 2 + 2); ctx.fill();
+    if (homes[i]) { D.text(ctx, '🐸', c, rowY(0) + C / 2 + 2, { size: 26, family: 'body' }); }
+    else if (fly && fly.bay === i) D.text(ctx, '🪰', c + Math.sin(t * 9) * 3, rowY(0) + C / 2, { size: 20, family: 'body' });
+    else if (croc && croc.bay === i) { D.text(ctx, '🐊', c, rowY(0) + C / 2 + 4, { size: croc.t > 1.2 ? 26 : 16, family: 'body', alpha: Math.min(1, croc.t) }); }
+  });
+  // cantero del medio y vereda de salida
+  for (const r of [MEDIAN, START]) {
+    ctx.fillStyle = '#5a9a3a'; ctx.fillRect(0, rowY(r), W, C);
+    ctx.fillStyle = '#6fb848'; for (let x = 0; x < W; x += 8) ctx.fillRect(x + ((x * 7) % 5), rowY(r) + ((x * 13) % 30) + 4, 2, 4);
+    ctx.fillStyle = r === MEDIAN ? '#ff6ab0' : '#ffe14a'; for (let x = 20; x < W; x += 74) { ctx.beginPath(); ctx.arc(x + (r * 17) % 30, rowY(r) + 12 + (x % 3) * 6, 3, 0, 7); ctx.fill(); }
+  }
+  // ruta
+  ctx.fillStyle = '#2e2f38'; ctx.fillRect(0, rowY(7), W, C * 6);
+  ctx.fillStyle = '#d8d8d8'; ctx.fillRect(0, rowY(7), W, 3); ctx.fillRect(0, rowY(13) - 3, W, 3);
+  ctx.fillStyle = 'rgba(255,255,255,.55)'; for (let r = 8; r <= 12; r++) for (let x = 0; x < W; x += 40) ctx.fillRect(x + 8, rowY(r) - 1, 22, 2);
+  ctx.save(); FX.applyShake(ctx);
+  for (const l of lanes) for (const o of l.objs) { if (o.x > W + 10 || o.x + o.w < -10) continue; if (l.type === 'river') drawRiverObj(o, l, rowY(l.row)); else drawCar(o, l, rowY(l.row)); }
+  if (state === 'dying') {
+    const x = frog.x, y = rowY(frog.row) + C / 2, k = Math.min(1, deathT / .4);
+    if (deathKind === 'water') { ctx.strokeStyle = `rgba(255,255,255,${1 - k})`; ctx.lineWidth = 2; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x, y, 6 + i * 8 * k + k * 10, 0, 7); ctx.stroke(); } }
+    else D.text(ctx, '💀', x, y, { size: 26, family: 'body' });
+  } else drawFrog();
+  FX.draw(ctx);
+  ctx.restore();
+  // barra de tiempo
+  if (state !== 'menu') {
+    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(0, 0, W, TOP - 10);
+    const k = U.clamp(timeLeft / LIFE_T, 0, 1);
+    D.text(ctx, 'TIEMPO', 14, 26, { size: 12, align: 'left', color: '#fff' });
+    ctx.fillStyle = 'rgba(255,255,255,.12)'; D.rr(ctx, 84, 18, W - 100, 14, 7); ctx.fill();
+    ctx.fillStyle = k < .2 ? '#ff3d6e' : k < .5 ? '#ffd400' : '#39ff88'; D.rr(ctx, 84, 18, (W - 100) * k, 14, 7); ctx.fill();
+    D.text(ctx, `NIDOS ${homes.filter(Boolean).length}/5`, W - 16, 44, { size: 11, align: 'right', color: '#ffd400' });
+  }
+  if (state === 'clear') D.text(ctx, '¡NIVEL COMPLETO!', W / 2, H / 2, { size: 30, color: '#ffd400', stroke: '#000', strokeW: 6 });
+  FX.drawFlash(ctx, W, H);
+}
+// táctil: deslizar o tocar alrededor de la rana
+let sw = null;
+view.canvas.addEventListener('pointerdown', e => { sw = { x: e.clientX, y: e.clientY, p: view.toLocal(e.clientX, e.clientY) }; });
+view.canvas.addEventListener('pointerup', e => {
+  if (!sw || state !== 'play' || !frog) { sw = null; return; }
+  const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+  if (Math.hypot(dx, dy) > 24) hop(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+  else { const p = sw.p, fx = frog.x - p.x, fy = rowY(frog.row) + C / 2 - p.y; hop(Math.abs(fx) > Math.abs(fy) ? (fx > 0 ? 'left' : 'right') : (fy > 0 ? 'up' : 'down')); }
+  sw = null;
+});
+const SONG = { bpm: 132, tracks: [
+  { type: 'square', vol: .16, notes: 'G4 . G4 A4 B4 . G4 . C5 . B4 . A4 . . . A4 . A4 B4 C5 . A4 . D5 . C5 . B4 . . . G4 . B4 . D5 . B4 . C5 . E5 . D5 . C5 . B4 . A4 . G4 . A4 . B4 . G4 . . . . . . .' },
+  { type: 'triangle', vol: .5, notes: 'G2 . D3 . G2 . D3 . C3 . G3 . C3 . G3 . D3 . A3 . D3 . A3 . G2 . D3 . G2 . D3 . G2 . D3 . G2 . D3 . C3 . G3 . C3 . G3 . D3 . A3 . D3 . A3 . G2 . D3 . G2 . . .' },
+  { drum: true, vol: .45, notes: 'K . H . S . H . K K H . S . H .' },
+] };
+if (BG.thumb) { level = 3; buildLanes(); frog = newFrog(); frog.row = 9; frog.x = W / 2 + 20; homes = [true, false, true, false, false]; fly = { bay: 3, t: 0 }; state = 'thumb'; for (let i = 0; i < 400; i++) for (const l of lanes) for (const o of l.objs) { o.x += l.dir * l.sp / 60; if (l.dir > 0 && o.x > W + C * 3) o.x -= l.span; else if (l.dir < 0 && o.x + o.w < -C * 3) o.x += l.span; } update = () => { t += 1 / 60; }; }
+else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

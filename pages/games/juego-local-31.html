@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Maze Runner</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  MAZE RUNNER — BandaGamer
+//  Laberintos generados en la oscuridad: solo ves lo que alumbra tu antorcha y lo
+//  que ya exploraste. Juntá gemas, encontrá la llave cuando la salida está cerrada,
+//  agarrá relojes de arena para sumar tiempo y escapá de las sombras que te persiguen.
+//  Cada nivel es más grande. Si el tiempo llega a cero, se terminó.
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 600, H = 680, TS = 34;
+const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+
+BG.init({
+  id: 'maze', title: 'MAZE RUNNER', icon: '🌀', accent: '#2ef2ff', accent2: '#ffd400', music: true,
+  post: { bloom: .5, vignette: .45, thumbFx: true },
+  subtitle: 'Escapá de cada laberinto antes de que se acabe el tiempo. Tu antorcha solo alumbra cerca: explorá, juntá gemas y cuidado con las sombras.',
+  hud: [{ id: 'score', label: 'Puntos' }, { id: 'level', label: 'Nivel', color: '#ffd400' }, { id: 'time', label: 'Tiempo', color: '#2ef2ff', value: '0' }],
+  help: '<kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> o WASD mover (podés apretar el giro antes de llegar) · <kbd>H</kbd> brújula (−5 s) · <kbd>P</kbd> pausa',
+  helpTouch: 'Deslizá el dedo para correr y girar (o usá la cruceta) · 🧭 muestra el camino (−5 s)',
+  touch: { dpad: 'full', buttons: [{ action: 'hint', label: '🧭' }] },
+  onRestart: () => start(), onMenu: () => showMenu(),
+});
+BG.input.map.hint = ['KeyH', 'KeyX'];
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+
+let S = 0, grid = new Uint8Array(0), explored = new Uint8Array(0), crumbs = new Uint8Array(0), distP = new Int16Array(0);
+let pl = { x: 1, y: 1, px: 1, py: 1, dir: null, prog: 0, from: [1, 1], inv: 0 }, items = [], enemies = [], exit = { x: 1, y: 1 }, needKey = false, hasKey = false;
+let state = 'menu', t = 0, level = 1, score = 0, timeLeft = 0, lightR = 5, cam = { x: 0, y: 0 }, hint = null, hintT = 0, lastDir = null, swipeDir = null, hue = 190, clearT = 0, lockMsgT = 0, gems = 0, totalGems = 0, tickT = 0;
+const fogMem = document.createElement('canvas'), fm = fogMem.getContext('2d');
+const fogScr = document.createElement('canvas'), fs = fogScr.getContext('2d');
+fogScr.width = W / 2; fogScr.height = H / 2;
+
+// ── Generación ────────────────────────────────────────────────────────────
+const idx = (x, y) => y * S + x;
+const open = (x, y) => x >= 0 && y >= 0 && x < S && y < S && grid[idx(x, y)] === 0;
+function genMaze(n, braid) {
+  S = n * 2 + 1; grid = new Uint8Array(S * S).fill(1);
+  const vis = new Uint8Array(n * n), stack = [[0, 0]]; vis[0] = 1; grid[idx(1, 1)] = 0;
+  while (stack.length) {
+    const [cx, cy] = stack[stack.length - 1]; let moved = false;
+    for (const [dx, dy] of U.shuffle([[1, 0], [-1, 0], [0, 1], [0, -1]])) {
+      const nx = cx + dx, ny = cy + dy;
+      if (nx < 0 || ny < 0 || nx >= n || ny >= n || vis[ny * n + nx]) continue;
+      vis[ny * n + nx] = 1; grid[idx(cx * 2 + 1 + dx, cy * 2 + 1 + dy)] = 0; grid[idx(nx * 2 + 1, ny * 2 + 1)] = 0;
+      stack.push([nx, ny]); moved = true; break;
+    }
+    if (!moved) stack.pop();
+  }
+  // "trenzado": abre algunos callejones sin salida para crear circuitos (para escapar de las sombras)
+  for (let y = 1; y < S - 1; y += 2) for (let x = 1; x < S - 1; x += 2) {
+    if (neighbors(x, y).length !== 1 || Math.random() > braid) continue;
+    const opts = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => grid[idx(x + dx, y + dy)] === 1 && x + dx * 2 > 0 && x + dx * 2 < S - 1 && y + dy * 2 > 0 && y + dy * 2 < S - 1);
+    if (opts.length) { const [dx, dy] = U.pick(opts); grid[idx(x + dx, y + dy)] = 0; }
+  }
+}
+function neighbors(x, y) { const r = []; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (open(x + dx, y + dy)) r.push([x + dx, y + dy]); return r; }
+function bfs(sx, sy) {
+  const d = new Int16Array(S * S).fill(-1), q = [sx, sy]; d[idx(sx, sy)] = 0;
+  for (let h = 0; h < q.length; h += 2) { const x = q[h], y = q[h + 1], dd = d[idx(x, y)]; for (const [nx, ny] of neighbors(x, y)) if (d[idx(nx, ny)] < 0) { d[idx(nx, ny)] = dd + 1; q.push(nx, ny); } }
+  return d;
+}
+function pathTo(tx, ty) {
+  const d = bfs(tx, ty), p = []; let x = pl.x, y = pl.y, g = 0;
+  while ((x !== tx || y !== ty) && g++ < 5000) { const nb = neighbors(x, y).sort((a, b) => d[idx(a[0], a[1])] - d[idx(b[0], b[1])])[0]; if (!nb || d[idx(nb[0], nb[1])] < 0) break; [x, y] = nb; p.push(x, y); }
+  return p;
+}
+function loadLevel(n) {
+  level = n; const cells = Math.min(24, 7 + n);
+  genMaze(cells, .3 + Math.min(.3, n * .03));
+  explored = new Uint8Array(S * S); crumbs = new Uint8Array(S * S);
+  hue = (180 + n * 37) % 360;
+  const corners = [[1, 1], [S - 2, 1], [1, S - 2], [S - 2, S - 2]], st = U.pick(corners);
+  pl = { x: st[0], y: st[1], px: st[0], py: st[1], dir: null, prog: 0, from: st.slice(), inv: 0 };
+  const dS = bfs(pl.x, pl.y);
+  // salida: la celda más lejana
+  let best = 0; for (let y = 1; y < S; y += 2) for (let x = 1; x < S; x += 2) if (dS[idx(x, y)] > best) { best = dS[idx(x, y)]; exit = { x, y }; }
+  const dE = bfs(exit.x, exit.y);
+  const deadEnds = []; for (let y = 1; y < S; y += 2) for (let x = 1; x < S; x += 2) if (neighbors(x, y).length === 1 && !(x === pl.x && y === pl.y) && !(x === exit.x && y === exit.y)) deadEnds.push([x, y]);
+  const used = new Set([idx(pl.x, pl.y), idx(exit.x, exit.y)]);
+  const take = ([x, y]) => { used.add(idx(x, y)); return { x, y }; };
+  const freeCells = () => { const r = []; for (let y = 1; y < S; y++) for (let x = 1; x < S; x++) if (open(x, y) && !used.has(idx(x, y)) && dS[idx(x, y)] > 4) r.push([x, y]); return r; };
+  items = []; needKey = n >= 3; hasKey = false;
+  let keyDetour = 0;
+  if (needKey) {
+    const cand = (deadEnds.length ? deadEnds : freeCells()).filter(c => !used.has(idx(c[0], c[1]))).sort((a, b) => Math.min(dS[idx(b[0], b[1])], dE[idx(b[0], b[1])] * 1.2) - Math.min(dS[idx(a[0], a[1])], dE[idx(a[0], a[1])] * 1.2));
+    const k = cand[Math.floor(Math.random() * Math.max(1, Math.ceil(cand.length * .25)))] || cand[0];
+    if (k) { items.push(Object.assign(take(k), { kind: 'key' })); keyDetour = dS[idx(k[0], k[1])] + dE[idx(k[0], k[1])] - best; } else needKey = false;
+  }
+  U.shuffle(deadEnds);
+  totalGems = Math.min(26, 6 + Math.floor(n * 1.6)); gems = 0;
+  let placed = 0;
+  for (const c of deadEnds) { if (placed >= totalGems) break; if (used.has(idx(c[0], c[1]))) continue; items.push(Object.assign(take(c), { kind: 'gem', ph: U.rand(6) })); placed++; }
+  let fc = U.shuffle(freeCells());
+  while (placed < totalGems && fc.length) { const c = fc.pop(); if (used.has(idx(c[0], c[1]))) continue; items.push(Object.assign(take(c), { kind: 'gem', ph: U.rand(6) })); placed++; }
+  totalGems = placed;
+  fc = U.shuffle(freeCells()).filter(c => dS[idx(c[0], c[1])] > 10);
+  const nClock = 1 + Math.min(3, Math.floor(n / 3));
+  for (let i = 0; i < nClock && fc.length; i++) items.push(Object.assign(take(fc.pop()), { kind: 'clock' }));
+  if (n >= 2 && Math.random() < .55 && fc.length) items.push(Object.assign(take(fc.pop()), { kind: 'torch' }));
+  if (n >= 3 && Math.random() < .35 && fc.length) items.push(Object.assign(take(fc.pop()), { kind: 'map' }));
+  // sombras
+  enemies = [];
+  const nEn = n < 3 ? 0 : Math.min(5, Math.floor((n - 1) / 2));
+  const far = freeCells().filter(c => dS[idx(c[0], c[1])] > 14);
+  for (let i = 0; i < nEn && far.length; i++) { const c = far.splice(Math.floor(Math.random() * far.length), 1)[0]; enemies.push({ x: c[0], y: c[1], px: c[0], py: c[1], home: c, dir: null, prog: 0, base: Math.min(6.2, 3.8 + n * .18), spd: 4, chase: false }); }
+  lightR = Math.max(3.4, 5.4 - n * .18);
+  timeLeft = Math.round(18 + (best + keyDetour) * .42 + totalGems * .6);
+  hint = null; hintT = 0; clearT = 0;
+  fogMem.width = S; fogMem.height = S; reveal(pl.x, pl.y);
+  distP = bfs(pl.x, pl.y);
+  BG.hud.setAll({ level: n, time: timeLeft });
+  state = 'play';
+  BG.ui.toast(`NIVEL ${n} · ${S}×${S}` + (needKey ? ' · 🔑 buscá la llave' : ''), '#2ef2ff');
+}
+function reveal(cx, cy, all) {
+  let changed = false; const r = 2.6;
+  if (all) { explored.fill(1); changed = true; }
+  else for (let y = Math.max(0, Math.floor(cy - r)); y <= Math.min(S - 1, Math.ceil(cy + r)); y++) for (let x = Math.max(0, Math.floor(cx - r)); x <= Math.min(S - 1, Math.ceil(cx + r)); x++)
+    if (!explored[idx(x, y)] && (x - cx) ** 2 + (y - cy) ** 2 <= r * r) { explored[idx(x, y)] = 1; changed = true; }
+  if (changed) redrawFog();
+}
+function redrawFog() {
+  fm.globalCompositeOperation = 'source-over'; fm.fillStyle = '#000'; fm.fillRect(0, 0, S, S);
+  fm.globalCompositeOperation = 'destination-out'; fm.fillStyle = 'rgba(0,0,0,.58)';
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (explored[idx(x, y)]) fm.fillRect(x, y, 1, 1);
+  fm.globalCompositeOperation = 'source-over';
+}
+
+// ── Partida ───────────────────────────────────────────────────────────────
+function start() { score = 0; BG.hud.set('score', 0); FX.clear(); loadLevel(1); BG.start(); BG.music.play(SONG); }
+function showMenu() { state = 'menu'; BG.stop(); BG.music.stop(); if (!S) { genMaze(9, .3); explored = new Uint8Array(S * S).fill(1); crumbs = new Uint8Array(S * S); fogMem.width = S; fogMem.height = S; reveal(0, 0, true); pl = { x: 1, y: 1, px: 1, py: 1, dir: null, prog: 0, from: [1, 1], inv: 0 }; exit = { x: S - 2, y: S - 2 }; } BG.ui.menu({ buttons: [{ label: '▶ ENTRAR AL LABERINTO', primary: true, onClick: start }] }); }
+function over() {
+  state = 'over'; BG.stop(); BG.music.stop(); SFX.play('lose');
+  const r = BG.submitScore(score);
+  setTimeout(() => BG.ui.gameOver({ icon: '⌛', title: '¡SE ACABÓ EL TIEMPO!', score, isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Nivel', value: level }, { label: 'Récord', value: U.fmt(BG.getBest() || score) }], onRetry: start, onMenu: showMenu }), 800);
+}
+function levelDone() {
+  state = 'clear'; clearT = 0; SFX.play('win'); FX.flash('#2ef2ff', .35);
+  const bonus = 300 * level, tb = Math.max(0, Math.floor(timeLeft)) * 15;
+  addScore(bonus + tb);
+  BG.ui.toast(`¡ESCAPASTE! +${U.fmt(bonus)} · tiempo +${U.fmt(tb)}`, '#39ff88');
+  const ex = (exit.x + .5) * TS, ey = (exit.y + .5) * TS;
+  FX.burst(ex, ey, { n: 50, color: ['#2ef2ff', '#ffd400', '#fff'], speed: 300, life: 1 }); FX.ring(ex, ey, { color: '#2ef2ff', max: 140, width: 6 });
+}
+function addScore(n) { score += n; BG.hud.set('score', score, true); }
+function onTile() {
+  crumbs[idx(pl.x, pl.y)] = 1; reveal(pl.x, pl.y); distP = bfs(pl.x, pl.y);
+  const cx = (pl.x + .5) * TS, cy = (pl.y + .5) * TS;
+  for (const it of items) {
+    if (it.got || it.x !== pl.x || it.y !== pl.y) continue;
+    it.got = true;
+    if (it.kind === 'gem') { gems++; addScore(50 + level * 5); SFX.play('coin'); FX.burst(cx, cy, { n: 12, color: ['#2ef2ff', '#a8f7ff', '#fff'], speed: 160, life: .45 }); FX.text(cx, cy - 10, '+' + (50 + level * 5), { color: '#2ef2ff', size: 14 }); if (gems === totalGems) { addScore(500); BG.ui.toast('💎 ¡TODAS LAS GEMAS! +500', '#2ef2ff'); } }
+    else if (it.kind === 'key') { hasKey = true; SFX.play('power'); BG.ui.toast('🔑 ¡LLAVE! La salida está abierta', '#ffd400'); FX.ring(cx, cy, { color: '#ffd400', max: 80 }); FX.burst(cx, cy, { n: 20, color: ['#ffd400', '#fff'], speed: 200, life: .6 }); }
+    else if (it.kind === 'clock') { timeLeft += 10; SFX.play('power'); FX.text(cx, cy - 10, '+10 s', { color: '#39ff88', size: 18 }); FX.ring(cx, cy, { color: '#39ff88', max: 60 }); }
+    else if (it.kind === 'torch') { lightR += 1.8; SFX.play('power'); BG.ui.toast('🔦 ¡ANTORCHA! Ves más lejos', '#ff9a1f'); }
+    else if (it.kind === 'map') { reveal(0, 0, true); SFX.play('power'); BG.ui.toast('🗺️ ¡MAPA! Laberinto revelado', '#a855f7'); }
+  }
+  if (pl.x === exit.x && pl.y === exit.y) {
+    if (needKey && !hasKey) { if (lockMsgT <= 0) { BG.ui.toast('🔒 La salida está cerrada: buscá la llave', '#ff3d6e'); SFX.play('error'); lockMsgT = 2; } }
+    else levelDone();
+  }
+}
+function wantDir() {
+  const I = BG.input, held = Object.keys(DIRS).filter(d => I.isDown(d));
+  if (held.length) { swipeDir = null; return held.includes(lastDir) ? lastDir : held[held.length - 1]; }
+  return swipeDir;
+}
+function stepActor(a, dt, choose) {
+  if (!a.dir) { a.dir = choose(a); if (!a.dir) return false; a.from = [a.x, a.y]; a.x += DIRS[a.dir][0]; a.y += DIRS[a.dir][1]; a.prog = 0; }
+  a.prog += a.spd * dt;
+  if (a.prog >= 1) {
+    const over = a.prog - 1; a.prog = 0; a.dir = null; a.px = a.x; a.py = a.y;
+    return over + .0001;    // llegó: devuelve el sobrante para seguir sin trabarse
+  }
+  a.px = U.lerp(a.from[0], a.x, a.prog); a.py = U.lerp(a.from[1], a.y, a.prog);
+  return false;
+}
+function choosePlayer(a) {
+  const w = wantDir();
+  if (w && open(a.x + DIRS[w][0], a.y + DIRS[w][1])) { a.last = w; return w; }
+  // giro anticipado: si venías corriendo y el giro pedido todavía no se puede, seguís derecho
+  if (w && a.arrived && a.last && open(a.x + DIRS[a.last][0], a.y + DIRS[a.last][1])) return a.last;
+  a.arrived = false;
+  return null;
+}
+function chooseEnemy(e) {
+  const nb = Object.keys(DIRS).filter(d => open(e.x + DIRS[d][0], e.y + DIRS[d][1]));
+  if (!nb.length) return null;
+  const dp = distP[idx(e.x, e.y)];
+  e.chase = dp >= 0 && dp < 9 && pl.inv <= 0;
+  if (e.chase) return nb.sort((a, b) => distP[idx(e.x + DIRS[a][0], e.y + DIRS[a][1])] - distP[idx(e.x + DIRS[b][0], e.y + DIRS[b][1])])[0];
+  const back = e.lastDir && { up: 'down', down: 'up', left: 'right', right: 'left' }[e.lastDir];
+  const opts = nb.length > 1 ? nb.filter(d => d !== back) : nb;
+  return e.lastDir = U.pick(opts);
+}
+function update(dt) {
+  t += dt; lockMsgT -= dt;
+  if (state === 'menu' || state === 'over') return;
+  if (state === 'clear') { clearT += dt; if (clearT > 2) loadLevel(level + 1); return; }
+  if (state !== 'play') return;
+  timeLeft -= dt; pl.inv -= dt;
+  if (timeLeft <= 10 && timeLeft > 0) { tickT -= dt; if (tickT <= 0) { tickT = 1; SFX.play('tick'); } }
+  BG.hud.set('time', Math.max(0, Math.ceil(timeLeft)));
+  if (timeLeft <= 0) { timeLeft = 0; return over(); }
+  // jugador (puede recorrer varias casillas por frame sin perder el sobrante)
+  pl.spd = 8.5; let rem = dt, g = 0;
+  while (rem > 0 && g++ < 4) {
+    const r = stepActor(pl, rem, choosePlayer);
+    if (r === false) break;
+    pl.arrived = true; onTile(); if (state !== 'play') return;
+    rem = (r - .0001) / pl.spd;
+  }
+  if (pl.dir && Math.random() < dt * 20) FX.burst((pl.px + .5) * TS, (pl.py + .5) * TS, { n: 1, color: ['#2ef2ff', '#fff'], speed: 30, life: .4, size: 2.5 });
+  // sombras
+  for (const e of enemies) {
+    let rem2 = dt, g2 = 0;
+    e.spd = e.chase ? e.base : e.base * .75;
+    while (rem2 > 0 && g2++ < 3) { const r = stepActor(e, rem2, chooseEnemy); if (r === false) break; rem2 = (r - .0001) / e.spd; }
+    if (pl.inv <= 0 && Math.hypot(e.px - pl.px, e.py - pl.py) < .6) {
+      timeLeft = Math.max(0, timeLeft - 10); pl.inv = 2; SFX.play('hurt'); FX.shake(9, .4); FX.flash('#a020f0', .4);
+      FX.text((pl.px + .5) * TS, (pl.py + .5) * TS - 14, '−10 s', { color: '#ff3d6e', size: 20 });
+      e.x = e.home[0]; e.y = e.home[1]; e.px = e.x; e.py = e.y; e.dir = null; e.prog = 0;
+    }
+  }
+  // brújula
+  const I = BG.input, h1 = I.pressed('hint'), h2 = I.pressed('action2');
+  if ((h1 || h2) && hintT <= 0) {
+    const tgt = needKey && !hasKey ? items.find(i => i.kind === 'key' && !i.got) : exit;
+    if (tgt) { hint = pathTo(tgt.x, tgt.y); hintT = 2.6; timeLeft = Math.max(1, timeLeft - 5); SFX.play('select'); FX.text((pl.px + .5) * TS, (pl.py + .5) * TS - 14, '−5 s', { color: '#ffd400', size: 16 }); }
+  }
+  if (hintT > 0) hintT -= dt;
+}
+
+// ── Dibujo ────────────────────────────────────────────────────────────────
+function render() {
+  ctx.fillStyle = '#05050b'; ctx.fillRect(0, 0, W, H);
+  const worldPx = S * TS;
+  const tx = worldPx <= W ? (worldPx - W) / 2 : U.clamp((pl.px + .5) * TS - W / 2, 0, worldPx - W);
+  const ty = worldPx <= H ? (worldPx - H) / 2 : U.clamp((pl.py + .5) * TS - H / 2, 0, worldPx - H);
+  cam.x = state === 'play' || state === 'clear' ? U.lerp(cam.x, tx, .2) : tx; cam.y = state === 'play' || state === 'clear' ? U.lerp(cam.y, ty, .2) : ty;
+  if (Math.abs(cam.x - tx) > TS * 4) cam.x = tx; if (Math.abs(cam.y - ty) > TS * 4) cam.y = ty;
+  ctx.save(); FX.applyShake(ctx); ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
+  const x0 = Math.max(0, Math.floor(cam.x / TS) - 1), x1 = Math.min(S - 1, Math.ceil((cam.x + W) / TS) + 1);
+  const y0 = Math.max(0, Math.floor(cam.y / TS) - 1), y1 = Math.min(S - 1, Math.ceil((cam.y + H) / TS) + 1);
+  const wallTop = `hsl(${hue},38%,34%)`, wallFront = `hsl(${hue},40%,18%)`, wallHi = `hsl(${hue},60%,62%)`;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const X = x * TS, Y = y * TS;
+    if (grid[idx(x, y)] === 0) {
+      ctx.fillStyle = (x + y) % 2 ? '#14161f' : '#171a25'; ctx.fillRect(X, Y, TS, TS);
+      if (crumbs[idx(x, y)]) { ctx.fillStyle = 'rgba(46,242,255,.10)'; ctx.fillRect(X + TS * .38, Y + TS * .38, TS * .24, TS * .24); }
+    }
+  }
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    if (grid[idx(x, y)] !== 1) continue;
+    const X = x * TS, Y = y * TS;
+    ctx.fillStyle = wallTop; ctx.fillRect(X, Y - 8, TS, TS);
+    if (y + 1 < S && grid[idx(x, y + 1)] === 0) { ctx.fillStyle = wallFront; ctx.fillRect(X, Y + TS - 8, TS, 8); }
+    if (y > 0 && grid[idx(x, y - 1)] === 0) { ctx.fillStyle = wallHi; ctx.fillRect(X, Y - 8, TS, 2); }
+    ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(X + ((x * 7 + y * 3) % 5) * 5 + 3, Y - 4 + ((x * 3 + y) % 3) * 8, 6, 3);
+  }
+  // salida
+  const ex = (exit.x + .5) * TS, ey = (exit.y + .5) * TS, locked = needKey && !hasKey;
+  D.glowCircle(ctx, ex, ey, TS * .42, locked ? 'rgba(255,61,110,.35)' : 'rgba(46,242,255,.35)', 24);
+  ctx.lineWidth = 3;
+  for (let k = 0; k < 3; k++) { ctx.strokeStyle = locked ? '#ff3d6e' : ['#2ef2ff', '#a8f7ff', '#ffffff'][k]; ctx.beginPath(); ctx.arc(ex, ey, TS * (.18 + k * .1), t * (2 + k) + k, t * (2 + k) + k + 4); ctx.stroke(); }
+  if (locked) D.text(ctx, '🔒', ex, ey, { size: 16, family: 'body' });
+  // objetos
+  for (const it of items) {
+    if (it.got) continue;
+    const x = (it.x + .5) * TS, y = (it.y + .5) * TS + Math.sin(t * 3 + it.x) * 2;
+    if (it.kind === 'gem') {
+      const s = 8, w = Math.abs(Math.cos(t * 2.5 + (it.ph || 0))) * s + 2;
+      ctx.fillStyle = '#2ef2ff'; ctx.shadowColor = '#2ef2ff'; ctx.shadowBlur = 10;
+      ctx.beginPath(); ctx.moveTo(x, y - s); ctx.lineTo(x + w, y); ctx.lineTo(x, y + s); ctx.lineTo(x - w, y); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.moveTo(x, y - s); ctx.lineTo(x + w * .4, y - 1); ctx.lineTo(x, y); ctx.fill();
+    } else {
+      const e = { key: '🔑', clock: '⏳', torch: '🔦', map: '🗺️' }[it.kind];
+      D.glowCircle(ctx, x, y, 11, it.kind === 'key' ? 'rgba(255,212,0,.35)' : 'rgba(255,255,255,.18)', 16);
+      D.text(ctx, e, x, y + 1, { size: 20, family: 'body' });
+    }
+  }
+  // camino de la brújula
+  if (hintT > 0 && hint) {
+    ctx.fillStyle = `rgba(255,212,0,${Math.min(1, hintT) * .8})`;
+    for (let i = 0; i < hint.length; i += 2) { const k = (i / 2 + Math.floor(t * 12)) % 4 === 0 ? 4 : 2.5; ctx.beginPath(); ctx.arc((hint[i] + .5) * TS, (hint[i + 1] + .5) * TS, k, 0, 7); ctx.fill(); }
+  }
+  // sombras (cuerpo)
+  for (const e of enemies) drawShadow(e);
+  // jugador
+  drawPlayer();
+  FX.draw(ctx);
+  ctx.restore();
+  // niebla: memoria de lo explorado + luz de la antorcha
+  if (state !== 'menu') {
+    const k = fogScr.width / W;
+    fs.globalCompositeOperation = 'source-over'; fs.clearRect(0, 0, fogScr.width, fogScr.height);
+    fs.fillStyle = '#000'; fs.fillRect(0, 0, fogScr.width, fogScr.height);
+    fs.globalCompositeOperation = 'destination-out';
+    fs.fillStyle = '#000'; fs.fillRect(-cam.x * k, -cam.y * k, worldPx * k, worldPx * k);
+    fs.globalCompositeOperation = 'source-over'; fs.imageSmoothingEnabled = true;
+    fs.drawImage(fogMem, -cam.x * k, -cam.y * k, worldPx * k, worldPx * k);
+    const px = ((pl.px + .5) * TS - cam.x) * k, py = ((pl.py + .5) * TS - cam.y) * k, R = lightR * TS * k * (1 + Math.sin(t * 9) * .025 + Math.sin(t * 23) * .015);
+    fs.globalCompositeOperation = 'destination-out';
+    const g = fs.createRadialGradient(px, py, R * .25, px, py, R); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(.6, 'rgba(0,0,0,.85)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    fs.fillStyle = g; fs.fillRect(px - R, py - R, R * 2, R * 2);
+    fs.globalCompositeOperation = 'source-over';
+    ctx.drawImage(fogScr, 0, 0, W, H);
+    // tinte cálido de la antorcha
+    const lg = ctx.createRadialGradient(px / k, py / k, 0, px / k, py / k, R / k); lg.addColorStop(0, 'rgba(255,170,60,.10)'); lg.addColorStop(1, 'rgba(255,170,60,0)');
+    ctx.fillStyle = lg; ctx.fillRect(0, 0, W, H);
+    // ojos de las sombras: se ven en la oscuridad
+    for (const e of enemies) {
+      const x = (e.px + .5) * TS - cam.x, y = (e.py + .5) * TS - cam.y;
+      if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
+      const col = e.chase ? '#ff2040' : '#c070ff';
+      for (const s of [-5, 5]) D.glowCircle(ctx, x + s, y - 3, 2.6, col, 10);
+    }
+    // flecha hacia la salida si ya la descubriste y está fuera de pantalla
+    const sx = ex - cam.x, sy = ey - cam.y;
+    if (explored[idx(exit.x, exit.y)] && (sx < 0 || sy < 0 || sx > W || sy > H)) {
+      const a = Math.atan2(sy - H / 2, sx - W / 2), r = Math.min(W, H) / 2 - 26;
+      ctx.save(); ctx.translate(W / 2 + Math.cos(a) * r, H / 2 + Math.sin(a) * r); ctx.rotate(a);
+      ctx.fillStyle = locked ? '#ff3d6e' : '#2ef2ff'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-8, -8); ctx.lineTo(-8, 8); ctx.fill(); ctx.restore();
+    }
+    // inventario
+    ctx.fillStyle = 'rgba(0,0,0,.5)'; D.rr(ctx, 10, 10, 196, 30, 10); ctx.fill();
+    D.text(ctx, `💎 ${gems}/${totalGems}`, 20, 26, { size: 14, align: 'left', family: 'body' });
+    D.text(ctx, needKey ? (hasKey ? '🔑 ✔' : '🔑 ✖') : '🔓', 120, 26, { size: 14, align: 'left', family: 'body', color: hasKey || !needKey ? '#ffd400' : '#888' });
+    if (timeLeft <= 10 && state === 'play') { ctx.fillStyle = `rgba(255,30,60,${.08 + Math.sin(t * 8) * .06})`; ctx.fillRect(0, 0, W, H); }
+  }
+  if (state === 'clear') D.text(ctx, '¡ESCAPASTE!', W / 2, H / 2, { size: 38, color: '#2ef2ff', glow: '#2ef2ff', blur: 24 });
+  FX.drawFlash(ctx, W, H);
+}
+function drawPlayer() {
+  const x = (pl.px + .5) * TS, y = (pl.py + .5) * TS;
+  if (pl.inv > 0 && Math.floor(pl.inv * 12) % 2) return;
+  ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.beginPath(); ctx.ellipse(x, y + 11, 10, 4, 0, 0, 7); ctx.fill();
+  const bob = Math.sin(t * (pl.dir ? 18 : 4)) * 1.5;
+  D.glowCircle(ctx, x, y - 2 + bob, 11, '#2ef2ff', 18);
+  ctx.fillStyle = '#e8fdff'; ctx.beginPath(); ctx.arc(x - 3, y - 6 + bob, 4, 0, 7); ctx.fill();
+  const d = pl.last ? DIRS[pl.last] : [0, 1];
+  ctx.fillStyle = '#05303a'; for (const s of [-4, 4]) { ctx.beginPath(); ctx.arc(x + s + d[0] * 3, y - 2 + bob + d[1] * 3, 2.2, 0, 7); ctx.fill(); }
+  // llama de la antorcha
+  const fx = x + 10, fy = y - 12 + bob;
+  ctx.fillStyle = '#7a4a1a'; ctx.fillRect(fx - 1.5, fy, 3, 10);
+  D.glowCircle(ctx, fx, fy - 2 + Math.sin(t * 20) * 1, 4 + Math.sin(t * 13) * .8, '#ffb347', 14);
+}
+function drawShadow(e) {
+  const x = (e.px + .5) * TS, y = (e.py + .5) * TS;
+  ctx.fillStyle = e.chase ? 'rgba(90,10,40,.92)' : 'rgba(40,10,70,.9)';
+  ctx.beginPath(); ctx.arc(x, y - 3, 12, Math.PI, 0);
+  for (let i = 0; i <= 4; i++) ctx.lineTo(x + 12 - i * 6, y + 10 + (i % 2 ? -4 : 0) + Math.sin(t * 10 + i) * 2);
+  ctx.closePath(); ctx.fill();
+}
+view.canvas.addEventListener('pointerdown', e => { sw = { x: e.clientX, y: e.clientY }; });
+view.canvas.addEventListener('pointermove', e => {
+  if (!sw) return; const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 22) return;
+  swipeDir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); pl.last = pl.last || swipeDir; sw = { x: e.clientX, y: e.clientY };
+});
+window.addEventListener('pointerup', () => { sw = null; });
+let sw = null;
+['left', 'right', 'up', 'down'].forEach(d => BG.input.on(d, () => { lastDir = d; }));
+const SONG = { bpm: 96, tracks: [
+  { type: 'triangle', vol: .3, notes: 'D4 . . F4 . . A4 . G4 . . F4 . . E4 . D4 . . F4 . . A4 . C5 . . A4 . . G4 . Bb3 . . D4 . . F4 . E4 . . D4 . . C#4 . D4 . . . . . . . . . . . . . . .' },
+  { type: 'sine', vol: .5, notes: 'D2 - - - - - - - D2 - - - - - - - Bb1 - - - - - - - A1 - - - - - - - D2 - - - - - - - D2 - - - - - - - Bb1 - - - - - - - A1 - - - - - - -' },
+  { drum: true, vol: .3, notes: 'K . . . H . . . K . K . H . . .' },
+] };
+if (BG.thumb) {
+  level = 5; genMaze(8, .35); explored = new Uint8Array(S * S); crumbs = new Uint8Array(S * S); fogMem.width = S; fogMem.height = S;
+  pl = { x: 7, y: 7, px: 7, py: 7, dir: 'right', prog: 0, from: [7, 7], inv: 0, last: 'right' }; grid[idx(7, 7)] = 0;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if ((x - 7) ** 2 + (y - 7) ** 2 < 70) explored[idx(x, y)] = 1;
+  redrawFog(); exit = { x: 11, y: 9 }; grid[idx(11, 9)] = 0; needKey = false; lightR = 4.6; hue = 200;
+  items = [{ x: 5, y: 7, kind: 'gem', ph: 0 }, { x: 9, y: 5, kind: 'gem', ph: 1 }, { x: 7, y: 11, kind: 'clock' }].filter(i => { grid[idx(i.x, i.y)] = 0; return true; });
+  enemies = [{ x: 3, y: 5, px: 3, py: 5, chase: true }]; grid[idx(3, 5)] = 0; gems = 4; totalGems = 11;
+  state = 'thumb'; update = () => { t += 1 / 60; };
+} else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

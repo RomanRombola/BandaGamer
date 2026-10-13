@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Breakout Neon</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  BREAKOUT NEON — BandaGamer (inspirado en Arkanoid)
+//  10 niveles diseñados + infinitos generados · ladrillos duros, de metal, bombas,
+//  regalo y oro · 8 cápsulas (ancha, multibola, láser, lento, pegamento, fuego,
+//  vida y la mala: paleta chica) · combos sin tocar la paleta.
+//  Modo AVALANCHA: la pared de ladrillos baja sin parar.
+//  Arreglos "de fábrica": colisión con sub-pasos (la pelota no atraviesa ladrillos),
+//  rebote con un solo eje por choque, velocidad vertical mínima (sin bucles
+//  horizontales eternos) y el metal se debilita si pasan 30 s sin romper nada.
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 600, H = 820, COLS = 11, BW = 50, BH = 24, BX = (W - COLS * BW) / 2, BY = 96, PY = H - 84, PH = 16, R = 7;
+const PAL = { '1': '#ff2b6e', '2': '#ff8a1f', '3': '#ffd400', '4': '#39ff88', '5': '#2ef2ff', '6': '#a855f7' };
+const LEVELS = [
+  ['BIENVENIDA', ['66666666666', '55555555555', '44444444444', '33333333333', '22222222222', '11111111111']],
+  ['PIRÁMIDE', ['.....P.....', '....111....', '...22222...', '..3333333..', '.444444444.', '55555555555', 'HHHHHHHHHHH']],
+  ['TABLERO', ['1.2.3.4.5.6', '.1.2.3.4.5.', '6.5.4.3.2.1', '.6.5.4.3.2.', 'H.H.H.H.H.H', '.P.B.P.B.P.']],
+  ['INVASOR', ['..5.....5..', '...5...5...', '..5555555..', '.55.555.55.', '55555555555', '5.5555555.5', '5.5.....5.5', '...55.55...', '...........', 'B.........B']],
+  ['FORTALEZA', ['MMM.....MMM', 'M1M.HHH.M1M', 'MPM.HBH.MPM', 'M2M.HHH.M2M', '...........', '33333333333', '44444444444']],
+  ['CORAZÓN', ['..11...11..', '.1111.1111.', '11111111111', '11111P11111', '.111111111.', '..1111111..', '...11111...', '....111....', '.....1.....']],
+  ['BOMBAS', ['1B1B1B1B1B1', '22222222222', 'B3B3B3B3B3B', '44444444444', '5B5B5B5B5B5', 'XXXXXXXXXXX']],
+  ['MURALLAS', ['HHHHHHHHHHH', 'B6666G6666B', 'HXHXHXHXHXH', '...........', '1P1P1P1P1P1', 'MMMM...MMMM', '22222222222']],
+  ['DIAMANTE', ['.....X.....', '....XHX....', '...XH3HX...', '..XH343HX..', '.XH34P43HX.', '..XH343HX..', '...XH3HX...', '....XHX....', '.....X.....']],
+  ['FIEBRE DE ORO', ['G.G.G.G.G.G', 'HHHHHHHHHHH', 'M.M.M.M.M.M', '55555555555', '44444444444', 'B.B.B.B.B.B', '33333333333', 'XXXXXXXXXXX']],
+];
+const PU = {
+  wide: { l: 'E', c: '#2ef2ff', n: 'PALETA ANCHA', w: 3, t: 15 }, multi: { l: 'D', c: '#ffd400', n: 'MULTIBOLA', w: 3 },
+  laser: { l: 'L', c: '#ff2b6e', n: 'LÁSER (Espacio / tocá)', w: 2, t: 12 }, slow: { l: 'S', c: '#39ff88', n: 'PELOTA LENTA', w: 2, t: 10 },
+  catch: { l: 'C', c: '#b8ff3e', n: 'PEGAMENTO', w: 2, t: 15 }, fire: { l: 'F', c: '#ff7a1a', n: 'BOLA DE FUEGO', w: 1.4, t: 7 },
+  life: { l: '+', c: '#ff6ab0', n: '+1 VIDA', w: .6 }, shrink: { l: '−', c: '#ff3030', n: '¡PALETA CHICA!', w: 1.3, t: 10 },
+};
+
+BG.init({
+  id: 'breakout', title: 'BREAKOUT NEON', icon: '🧱', accent: '#2ef2ff', accent2: '#ff2bd6', music: true,
+  post: { bloom: .55, vignette: .35, scan: .05, thumbFx: true },
+  subtitle: 'Rompé todos los ladrillos. Agarrá las cápsulas que caen (¡menos la roja!) y encadená golpes sin tocar la paleta para multiplicar puntos.',
+  hud: [{ id: 'score', label: 'Puntos' }, { id: 'level', label: 'Nivel', color: '#ff2bd6' }, { id: 'lives', label: 'Vidas', color: '#ff6ab0', value: '❤❤❤' }],
+  help: 'Mouse o <kbd>←</kbd><kbd>→</kbd> mover · <kbd>Espacio</kbd> lanzar / disparar láser · <kbd>P</kbd> pausa',
+  helpTouch: 'Deslizá el dedo para mover la paleta · tocá para lanzar / disparar',
+  touch: { buttons: [{ action: 'action', label: '⦿', wide: true }] },
+  onRestart: () => start(mode), onMenu: () => showMenu(),
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+const STARS = D.stars(90, W, H * .6, 5);
+
+let bricks = [], balls = [], caps = [], lasers = [], pending = [], pad = { x: W / 2, w: 104, tw: 104, vx: 0 }, eff = {};
+let mode = 'default', descT = 0, shifts = 0, state = 'menu', t = 0, score = 0, level = 1, lives = 3, chain = 0, hits = 0, stateT = 0, idleT = 0, metalWeak = false, targetX = null, laserCD = 0, levelName = '', grid = [];
+
+function start(m) {
+  mode = m || mode; score = 0; level = 1; lives = 3; BG.hud.setAll({ score: 0 }); updLives();
+  FX.clear(); if (mode === 'aval') loadAval(); else loadLevel(1); BG.start(); BG.music.play(SONG);
+}
+// ── Modo Avalancha ────────────────────────────────────────────────────────
+function genRow() {
+  let row = '';
+  for (let c = 0; c < COLS; c++) { const x = Math.random(); row += x < .14 ? '.' : x < .24 + level * .01 ? 'H' : x < .27 + level * .006 ? 'X' : x < .33 ? 'B' : x < .36 ? 'P' : String(1 + Math.floor(Math.random() * 6)); }
+  return row;
+}
+function rebuildGrid() { grid = []; for (const b of bricks) if (b.alive) (grid[b.r] = grid[b.r] || [])[b.c] = b; }
+function loadAval() {
+  level = 1; shifts = 0; levelName = 'AVALANCHA';
+  buildBricks(Array.from({ length: 5 }, genRow));
+  balls = []; caps = []; lasers = []; pending = []; eff = {}; chain = 0; hits = 0; idleT = 0; metalWeak = false;
+  pad.tw = 104; newBall(); descT = 11; BG.hud.set('level', 1, true); state = 'ready'; stateT = 0;
+}
+function shiftDown() {
+  shifts++;
+  if (shifts % 4 === 0) { level++; BG.hud.set('level', level, true); }
+  bricks = bricks.filter(b => b.alive);
+  for (const b of bricks) { b.r++; b.y += BH; b.drop = Math.min(b.drop, 0) - BH; }
+  [...genRow()].forEach((ch, c) => {
+    if (ch === '.') return;
+    const nb = { r: 0, c, x: BX + c * BW + 1, y: BY + 1, w: BW - 2, h: BH - 2, type: ch, alive: true, flash: 0, drop: -BH };
+    buildBrickProps(nb); bricks.push(nb);
+  });
+  rebuildGrid(); SFX.play('drop'); FX.shake(3, .15);
+  if (bricks.some(b => b.alive && b.y + b.h >= PY - 34)) over('¡TE APLASTÓ LA AVALANCHA!');
+}
+function showMenu() {
+  state = 'menu'; BG.stop(); BG.music.stop();
+  if (!bricks.length) buildBricks(LEVELS[5][1]);
+  const best = k => { const b = BG.getBest(k); return b != null ? 'récord ' + U.fmt(b) : ''; };
+  BG.ui.menu({ stats: null, buttons: [{ label: '▶ CLÁSICO', small: best('default') || '10 niveles + infinitos', primary: true, onClick: () => start('default') }, { label: '🌋 AVALANCHA', small: best('aval') || 'la pared baja sin parar', onClick: () => start('aval') }] });
+}
+function updLives() { BG.hud.set('lives', lives > 0 ? (lives > 5 ? '❤×' + lives : '❤'.repeat(lives)) : '—'); }
+function genLevel(n) {
+  const rng = U.rng(n * 977 + 13), rows = Math.min(10, 6 + Math.floor((n - 10) / 3)), out = [];
+  const pk = arr => arr[Math.floor(rng() * arr.length)];
+  for (let r = 0; r < rows; r++) {
+    const half = []; const col = String(1 + (r % 6));
+    for (let c = 0; c < 6; c++) {
+      const x = rng(); let ch;
+      if (x < .14) ch = '.'; else if (x < .2 + n * .004) ch = 'H'; else if (x < .23 + n * .006) ch = 'X';
+      else if (x < .26 + n * .003 && r < rows - 1 && r > 0) ch = 'M'; else if (x < .3) ch = 'B'; else if (x < .33) ch = 'P'; else if (x < .335) ch = 'G'; else ch = rng() < .7 ? col : pk(['1', '2', '3', '4', '5', '6']);
+      half.push(ch);
+    }
+    out.push(half.join('') + half.slice(0, 5).reverse().join(''));
+  }
+  return out;
+}
+function buildBricks(map) {
+  bricks = []; grid = [];
+  map.forEach((row, r) => {
+    grid[r] = [];
+    [...row].forEach((ch, c) => {
+      if (ch === '.') return;
+      const b = { r, c, x: BX + c * BW + 1, y: BY + r * BH + 1, w: BW - 2, h: BH - 2, type: ch, alive: true, flash: 0, drop: -200 - r * 40 - c * 12 };
+      buildBrickProps(b); bricks.push(b); grid[r][c] = b;
+    });
+  });
+}
+function buildBrickProps(b) {
+  const ch = b.type;
+  if (PAL[ch]) { b.hp = 1; b.color = PAL[ch]; }
+  else if (ch === 'H') { b.hp = 2; b.color = '#9fb4d8'; }
+  else if (ch === 'X') { b.hp = 3; b.color = '#c8a0ff'; }
+  else if (ch === 'M') { b.hp = 1; b.color = '#7c8494'; }
+  else if (ch === 'B') { b.hp = 1; b.color = '#ff3030'; }
+  else if (ch === 'P') { b.hp = 1; b.color = '#ffffff'; }
+  else if (ch === 'G') { b.hp = 2; b.color = '#ffc94a'; }
+  b.max = b.hp;
+}
+function loadLevel(n) {
+  level = n; const L = LEVELS[n - 1];
+  levelName = L ? L[0] : 'SECTOR ' + n;
+  buildBricks(L ? L[1] : genLevel(n));
+  balls = []; caps = []; lasers = []; pending = []; eff = {}; chain = 0; hits = 0; idleT = 0; metalWeak = false;
+  pad.tw = 104; newBall();
+  BG.hud.set('level', n, true);
+  state = 'ready'; stateT = 0;
+}
+function newBall() { balls = [{ x: pad.x, y: PY - R, vx: 0, vy: 0, stuck: 0, trail: [], noPad: 0 }]; }
+function speed() { return Math.min(800, 430 + level * 12 + Math.min(hits, 45) * 4) * (eff.slow > 0 ? .65 : 1); }
+function launch(b) {
+  const a = U.clamp(b.stuck / (pad.w / 2), -1, 1) * .9 + U.rand(-.08, .08);
+  const s = speed(); b.vx = Math.sin(a) * s; b.vy = -Math.cos(a) * s; b.stuck = null; SFX.play('bounce');
+}
+function minVertical(b) {
+  const s = Math.hypot(b.vx, b.vy) || speed();
+  if (Math.abs(b.vy) < s * .32) { b.vy = (b.vy < 0 ? -1 : 1) * s * .32; b.vx = Math.sign(b.vx || 1) * Math.sqrt(s * s - b.vy * b.vy); }
+}
+
+// ── Ladrillos ─────────────────────────────────────────────────────────────
+function hitBrick(br) {
+  idleT = 0;
+  if (br.type === 'M' && !metalWeak) { br.flash = .15; SFX.tone({ f: 1400, f2: 900, dur: .05, type: 'square', vol: .08 }); return; }
+  br.hp--; br.flash = .14;
+  if (br.hp > 0) { SFX.tone({ f: 520 + br.hp * 120, dur: .05, type: 'square', vol: .1 }); FX.burst(br.x + br.w / 2, br.y + br.h / 2, { n: 5, color: [br.color, '#fff'], speed: 90, life: .3 }); return; }
+  destroy(br);
+}
+function destroy(br) {
+  if (!br.alive) return;
+  br.alive = false; chain++;
+  const mult = 1 + Math.floor(chain / 4);
+  const base = br.type === 'G' ? 300 : br.type === 'X' ? 50 : br.type === 'H' ? 30 : br.type === 'M' ? 80 : 10 + level;
+  const pts = base * mult; score += pts; BG.hud.set('score', score, true);
+  const cx = br.x + br.w / 2, cy = br.y + br.h / 2;
+  FX.burst(cx, cy, { n: 14, color: [br.color, '#fff'], speed: 200, life: .45, size: 3.5, gravity: 300 });
+  if (mult > 1 || base >= 50) FX.text(cx, cy, '+' + pts + (mult > 1 ? ' ×' + mult : ''), { color: mult > 2 ? '#ffd400' : '#fff', size: 13 + Math.min(8, mult * 2) });
+  SFX.tone({ f: 440 * Math.pow(2, Math.min(chain, 24) / 12), dur: .07, type: 'square', vol: .12 });
+  if (br.type === 'B') {
+    SFX.play('explode'); FX.shake(7, .3); FX.ring(cx, cy, { color: '#ff7a1a', max: 90, width: 5 }); FX.burst(cx, cy, { n: 26, color: ['#ff7a1a', '#ffd400', '#ff3030'], speed: 280, life: .5 });
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { const nb = grid[br.r + dr] && grid[br.r + dr][br.c + dc]; if (nb && nb.alive && (nb.type !== 'M' || metalWeak)) pending.push({ br: nb, t: .08 }); }
+  }
+  if (br.type === 'P' || br.type === 'G' || Math.random() < .08) spawnCap(cx, cy, br.type === 'G');
+  if (!bricks.some(b => b.alive && (b.type !== 'M' || metalWeak))) {
+    if (mode === 'aval') { score += 1000; BG.hud.set('score', score, true); BG.ui.toast('¡PARED LIMPIA! +1.000', '#39ff88'); SFX.play('win'); for (let i = 0; i < 3; i++) shiftDown(); }
+    else levelClear();
+  }
+}
+function spawnCap(x, y, good) {
+  let tot = 0; const ks = Object.keys(PU).filter(k => !(good && k === 'shrink'));
+  ks.forEach(k => tot += PU[k].w);
+  let r = Math.random() * tot, k = ks[0];
+  for (const kk of ks) { r -= PU[kk].w; if (r <= 0) { k = kk; break; } }
+  caps.push({ x, y, k, rot: 0 });
+}
+function applyCap(k) {
+  const P = PU[k]; SFX.play(k === 'shrink' ? 'error' : 'power'); BG.ui.toast(P.n, P.c);
+  FX.ring(pad.x, PY, { color: P.c, max: 80 }); score += 50; BG.hud.set('score', score);
+  if (k === 'life') { lives++; updLives(); return; }
+  if (k === 'multi') {
+    const add = [];
+    for (const b of balls.slice(0, 4)) { if (b.stuck != null) launch(b); const s = Math.hypot(b.vx, b.vy), a = Math.atan2(b.vy, b.vx); for (const da of [-.45, .45]) add.push({ x: b.x, y: b.y, vx: Math.cos(a + da) * s, vy: Math.sin(a + da) * s, stuck: null, trail: [], noPad: 0 }); }
+    add.forEach(minVertical); balls.push(...add.slice(0, 12 - balls.length)); return;
+  }
+  if (k === 'wide') eff.shrink = 0; if (k === 'shrink') eff.wide = 0;
+  eff[k] = P.t;
+}
+function levelClear() {
+  if (state !== 'play' && state !== 'ready') return;
+  state = 'clear'; stateT = 0; SFX.play('win'); FX.flash('#2ef2ff', .3);
+  const bonus = 500 * level + lives * 100; score += bonus; BG.hud.set('score', score, true);
+  BG.ui.toast(`¡NIVEL COMPLETO! +${U.fmt(bonus)}`, '#39ff88');
+  for (let i = 0; i < 4; i++) setTimeout(() => FX.burst(U.rand(80, W - 80), U.rand(120, 400), { n: 30, color: ['#2ef2ff', '#ff2bd6', '#ffd400'], speed: 260, life: .8 }), i * 160);
+}
+function loseBall() {
+  lives--; updLives(); SFX.play('hurt'); FX.shake(8, .35); FX.flash('#ff3d6e', .35);
+  if (lives <= 0) return over();
+  eff = {}; caps = []; lasers = []; pad.tw = 104; chain = 0; newBall(); state = 'ready'; stateT = 0;
+}
+function over(title) {
+  if (state === 'over') return;
+  state = 'over'; BG.stop(); BG.music.stop(); SFX.play('lose');
+  const r = BG.submitScore(score, { mode });
+  setTimeout(() => BG.ui.gameOver({ icon: '🧱', title: title || 'GAME OVER', score, isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: mode === 'aval' ? 'Velocidad' : 'Nivel', value: level }, { label: 'Récord', value: U.fmt(BG.getBest(mode) || score) }], onRetry: () => start(mode), onMenu: showMenu }), 700);
+}
+
+// ── Actualización ─────────────────────────────────────────────────────────
+function update(dt) {
+  t += dt;
+  for (const b of bricks) { if (b.drop < 0) b.drop = Math.min(0, b.drop + dt * 900); b.flash = Math.max(0, b.flash - dt); }
+  if (state === 'menu' || state === 'over') return;
+  const I = BG.input;
+  // paleta
+  pad.tw = eff.wide > 0 ? 164 : eff.shrink > 0 ? 66 : 104;
+  pad.w = U.lerp(pad.w, pad.tw, Math.min(1, dt * 10));
+  const ax = I.axisX(), ox = pad.x;
+  if (ax) { targetX = null; pad.x += ax * 760 * dt; }
+  else if (targetX != null) pad.x = U.lerp(pad.x, targetX, Math.min(1, dt * 22));
+  pad.x = U.clamp(pad.x, pad.w / 2 + 6, W - pad.w / 2 - 6); pad.vx = (pad.x - ox) / dt;
+  const fire = I.pressed('action') || I.pressed('up') || tapFire; tapFire = false;
+  if (state === 'clear') { stateT += dt; balls.forEach(b => b.trail = []); if (stateT > 2.2) loadLevel(level + 1); return; }
+  for (const k in eff) eff[k] = Math.max(0, eff[k] - dt);
+  // pelotas pegadas
+  for (const b of balls) if (b.stuck != null) { b.x = pad.x + b.stuck; b.y = PY - R; }
+  if (state === 'ready') { stateT += dt; if (fire && stateT > .25) { state = 'play'; balls.forEach(b => b.stuck != null && launch(b)); } return; }
+  if (fire) {
+    const stuck = balls.filter(b => b.stuck != null);
+    if (stuck.length) stuck.forEach(launch);
+    else if (eff.laser > 0 && laserCD <= 0) { laserCD = .22; lasers.push({ x: pad.x - pad.w / 2 + 8, y: PY - 6 }, { x: pad.x + pad.w / 2 - 8, y: PY - 6 }); SFX.play('laser'); }
+  }
+  laserCD -= dt;
+  for (const b of balls) if (b.stuck != null) { b.stuckT = (b.stuckT || 0) + dt; if (b.stuckT > 3) { launch(b); b.stuckT = 0; } }
+  // explosiones en cadena
+  for (const p of pending) { p.t -= dt; if (p.t <= 0) { p.done = true; destroy(p.br); } }
+  pending = pending.filter(p => !p.done);
+  if (state !== 'play') return;
+  if (mode === 'aval') { descT -= dt; if (descT <= 0) { descT = Math.max(4.5, 11 - shifts * .25); shiftDown(); if (state !== 'play') return; } }
+  // pelotas
+  const sp = speed();
+  for (const b of balls) {
+    if (b.stuck != null) continue;
+    const n = Math.hypot(b.vx, b.vy) || 1; b.vx = b.vx / n * sp; b.vy = b.vy / n * sp;
+    const steps = Math.ceil(sp * dt / 4);
+    for (let s = 0; s < steps && !b.lost; s++) stepBall(b, dt / steps);
+    b.trail.push(b.x, b.y); if (b.trail.length > 20) b.trail.splice(0, 2);
+    if (eff.fire > 0) FX.burst(b.x, b.y, { n: 1, color: ['#ff7a1a', '#ffd400'], speed: 40, life: .3, size: 4 });
+  }
+  balls = balls.filter(b => !b.lost);
+  if (!balls.length) return loseBall();
+  // láser
+  for (const l of lasers) {
+    l.y -= 980 * dt;
+    for (const br of bricks) if (br.alive && l.x > br.x && l.x < br.x + br.w && l.y < br.y + br.h && l.y > br.y - 10) { l.dead = true; hitBrick(br); FX.burst(l.x, l.y, { n: 5, color: ['#ff2b6e', '#fff'], speed: 100, life: .25 }); break; }
+    if (l.y < 0) l.dead = true;
+  }
+  lasers = lasers.filter(l => !l.dead);
+  // cápsulas
+  for (const c of caps) {
+    c.y += 170 * dt; c.rot += dt * 4;
+    if (c.y > PY - 8 && c.y < PY + PH + 8 && Math.abs(c.x - pad.x) < pad.w / 2 + 16) { c.got = true; applyCap(c.k); }
+    if (c.y > H + 20) c.got = true;
+  }
+  caps = caps.filter(c => !c.got);
+  // anti-atasco: si pasan 30 s sin romper nada, el metal se debilita
+  idleT += dt;
+  if (idleT > 30 && !metalWeak && bricks.some(b => b.alive && b.type === 'M')) { metalWeak = true; BG.ui.toast('¡EL METAL SE DEBILITÓ!', '#9fb4d8'); SFX.play('power'); }
+}
+function stepBall(b, dt) {
+  b.x += b.vx * dt; b.y += b.vy * dt;
+  if (b.x < R) { b.x = R; b.vx = Math.abs(b.vx); wallBounce(b); }
+  if (b.x > W - R) { b.x = W - R; b.vx = -Math.abs(b.vx); wallBounce(b); }
+  if (b.y < R + 40) { b.y = R + 40; b.vy = Math.abs(b.vy); wallBounce(b); }
+  // paleta
+  if (b.vy > 0 && b.y + R >= PY && b.y - R <= PY + PH && b.x > pad.x - pad.w / 2 - R && b.x < pad.x + pad.w / 2 + R) {
+    const rel = U.clamp((b.x - pad.x) / (pad.w / 2), -1, 1), a = rel * 1.08 + U.clamp(pad.vx / 3000, -.15, .15), s = Math.hypot(b.vx, b.vy);
+    b.vx = Math.sin(a) * s; b.vy = -Math.cos(a) * s; b.y = PY - R; b.noPad = 0; chain = 0; hits++;
+    SFX.play('bounce'); FX.burst(b.x, PY, { n: 6, color: ['#2ef2ff', '#fff'], speed: 110, angle: -Math.PI / 2, spread: 1, life: .3 });
+    if (eff.catch > 0) { b.stuck = b.x - pad.x; b.stuckT = 0; b.vx = 0; b.vy = 0; }
+    return;
+  }
+  if (b.y > H + 20) { b.lost = true; return; }
+  // ladrillos: como mucho un rebote por sub-paso
+  for (const br of bricks) {
+    if (!br.alive || br.drop < 0) continue;
+    const cx = U.clamp(b.x, br.x, br.x + br.w), cy = U.clamp(b.y, br.y, br.y + br.h);
+    const dx = b.x - cx, dy = b.y - cy;
+    if (dx * dx + dy * dy >= R * R) continue;
+    const pass = eff.fire > 0 && (br.type !== 'M' || metalWeak);
+    if (pass) { destroy(br); continue; }
+    const ox = Math.min(b.x + R - br.x, br.x + br.w - (b.x - R)), oy = Math.min(b.y + R - br.y, br.y + br.h - (b.y - R));
+    if (ox < oy) { if (b.x < br.x + br.w / 2) { b.vx = -Math.abs(b.vx); b.x = br.x - R; } else { b.vx = Math.abs(b.vx); b.x = br.x + br.w + R; } }
+    else { if (b.y < br.y + br.h / 2) { b.vy = -Math.abs(b.vy); b.y = br.y - R; } else { b.vy = Math.abs(b.vy); b.y = br.y + br.h + R; } }
+    b.noPad++; minVertical(b); hitBrick(br);
+    break;
+  }
+}
+function wallBounce(b) {
+  b.noPad++;
+  if (b.noPad > 24) { const s = Math.hypot(b.vx, b.vy), a = Math.atan2(b.vy, b.vx) + U.rand(-.25, .25); b.vx = Math.cos(a) * s; b.vy = Math.sin(a) * s; b.noPad = 12; }
+  minVertical(b); SFX.tone({ f: 300, dur: .03, type: 'square', vol: .05 });
+}
+
+// ── Dibujo ────────────────────────────────────────────────────────────────
+function drawBrick(b) {
+  const y = b.y + b.drop;
+  if (y < -40) return;
+  ctx.save();
+  if (b.type === 'M') {
+    const g = ctx.createLinearGradient(0, y, 0, y + b.h); g.addColorStop(0, metalWeak ? '#6a5a5a' : '#c3cad6'); g.addColorStop(.5, metalWeak ? '#4a3a3a' : '#7c8494'); g.addColorStop(1, metalWeak ? '#3a2a2a' : '#4c5260');
+    ctx.fillStyle = g; D.rr(ctx, b.x, y, b.w, b.h, 3); ctx.fill();
+    const sx = ((t * 120 + b.c * 30 + b.r * 50) % 400) - 100;
+    if (sx > 0 && sx < b.w) { ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(b.x + sx, y + 2, 6, b.h - 4); }
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; for (const [rx, ry] of [[4, 4], [b.w - 4, 4], [4, b.h - 4], [b.w - 4, b.h - 4]]) { ctx.beginPath(); ctx.arc(b.x + rx, y + ry, 1.6, 0, 7); ctx.fill(); }
+  } else {
+    let col = b.color;
+    if (b.type === 'P') col = `hsl(${(t * 160 + b.c * 30) % 360},100%,62%)`;
+    const g = ctx.createLinearGradient(0, y, 0, y + b.h); g.addColorStop(0, '#fff'); g.addColorStop(.18, col); g.addColorStop(1, shade(col, b.type === 'P' ? 0 : .45));
+    ctx.fillStyle = g; D.rr(ctx, b.x, y, b.w, b.h, 4); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(b.x + 4, y + 3, b.w - 8, 3);
+    if (b.type === 'H' || b.type === 'X' || b.type === 'G') {
+      if (b.hp < b.max) { ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(b.x + 10, y + 2); ctx.lineTo(b.x + 18, y + 11); ctx.lineTo(b.x + 14, y + b.h - 2); if (b.hp < b.max - 1) { ctx.moveTo(b.x + 34, y + 2); ctx.lineTo(b.x + 30, y + 12); ctx.lineTo(b.x + 40, y + b.h - 3); } ctx.stroke(); }
+      if (b.type === 'G') { const sx = ((t * 90 + b.c * 20) % 160) - 30; if (sx > 0 && sx < b.w) { ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fillRect(b.x + sx, y + 2, 4, b.h - 4); } }
+    }
+    if (b.type === 'B') { D.text(ctx, '✹', b.x + b.w / 2, y + b.h / 2 + 1, { size: 15, color: '#ffe' }); }
+    if (b.type === 'P') D.text(ctx, '?', b.x + b.w / 2, y + b.h / 2 + 1, { size: 14, color: '#1a1a2e' });
+  }
+  if (b.flash > 0) { ctx.globalAlpha = b.flash / .15; ctx.fillStyle = '#fff'; D.rr(ctx, b.x, y, b.w, b.h, 4); ctx.fill(); }
+  ctx.restore();
+}
+const shadeCache = {};
+function shade(hex, k) {
+  const key = hex + k; if (shadeCache[key]) return shadeCache[key];
+  if (hex[0] !== '#') return hex;
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16) * (1 - k) | 0, g = (n >> 8 & 255) * (1 - k) | 0, b = (n & 255) * (1 - k) | 0;
+  return shadeCache[key] = `rgb(${r},${g},${b})`;
+}
+function render() {
+  const hue = (level * 47) % 360;
+  const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#05030f'); bg.addColorStop(.6, `hsl(${hue},60%,8%)`); bg.addColorStop(1, `hsl(${hue + 40},70%,14%)`);
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  for (const s of STARS) { ctx.globalAlpha = .25 + .5 * Math.abs(Math.sin(t + s.tw)); ctx.fillStyle = '#fff'; ctx.fillRect(s.x, s.y, s.z * 1.8, s.z * 1.8); }
+  ctx.globalAlpha = 1;
+  // grilla synthwave
+  const hz = H * .56;
+  ctx.strokeStyle = `hsla(${hue + 280},100%,65%,.22)`; ctx.lineWidth = 1.5;
+  for (let i = -10; i <= 10; i++) { ctx.beginPath(); ctx.moveTo(W / 2 + i * 14, hz); ctx.lineTo(W / 2 + i * 120, H); ctx.stroke(); }
+  for (let i = 0; i < 12; i++) { const k = ((i + (t * .6) % 1) / 12), y = hz + (H - hz) * k * k; ctx.globalAlpha = k; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+  // marco
+  ctx.fillStyle = 'rgba(46,242,255,.15)'; ctx.fillRect(0, 40, W, 2);
+  ctx.save(); FX.applyShake(ctx);
+  for (const b of bricks) if (b.alive) drawBrick(b);
+  // cápsulas
+  for (const c of caps) {
+    const P = PU[c.k];
+    ctx.save(); ctx.translate(c.x, c.y);
+    ctx.shadowColor = P.c; ctx.shadowBlur = 14;
+    const g = ctx.createLinearGradient(0, -9, 0, 9); g.addColorStop(0, '#fff'); g.addColorStop(.35, P.c); g.addColorStop(1, shade(P.c, .5));
+    ctx.fillStyle = g; D.rr(ctx, -20, -9, 40, 18, 9); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(-20 + ((c.rot * 12) % 40), -9, 5, 18);
+    D.text(ctx, P.l, 0, 1, { size: 13, color: '#111' });
+    ctx.restore();
+  }
+  // láser
+  ctx.fillStyle = '#ff2b6e'; for (const l of lasers) { ctx.shadowColor = '#ff2b6e'; ctx.shadowBlur = 10; ctx.fillRect(l.x - 2, l.y - 14, 4, 16); } ctx.shadowBlur = 0;
+  // paleta
+  if (state !== 'menu') {
+    const x = pad.x - pad.w / 2, col = eff.shrink > 0 ? '#ff3030' : eff.laser > 0 ? '#ff2b6e' : '#2ef2ff';
+    ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = 18;
+    const g = ctx.createLinearGradient(0, PY, 0, PY + PH); g.addColorStop(0, '#fff'); g.addColorStop(.3, col); g.addColorStop(1, shade(col, .55));
+    ctx.fillStyle = g; D.rr(ctx, x, PY, pad.w, PH, 8); ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#ff2b6e'; D.rr(ctx, x, PY, 14, PH, 7); ctx.fill(); D.rr(ctx, x + pad.w - 14, PY, 14, PH, 7); ctx.fill();
+    if (eff.laser > 0) { ctx.fillStyle = '#ddd'; ctx.fillRect(x + 5, PY - 7, 6, 8); ctx.fillRect(x + pad.w - 11, PY - 7, 6, 8); }
+    if (eff.catch > 0) { ctx.fillStyle = 'rgba(184,255,62,.8)'; ctx.fillRect(x + 16, PY - 2, pad.w - 32, 3); }
+  }
+  // pelotas
+  for (const b of balls) {
+    const fire = eff.fire > 0, col = fire ? '#ff7a1a' : '#bff6ff';
+    for (let i = 0; i < b.trail.length; i += 2) { const k = i / b.trail.length; ctx.globalAlpha = k * .5; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(b.trail[i], b.trail[i + 1], R * k, 0, 7); ctx.fill(); }
+    ctx.globalAlpha = 1; D.glowCircle(ctx, b.x, b.y, R, fire ? '#ffb347' : '#fff', 18);
+  }
+  FX.draw(ctx);
+  ctx.restore();
+  // indicadores
+  let ix = 14;
+  for (const k of ['wide', 'laser', 'slow', 'catch', 'fire', 'shrink']) if (eff[k] > 0) {
+    const P = PU[k]; ctx.fillStyle = P.c; ctx.globalAlpha = eff[k] < 2 && Math.floor(t * 8) % 2 ? .3 : 1;
+    D.rr(ctx, ix, 10, 30, 20, 6); ctx.fill(); D.text(ctx, P.l, ix + 15, 21, { size: 12, color: '#111' }); ctx.globalAlpha = 1; ix += 36;
+  }
+  if (chain >= 4 && state === 'play') D.text(ctx, `COMBO ×${1 + Math.floor(chain / 4)}`, W - 14, 21, { size: 14, color: '#ffd400', align: 'right', glow: '#ffd400' });
+  if (mode === 'aval' && (state === 'play' || state === 'ready')) {
+    const k = state === 'play' ? 1 - descT / Math.max(4.5, 11 - shifts * .25) : 0;
+    ctx.fillStyle = 'rgba(255,255,255,.1)'; ctx.fillRect(0, 44, W, 4);
+    ctx.fillStyle = k > .8 ? '#ff3d6e' : '#ffd400'; ctx.fillRect(0, 44, W * k, 4);
+    ctx.strokeStyle = `rgba(255,61,110,${.25 + (k > .8 ? Math.sin(t * 20) * .2 : 0)})`; ctx.setLineDash([10, 8]); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, PY - 34); ctx.lineTo(W, PY - 34); ctx.stroke(); ctx.setLineDash([]);
+  }
+  if (state === 'ready') {
+    D.text(ctx, mode === 'aval' ? 'AVALANCHA' : `NIVEL ${level}`, W / 2, H * .58, { size: 34, color: '#fff', glow: '#2ef2ff', blur: 20 });
+    D.text(ctx, mode === 'aval' ? 'que no lleguen a la línea roja' : levelName, W / 2, H * .58 + 38, { size: 16, color: '#ff2bd6' });
+    if (Math.floor(t * 2) % 2) D.text(ctx, BG.isTouch ? 'TOCÁ PARA LANZAR' : 'ESPACIO O CLIC PARA LANZAR', W / 2, H * .58 + 76, { size: 12, color: 'rgba(255,255,255,.75)' });
+  }
+  if (state === 'clear') D.text(ctx, '¡NIVEL COMPLETO!', W / 2, H * .5, { size: 34, color: '#39ff88', glow: '#39ff88', blur: 20 });
+  FX.drawFlash(ctx, W, H);
+}
+let tapFire = false;
+view.canvas.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) targetX = view.toLocal(e.clientX, e.clientY).x; });
+view.canvas.addEventListener('pointerdown', e => { targetX = view.toLocal(e.clientX, e.clientY).x; if (state === 'ready' || state === 'play') tapFire = true; });
+const SONG = { bpm: 128, tracks: [
+  { type: 'square', vol: .14, notes: 'A4 . C5 . E5 . A5 . G5 . E5 . C5 . D5 . F4 . A4 . C5 . F5 . E5 . C5 . A4 . C5 . G4 . B4 . D5 . G5 . F5 . D5 . B4 . D5 . E4 . G#4 . B4 . E5 . D5 . B4 . G#4 . B4 .' },
+  { type: 'sawtooth', vol: .16, notes: 'A2 A2 A3 A2 A2 A2 A3 A2 F2 F2 F3 F2 F2 F2 F3 F2 G2 G2 G3 G2 G2 G2 G3 G2 E2 E2 E3 E2 E2 E2 E3 E2' },
+  { drum: true, vol: .5, notes: 'K . H . S . H . K . H K S . H .' },
+] };
+if (BG.thumb) {
+  buildBricks(LEVELS[3][1]); bricks.forEach(b => b.drop = 0); state = 'thumb'; pad.w = 104; pad.x = 330;
+  balls = [{ x: 380, y: 520, vx: 1, vy: -1, stuck: null, trail: [430, 640, 418, 610, 406, 580, 394, 550], noPad: 0 }];
+  caps = [{ x: 180, y: 560, k: 'multi', rot: 1 }, { x: 470, y: 430, k: 'laser', rot: 2 }];
+  for (const b of bricks) if ((b.r === 9) || (b.r === 6 && b.c > 7)) b.alive = false;
+  update = () => { t += 1 / 60; };
+} else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

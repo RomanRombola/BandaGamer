@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>BandaGamer — Jugando</title>
+<link rel="icon" type="image/x-icon" href="../favicon.ico">
+<link rel="icon" type="image/svg+xml" href="../assets/logo/logo.svg">
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body class="pagina-juego">
+
+<!-- === OVERLAY NIVEL === -->
+<div id="overlay-nivel">
+  <div class="particulas"></div>
+  <div style="position:relative;z-index:1;text-align:center">
+    <div class="overlay-nivel-titulo">¡SUBISTE DE NIVEL!</div>
+    <div class="overlay-nivel-nombre"></div>
+    <div style="font-size:40px;letter-spacing:8px;animation:pulseGlow 0.6s ease infinite alternate">⭐⭐⭐</div>
+  </div>
+</div>
+
+<!-- === HEADER === -->
+<header>
+  <a id="logo-container" href="../index.html" title="BandaGamer">
+    <div class="logo-icon">🎮</div>
+    <span class="logo-texto">BANDAGAMER</span>
+  </a>
+
+  <nav id="nav-menu">
+    <a href="../index.html" class="nav-btn">Inicio</a>
+    <a href="social.html" class="nav-btn">Social <span class="nav-badge" data-social-badge style="display:none">0</span></a>
+  </nav>
+
+  <div class="perfil-header">
+    <div class="perfil-avatar-mini" id="perfil-avatar">😊</div>
+    <div class="perfil-nombre-nivel">
+      <span id="perfil-nombre" class="perfil-nombre">—</span>
+      <span id="perfil-nivel-texto" class="perfil-nivel-texto">Novato</span>
+    </div>
+    <div class="perfil-xp-wrap">
+      <div class="xp-bar"><div id="xp-bar-fill" class="xp-bar-fill" style="width:0%"></div></div>
+      <span id="xp-texto">0/1000 XP</span>
+    </div>
+    <span class="perfil-monedas">🪙 <span id="perfil-monedas">0</span></span>
+    <span id="perfil-nivel" style="font-family:'Orbitron',sans-serif;font-size:12px;color:var(--color-muted)">Nv.1</span>
+  </div>
+  <button id="hamburger" aria-label="Menú">☰<span class="nav-badge" data-social-badge style="display:none">0</span></button>
+</header>
+
+<!-- === CONTENIDO === -->
+<main class="jp-wrap">
+
+  <div id="estado-cargando" style="text-align:center;padding:80px 20px">
+    <div style="font-size:50px;margin-bottom:16px;animation:pulseGlow 0.8s ease infinite alternate">🎮</div>
+    <div style="font-family:'Orbitron',sans-serif;color:var(--color-muted);font-size:16px;letter-spacing:2px">CARGANDO JUEGO...</div>
+  </div>
+
+  <div id="estado-error" class="juego-error" style="display:none">
+    <div style="font-size:60px;margin-bottom:16px">❌</div>
+    <h2 style="font-family:'Orbitron',sans-serif;color:var(--color-primary);font-size:24px;margin-bottom:8px">JUEGO NO ENCONTRADO</h2>
+    <p style="color:var(--color-muted);margin-bottom:20px">El ID del juego no existe o es inválido.</p>
+    <a href="../index.html" class="btn-volver-inicio">← Volver al Inicio</a>
+  </div>
+
+  <div id="juego-contenido" style="display:none">
+    <!-- Barra del juego -->
+    <div class="jp-top">
+      <button class="jp-btn" id="btn-volver" title="Volver">←</button>
+      <div class="jp-titulo-wrap">
+        <h1 id="juego-titulo" class="jp-titulo">—</h1>
+        <div class="jp-tags" id="juego-tags"></div>
+      </div>
+      <div class="jp-acciones">
+        <button id="btn-fav-juego" class="jp-btn" title="Agregar a favoritos">♡</button>
+        <button id="btn-invitar" class="jp-btn jp-btn-txt" title="Invitar amigos">👥 <span>Invitar</span></button>
+        <button id="btn-fullscreen" class="jp-btn jp-btn-txt" title="Pantalla completa">⛶ <span>Pantalla completa</span></button>
+      </div>
+    </div>
+
+    <div class="jp-grid">
+      <!-- Frame del juego -->
+      <div class="juego-frame-wrap" id="juego-frame-wrap">
+        <iframe id="juego-iframe" allowfullscreen allow="autoplay; fullscreen *; gamepad *"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups allow-modals"
+                title="Juego"></iframe>
+        <div id="juego-fallback" class="juego-fallback">
+          <span class="fallback-icon">⚠️</span>
+          <span class="fallback-msg" id="fallback-msg">Este juego no pudo cargarse en el frame.</span>
+          <a id="btn-nueva-pestana" href="#" target="_blank" rel="noopener" class="btn-nueva-pestana">Abrir en nueva pestaña →</a>
+          <a href="../index.html" class="btn-volver-inicio" style="margin-top:8px">← Inicio</a>
+        </div>
+        <div id="juego-emulador-container" style="display:none;width:100%;height:100%"></div>
+      </div>
+
+      <!-- Panel lateral -->
+      <aside class="jp-panel">
+        <div class="jp-tabs">
+          <button class="jp-tab-btn on" data-tab="ranking">🏆 Ranking</button>
+          <button class="jp-tab-btn" data-tab="amigos">👥 Amigos <span class="nav-badge" data-social-badge style="display:none">0</span></button>
+          <button class="jp-tab-btn" data-tab="info">ℹ️ Info</button>
+        </div>
+
+        <!-- Ranking del juego -->
+        <section class="jp-tab on" id="tab-ranking">
+          <div class="jp-mirec">
+            <div><span class="jp-lbl">TU RÉCORD</span><b id="mi-record">—</b></div>
+            <div style="text-align:right"><span class="jp-lbl">TU PUESTO</span><b id="mi-puesto">—</b></div>
+          </div>
+          <div class="jp-seg" id="rk-modos"></div>
+          <div class="jp-seg">
+            <button class="on" data-scope="global">🌍 Global</button>
+            <button data-scope="amigos">👥 Amigos</button>
+          </div>
+          <div id="rk-lista" class="rk-lista"></div>
+        </section>
+
+        <!-- Amigos + chat rápido -->
+        <section class="jp-tab" id="tab-amigos">
+          <div id="am-vista-lista">
+            <div id="am-lista"><div class="jp-vacio">Cargando amigos…</div></div>
+            <a href="social.html" class="jp-link">Abrir Social completo →</a>
+          </div>
+          <div id="am-vista-chat" style="display:none">
+            <div class="qc-head">
+              <button class="jp-btn" id="qc-volver" title="Volver">←</button>
+              <div class="qc-av" id="qc-av">😊</div>
+              <div style="min-width:0"><div class="qc-nombre" id="qc-nombre">—</div><div class="qc-estado" id="qc-estado"></div></div>
+            </div>
+            <div class="qc-msgs" id="qc-msgs"></div>
+            <form class="qc-input" id="qc-form">
+              <input id="qc-texto" maxlength="500" placeholder="Escribí un mensaje…" autocomplete="off">
+              <button type="submit">➤</button>
+            </form>
+          </div>
+        </section>
+
+        <!-- Info -->
+        <section class="jp-tab" id="tab-info">
+          <p id="juego-descripcion" class="juego-descripcion"></p>
+          <div class="juego-stats" id="juego-stats-row">
+            <div class="juego-stat"><span id="stat-visitas" class="juego-stat-val">0</span><span class="juego-stat-lbl">Visitas</span></div>
+            <div class="juego-stat"><span id="stat-xp-sesion" class="juego-stat-val">0</span><span class="juego-stat-lbl">XP ganado</span></div>
+            <div class="juego-stat"><span id="stat-tiempo" class="juego-stat-val">0:00</span><span class="juego-stat-lbl">Tiempo</span></div>
+          </div>
+          <div class="jp-xpinfo">
+            <b>¿Cómo gano XP?</b><br>
+            +10 XP cada 30 s jugando · +5 XP por partida terminada · +25 XP por récord personal · +10 🪙 cada 10 min.
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="../js/games-data.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/social.js"></script>
+<script src="../js/notifs.js"></script>
+<script>
+// ── Página de juego ────────────────────────────────────────────────────────
+const NOMBRES_NIVEL = ["", "Novato", "Jugador", "Veterano", "Experto", "Élite", "Leyenda", "Maestro", "Campeón", "Gran Maestro", "Supremo"];
+
+// XP por puntajes (límites por visita para que no se pueda "farmear")
+const XP_PARTIDA = 5, XP_RECORD = 25, XP_PRIMER_RECORD = 10, MAX_PARTIDAS_XP = 20, MAX_RECORDS_XP = 6;
+let partidasConXP = 0, recordsConXP = 0;
+
+let intervaloTiempo = null, segundosSesion = 0, xpSesion = 0, monedaAcum = 0, segundosSinGuardar = 0;
+let juegoActual = null;
+let modoRanking = "default", alcanceRanking = "global";
+
+const $ = id => document.getElementById(id);
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function urlFotoSegura(u) { return (typeof u === "string" && /^(data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+\/=]+|https:\/\/[^\s"'<>]+)$/.test(u)) ? u : ""; }
+
+// ── Modos / formato de puntajes ────────────────────────────────────────────
+function modos() { return (juegoActual && juegoActual.modos && juegoActual.modos.length) ? juegoActual.modos : [{ id: "default", nombre: "Puntaje" }]; }
+function modoInfo(id) { return modos().find(m => m.id === id) || { id, nombre: id === "default" ? "Puntaje" : id }; }
+function ordenDe(m) { return m.orden || juegoActual.orden || "desc"; }
+function fmtScore(v, m) {
+  if (v == null) return "—";
+  const f = (m && m.formato) || juegoActual.formato;
+  if (f === "ms") { const ms = Math.round(v); return `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}.${String(Math.floor(ms / 10) % 100).padStart(2, "0")}`; }
+  if (f === "seg") { const s = Math.round(v); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+  if (f === "mov") return `${Math.round(v)} mov.`;
+  return Math.round(v).toLocaleString("es-AR");
+}
+
+// ── Header ─────────────────────────────────────────────────────────────────
+async function actualizarPerfil() {
+  const u = await Storage.getUsuario();
+  if (typeof Social !== "undefined" && u.uid && Storage.auth.currentUser) {
+    Social.initPresence(u.uid, u.nombre);
+    Notifs.iniciar(u.uid);
+  }
+  const maxNivel = (u.nivel || 1) >= 10;
+  const xpActual = maxNivel ? 1000 : (u.xp || 0) % 1000;
+  $("perfil-nombre").textContent = u.nombre || "—";
+  $("perfil-nivel").textContent = `Nv.${u.nivel || 1}`;
+  $("perfil-monedas").textContent = (u.monedas || 0).toLocaleString();
+  $("perfil-avatar").textContent = u.avatar || "😊";
+  $("xp-bar-fill").style.width = (xpActual / 10) + "%";
+  $("xp-texto").textContent = maxNivel ? "NIVEL MÁXIMO" : `${xpActual}/1000 XP`;
+  $("perfil-nivel-texto").textContent = NOMBRES_NIVEL[u.nivel] || "";
+  $("stat-xp-sesion").textContent = xpSesion;
+  return u;
+}
+
+// ── Contador de tiempo / XP / monedas ──────────────────────────────────────
+function iniciarContadorTiempo() {
+  detenerContadorTiempo();
+  intervaloTiempo = setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    segundosSesion++; monedaAcum++; segundosSinGuardar++;
+    const m = Math.floor(segundosSesion / 60), s = segundosSesion % 60;
+    $("stat-tiempo").textContent = `${m}:${String(s).padStart(2, "0")}`;
+
+    if (segundosSesion % 30 === 0) {
+      darXP(10);
+      // Guardar los segundos acumulados (antes se mandaba un 30 fijo y, si la pestaña se
+      // ocultaba en el medio, ese tramo se contaba dos veces)
+      const n = segundosSinGuardar; segundosSinGuardar = 0;
+      Storage.sumarTiempoJugado(n).catch(() => {});
+    }
+    if (monedaAcum >= 600) {
+      monedaAcum = 0;
+      Storage.sumarMonedas(10).then(() => { actualizarPerfil(); toastJuego("+10 🪙 por jugar 10 minutos"); }).catch(() => {});
+    }
+  }, 1000);
+}
+function detenerContadorTiempo() { if (intervaloTiempo !== null) { clearInterval(intervaloTiempo); intervaloTiempo = null; } }
+
+async function darXP(cant) {
+  xpSesion += cant;
+  try {
+    const { subioNivel, nuevoNivel } = await Storage.sumarXP(cant);
+    if (subioNivel) mostrarOverlayNivel(NOMBRES_NIVEL[nuevoNivel]);
+    await actualizarPerfil();
+    const elXp = $("stat-xp-sesion");
+    elXp.style.animation = "none"; void elXp.offsetHeight; elXp.style.animation = "xpPop .4s ease";
+  } catch (e) { console.warn("[XP] no se pudo guardar:", e); }
+}
+
+function toastJuego(mensaje) {
+  let c = $("toast-container");
+  if (!c) {
+    c = document.createElement("div"); c.id = "toast-container";
+    c.style.cssText = "position:fixed;top:76px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none";
+    document.body.appendChild(c);
+  }
+  const t = document.createElement("div"); t.className = "toast-notif"; t.textContent = mensaje;
+  c.appendChild(t); setTimeout(() => t.remove(), 3600);
+}
+
+function mostrarOverlayNivel(nombreNivel) {
+  const overlay = $("overlay-nivel");
+  overlay.querySelector(".overlay-nivel-nombre").textContent = nombreNivel;
+  const particulas = overlay.querySelector(".particulas");
+  particulas.innerHTML = "";
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement("span"); p.className = "particula";
+    p.style.setProperty("--x", `${Math.random() * 100}%`);
+    p.style.setProperty("--delay", `${Math.random() * 0.8}s`);
+    p.style.setProperty("--dur", `${0.7 + Math.random() * 0.9}s`);
+    p.style.setProperty("--color", ["#ff6600", "#ffe600", "#00aaff", "#ff0055"][Math.floor(Math.random() * 4)]);
+    particulas.appendChild(p);
+  }
+  overlay.classList.add("visible");
+  setTimeout(() => overlay.classList.remove("visible"), 3000);
+}
+
+// ── Carga del juego según tipo ─────────────────────────────────────────────
+function lanzarFallback(url) {
+  $("juego-iframe").style.display = "none";
+  $("juego-fallback").classList.add("visible");
+  $("btn-nueva-pestana").href = url;
+}
+function cargarIframe(juego) {
+  const iframe = $("juego-iframe");
+  const timeout = setTimeout(() => {
+    try { const doc = iframe.contentDocument || iframe.contentWindow.document; if (!doc || doc.body.innerHTML === "") lanzarFallback(juego.embed_url); }
+    catch (e) { lanzarFallback(juego.embed_url); }
+  }, 4000);
+  iframe.onload = () => clearTimeout(timeout);
+  iframe.src = juego.embed_url;
+}
+function cargarLocal(juego) {
+  const iframe = $("juego-iframe");
+  const room = new URLSearchParams(location.search).get("room");
+  let url = juego.embed_url;
+  if (room) url += (url.includes("?") ? "&" : "?") + "room=" + encodeURIComponent(room);
+  iframe.src = url;
+  iframe.onload = () => setTimeout(() => iframe.focus(), 200);
+  $("juego-frame-wrap").addEventListener("click", () => iframe.focus());
+}
+// Emuladores: tipo "emulador" con embed_url a la ROM y core (nes, gba, snes, gb, gbc)
+function cargarEmulador(juego) {
+  $("juego-iframe").style.display = "none";
+  const container = $("juego-emulador-container");
+  container.style.display = "block";
+  const core = ({ nes: "nes", gba: "gba", snes: "snes", gb: "gb", gbc: "gbc" })[juego.core] || "nes";
+  container.innerHTML = '<div id="game" style="width:100%;height:100%"></div>';
+  window.EJS_player = "#game"; window.EJS_core = core; window.EJS_gameUrl = juego.embed_url;
+  window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+  window.EJS_startOnLoaded = true; window.EJS_saveStateOnUnload = true;
+  const loader = document.createElement("script");
+  loader.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
+  document.body.appendChild(loader);
+  setTimeout(() => {
+    const gameEl = $("game");
+    if (gameEl && gameEl.innerHTML.trim() === "") {
+      $("fallback-msg").textContent = "No se pudo cargar el emulador. Revisá tu conexión.";
+      $("btn-nueva-pestana").style.display = "none";
+      $("juego-fallback").classList.add("visible");
+    }
+  }, 8000);
+}
+
+// ── Mensajes desde el juego (BG Kit) ───────────────────────────────────────
+window.addEventListener("message", async (e) => {
+  const iframe = $("juego-iframe");
+  if (!iframe || e.source !== iframe.contentWindow || !juegoActual) return;
+  const d = e.data;
+  if (!d || typeof d !== "object") return;
+  if (d.type === "bg-room") {
+    // Los juegos online publican el código de sala para que los amigos vean "▶ UNIRSE"
+    const code = typeof d.code === "string" ? d.code.slice(0, 40) : null;
+    try { window.Social && Social.setJugando(juegoActual.nombre, juegoActual.id, code); } catch (err) {}
+  } else if (d.type === "bg-hello") {
+    const u = await Storage.getUsuario();
+    const logueado = !!Storage.auth.currentUser;
+    iframe.contentWindow.postMessage({
+      type: "bg-hello-ack",
+      user: { uid: logueado ? u.uid : null, nombre: u.nombre || "Jugador", avatar: u.avatar || "😊", nivel: u.nivel || 1 },
+      records: (u.records && u.records[juegoActual.id]) || {},
+    }, "*");
+  } else if (d.type === "bg-score") {
+    registrarPuntaje(d);
+  }
+});
+
+async function registrarPuntaje(d) {
+  const score = Math.round(Number(d.score));
+  if (!Number.isFinite(score) || score <= 0) return;
+  const modo = typeof d.mode === "string" ? d.mode : "default";
+  const info = modoInfo(modo);
+  const orden = info.orden || (d.order === "asc" ? "asc" : ordenDe(info));
+  let res;
+  try { res = await Storage.registrarPuntaje(juegoActual.id, modo, score, orden); }
+  catch (e) { console.warn("[Récord] no se pudo guardar:", e); return; }
+
+  let xp = 0;
+  if (partidasConXP < MAX_PARTIDAS_XP) { partidasConXP++; xp += XP_PARTIDA; }
+  if (res.isRecord && recordsConXP < MAX_RECORDS_XP) { recordsConXP++; xp += res.prev == null ? XP_PRIMER_RECORD : XP_RECORD; }
+  if (xp) darXP(xp);
+
+  if (res.isRecord) {
+    toastJuego(`🏆 ${res.prev == null ? "Primer récord" : "¡Nuevo récord!"} en ${juegoActual.nombre}${modos().length > 1 ? " (" + info.nombre + ")" : ""}: ${fmtScore(score, info)}${xp ? "  +" + xp + " XP" : ""}`);
+    if (Storage.auth.currentUser) await Storage.enviarPuntajeRanking(juegoActual.id, modo, score, orden, res.usuario || {});
+  } else if (xp) {
+    toastJuego(`+${xp} XP por la partida`);
+  }
+  if (modo !== modoRanking && modos().some(m => m.id === modo)) { modoRanking = modo; pintarModos(); }
+  cargarRanking();
+}
+
+// ── Ranking del juego ──────────────────────────────────────────────────────
+function pintarModos() {
+  const cont = $("rk-modos");
+  const lista = modos();
+  if (lista.length < 2) { cont.style.display = "none"; return; }
+  cont.style.display = "";
+  cont.innerHTML = lista.map(m => `<button data-modo="${esc(m.id)}" class="${m.id === modoRanking ? "on" : ""}">${esc(m.nombre)}</button>`).join("");
+}
+
+let _rkToken = 0;
+async function cargarRanking() {
+  if (!juegoActual) return;
+  const token = ++_rkToken;
+  const info = modoInfo(modoRanking), orden = ordenDe(info);
+  const lista = $("rk-lista");
+  const records = await Storage.getRecords(juegoActual.id);
+  const mio = records[modoRanking];
+  $("mi-record").textContent = fmtScore(mio, info);
+  $("mi-puesto").textContent = "—";
+
+  if (juegoActual.tipo !== "local" || juegoActual.ranking === false) {
+    lista.innerHTML = `<div class="jp-vacio">Este juego no envía puntajes al portal, así que no tiene ranking.</div>`;
+    return;
+  }
+  const user = Storage.auth.currentUser;
+  if (alcanceRanking === "amigos" && !user) {
+    lista.innerHTML = `<div class="jp-vacio">Iniciá sesión con Google para competir con tus amigos.</div>`;
+    return;
+  }
+  lista.innerHTML = `<div class="jp-vacio">Cargando ranking…</div>`;
+  let filas;
+  if (alcanceRanking === "amigos") {
+    const uids = await amigosUids();
+    filas = await Storage.getPuntajesDe(juegoActual.id, modoRanking, [...uids, user.uid]);
+    filas.sort((a, b) => orden === "asc" ? a.score - b.score : b.score - a.score);
+  } else {
+    filas = await Storage.getRankingJuego(juegoActual.id, modoRanking, orden, 25);
+  }
+  if (token !== _rkToken) return;
+  if (!filas.length) {
+    lista.innerHTML = `<div class="jp-vacio">🏁 Todavía nadie puso un récord acá.<br>${user ? "¡Jugá y sé el primero!" : "Iniciá sesión con Google para aparecer en el ranking."}</div>`;
+    return;
+  }
+  const miUid = user && user.uid;
+  const idx = filas.findIndex(f => f.uid === miUid);
+  if (idx >= 0) $("mi-puesto").textContent = "#" + (idx + 1);
+  lista.innerHTML = filas.map((f, i) => `
+    <div class="rk-fila ${f.uid === miUid ? "yo" : ""}">
+      <span class="rk-pos">${["🥇", "🥈", "🥉"][i] || (i + 1)}</span>
+      <span class="rk-av">${esc(f.avatar || "😊")}</span>
+      <span class="rk-nom">${esc(f.nombre || "Jugador")}${f.uid === miUid ? ' <em>vos</em>' : ""}</span>
+      <span class="rk-pts">${esc(fmtScore(f.score, info))}</span>
+    </div>`).join("");
+}
+
+let _amigosCache = null;
+function amigosUids() {
+  if (_amigosCache) return Promise.resolve(_amigosCache);
+  return new Promise(resolve => {
+    if (!Social.uid) return resolve([]);
+    let un = null;
+    un = Social.onAmigos(a => { _amigosCache = a.map(x => x.uid); resolve(_amigosCache); setTimeout(() => un && un(), 0); });
+    setTimeout(() => resolve(_amigosCache || []), 4000);
+  });
+}
+
+// ── Amigos + chat rápido ───────────────────────────────────────────────────
+let _amigos = [], _presencia = {}, _unsubPres = null, _unsubMsgs = null, _chatUid = null, _amigosIniciado = false;
+function iniciarAmigos() {
+  if (_amigosIniciado) return;
+  _amigosIniciado = true;
+  const cont = $("am-lista");
+  if (!Storage.auth.currentUser) {
+    cont.innerHTML = `<div class="jp-vacio">👤 Estás como invitado.<br>Entrá con Google desde el inicio para chatear e invitar amigos a jugar.</div>`;
+    return;
+  }
+  Social.onAmigos(async lista => {
+    _amigosCache = lista.map(a => a.uid);
+    _amigos = await Promise.all(lista.map(async a => {
+      try { const p = await Social.getPerfil(a.uid); return { uid: a.uid, nombre: (p && p.nombre) || "Jugador", avatar: (p && p.avatar) || "😊" }; }
+      catch (e) { return { uid: a.uid, nombre: "Jugador", avatar: "😊" }; }
+    }));
+    if (_unsubPres) _unsubPres();
+    if (_amigos.length) _unsubPres = Social.onPresenciaAmigos(_amigos.map(a => a.uid), p => { _presencia = p; pintarAmigos(); });
+    pintarAmigos();
+  });
+}
+function pintarAmigos() {
+  const cont = $("am-lista");
+  if (!_amigos.length) { cont.innerHTML = `<div class="jp-vacio">Todavía no tenés amigos agregados.<br><a href="social.html" class="jp-link">Buscar jugadores →</a></div>`; return; }
+  const peso = a => { const p = _presencia[a.uid] || {}; return p.juegoId === juegoActual.id ? 4 : p.jugandoA ? 3 : p.online ? 2 : 1; };
+  const orden = [..._amigos].sort((a, b) => peso(b) - peso(a));
+  cont.innerHTML = orden.map(a => {
+    const p = _presencia[a.uid] || {};
+    let estado = '<span class="st off">Offline</span>';
+    if (p.jugandoA) estado = `<span class="st game">● Jugando a ${esc(p.jugandoA)}</span>`;
+    else if (p.online) estado = '<span class="st on">● Online</span>';
+    const unirse = (p.roomId && p.juegoId) ? `<button class="am-b join" data-act="unirse" data-juego="${esc(p.juegoId)}" data-room="${esc(p.roomId)}">▶ Unirse</button>` : "";
+    return `<div class="am-fila">
+      <div class="am-av">${esc(a.avatar)}</div>
+      <div class="am-info"><div class="am-nom">${esc(a.nombre)}</div>${estado}</div>
+      <div class="am-acc">${unirse}
+        <button class="am-b" data-act="chat" data-uid="${esc(a.uid)}" title="Chatear">💬</button>
+        <button class="am-b" data-act="invitar" data-uid="${esc(a.uid)}" data-nombre="${esc(a.nombre)}" title="Invitar a ${esc(juegoActual.nombre)}">🎮</button>
+      </div>
+    </div>`;
+  }).join("");
+  if (_chatUid) pintarEstadoChat();
+}
+function abrirChat(uid) {
+  const a = _amigos.find(x => x.uid === uid); if (!a) return;
+  _chatUid = uid; window.__chatRapidoAbierto = true;
+  $("am-vista-lista").style.display = "none"; $("am-vista-chat").style.display = "";
+  $("qc-av").textContent = a.avatar; $("qc-nombre").textContent = a.nombre; pintarEstadoChat();
+  $("qc-msgs").innerHTML = '<div class="jp-vacio">Cargando…</div>';
+  Social.marcarLeido(uid);
+  if (_unsubMsgs) _unsubMsgs();
+  _unsubMsgs = Social.onMensajes(uid, msgs => {
+    const box = $("qc-msgs");
+    box.innerHTML = msgs.length ? msgs.map(m => `<div class="qc-msg ${m.from === Social.uid ? "mio" : ""}">${esc(m.texto)}</div>`).join("") : '<div class="jp-vacio">¡Mandale un saludo! 👋</div>';
+    box.scrollTop = box.scrollHeight;
+    if (msgs.some(m => m.from === uid && !m.leido)) Social.marcarLeido(uid);
+  });
+  setTimeout(() => $("qc-texto").focus(), 50);
+}
+function pintarEstadoChat() {
+  const p = _presencia[_chatUid] || {};
+  $("qc-estado").textContent = p.jugandoA ? `Jugando a ${p.jugandoA}` : p.online ? "Online" : "Offline";
+}
+function cerrarChat() {
+  if (_unsubMsgs) { _unsubMsgs(); _unsubMsgs = null; }
+  _chatUid = null; window.__chatRapidoAbierto = false;
+  $("am-vista-chat").style.display = "none"; $("am-vista-lista").style.display = "";
+  $("juego-iframe").focus();
+}
+async function invitar(uid, nombre, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    await Social.invitarAJuego(uid, juegoActual.id, juegoActual.nombre);
+    toastJuego(`🎮 Invitaste a ${nombre} a jugar ${juegoActual.nombre}`);
+    if (btn) btn.textContent = "✓";
+  } catch (e) { toastJuego("No se pudo enviar la invitación"); if (btn) btn.disabled = false; }
+}
+
+// ── Pestañas y eventos del panel ───────────────────────────────────────────
+function cambiarTab(tab) {
+  document.querySelectorAll(".jp-tab-btn").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  document.querySelectorAll(".jp-tab").forEach(s => s.classList.toggle("on", s.id === "tab-" + tab));
+  if (tab === "amigos") iniciarAmigos();
+}
+document.addEventListener("click", e => {
+  const tb = e.target.closest(".jp-tab-btn"); if (tb) { cambiarTab(tb.dataset.tab); return; }
+  const md = e.target.closest("#rk-modos [data-modo]"); if (md) { modoRanking = md.dataset.modo; pintarModos(); cargarRanking(); return; }
+  const sc = e.target.closest("[data-scope]");
+  if (sc) { alcanceRanking = sc.dataset.scope; document.querySelectorAll("[data-scope]").forEach(b => b.classList.toggle("on", b === sc)); cargarRanking(); return; }
+  const ac = e.target.closest("#am-lista [data-act]");
+  if (ac) {
+    const d = ac.dataset;
+    if (d.act === "chat") abrirChat(d.uid);
+    else if (d.act === "invitar") invitar(d.uid, d.nombre, ac);
+    else if (d.act === "unirse") location.href = `juego.html?id=${encodeURIComponent(d.juego)}&room=${encodeURIComponent(d.room)}`;
+  }
+});
+$("qc-volver").addEventListener("click", cerrarChat);
+$("qc-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const inp = $("qc-texto"), t = inp.value.trim();
+  if (!t || !_chatUid) return;
+  inp.value = "";
+  try { await Social.enviarMensaje(_chatUid, t); } catch (err) { inp.value = t; toastJuego("No se pudo enviar el mensaje"); }
+});
+
+// ── Render de la página ────────────────────────────────────────────────────
+async function renderizarJuego(juego) {
+  juegoActual = juego;
+  document.title = `${juego.nombre} — BandaGamer`;
+  $("juego-titulo").textContent = juego.nombre;
+  $("juego-descripcion").textContent = juego.descripcion;
+  const tags = [`<span class="jp-tag">${esc(juego.categoria)}</span>`];
+  if (juego.multi) tags.push('<span class="jp-tag online">🌐 Online</span>');
+  if (juego.movil) tags.push('<span class="jp-tag movil">📱 Táctil</span>');
+  if (juego.nuevo) tags.push('<span class="jp-tag nuevo">✨ Renovado</span>');
+  $("juego-tags").innerHTML = tags.join("");
+  $("stat-visitas").textContent = await Storage.getContadorVisitas(juego.id);
+
+  const btnFav = $("btn-fav-juego");
+  const pintarFav = f => { btnFav.textContent = f ? "♥" : "♡"; btnFav.classList.toggle("activo", f); btnFav.title = f ? "Quitar de favoritos" : "Agregar a favoritos"; };
+  pintarFav(await Storage.esFavorito(juego.id));
+  btnFav.addEventListener("click", async () => pintarFav(await Storage.toggleFavorito(juego.id)));
+
+  if (juego.tipo === "iframe") cargarIframe(juego);
+  else if (juego.tipo === "local") cargarLocal(juego);
+  else if (juego.tipo === "emulador") cargarEmulador(juego);
+
+  Storage.registrarVisita(juego.id).then(async () => { $("stat-visitas").textContent = await Storage.getContadorVisitas(juego.id); });
+  iniciarContadorTiempo();
+
+  try { window.Social && Social.setJugando(juego.nombre, juego.id, new URLSearchParams(location.search).get("room") || null); }
+  catch (e) { console.warn("[Presence] setJugando falló:", e); }
+
+  modoRanking = modos()[0].id;
+  pintarModos();
+  Storage.authListo.then(() => cargarRanking());
+}
+
+async function iniciarPaginaJuego() {
+  actualizarPerfil();
+  Storage.publicarPerfil();
+  const id = new URLSearchParams(location.search).get("id");
+  const juego = id && juegos.find(j => j.id === id);
+  $("estado-cargando").style.display = "none";
+  if (!juego) { $("estado-error").style.display = "block"; return; }
+  $("juego-contenido").style.display = "block";
+  renderizarJuego(juego);
+
+  // Las flechas/espacio no deben mover la página; si el foco quedó en el portal, se reenvían al juego
+  const teclasJuego = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Shift"];
+  function manejarTecla(e) {
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;   // chat
+    if (teclasJuego.includes(e.key)) e.preventDefault();
+    const iframe = $("juego-iframe");
+    if (iframe && iframe.style.display !== "none" && juegoActual && juegoActual.tipo === "local") {
+      try { iframe.contentWindow.postMessage({ type: e.type, key: e.key, code: e.code, repeat: e.repeat }, "*"); } catch (err) {}
+      if (e.type === "keydown") iframe.focus();
+    }
+  }
+  window.addEventListener("keydown", manejarTecla, { capture: true, passive: false });
+  window.addEventListener("keyup", manejarTecla, { capture: true, passive: false });
+
+  $("btn-volver").addEventListener("click", () => {
+    if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) history.back();
+    else location.href = "../index.html";
+  });
+  $("btn-invitar").addEventListener("click", () => { cambiarTab("amigos"); $("am-lista").scrollIntoView({ behavior: "smooth", block: "nearest" }); });
+  $("btn-fullscreen").addEventListener("click", toggleFullscreen);
+
+  const hamburger = $("hamburger"), navMenu = $("nav-menu");
+  hamburger.addEventListener("click", () => { navMenu.classList.toggle("abierto"); });
+}
+
+// ── Pantalla completa ──────────────────────────────────────────────────────
+function toggleFullscreen() {
+  const el = $("juego-frame-wrap"), iframe = $("juego-iframe");
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) req.call(el).then(() => iframe.focus()).catch(() => { if (iframe.src) window.open(iframe.src, "_blank"); });
+    else if (iframe.src) window.open(iframe.src, "_blank");
+  } else {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (exit) exit.call(document);
+  }
+}
+
+// ── Al salir ───────────────────────────────────────────────────────────────
+let _saliendo = false;
+function guardarAlSalir() {
+  if (_saliendo) return;
+  _saliendo = true;
+  detenerContadorTiempo();
+  if (segundosSinGuardar > 0) Storage.sumarTiempoJugado(segundosSinGuardar).catch(() => {});
+  segundosSinGuardar = 0;
+  try { window.Social && Social.clearJugando(); } catch (e) {}
+}
+window.addEventListener("pagehide", guardarAlSalir);
+window.addEventListener("pageshow", e => {
+  if (e.persisted && juegoActual) {
+    _saliendo = false; iniciarContadorTiempo();
+    try { window.Social && Social.setJugando(juegoActual.nombre, juegoActual.id, new URLSearchParams(location.search).get("room")); } catch (err) {}
+  }
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden" && segundosSinGuardar > 0) {
+    const n = segundosSinGuardar; segundosSinGuardar = 0;
+    Storage.sumarTiempoJugado(n).catch(() => {});
+  }
+});
+
+document.addEventListener("DOMContentLoaded", iniciarPaginaJuego);
+</script>
+</body>
+</html>

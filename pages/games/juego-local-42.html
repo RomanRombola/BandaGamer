@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bodeguero</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+<style>
+.lvgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 6px 0 10px; }
+.lvgrid button { padding: 8px 0 6px; font: 700 15px Orbitron, sans-serif; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: #fff; cursor: pointer; }
+.lvgrid button small { display: block; font: 600 11px Rajdhani, sans-serif; color: #ffd400; letter-spacing: 1px; min-height: 13px; }
+.lvgrid button.lock { opacity: .3; cursor: default; }
+.lvgrid button.cur { border-color: #ffb347; box-shadow: 0 0 12px #ffb34777; }
+</style>
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  BODEGUERO — BandaGamer (puzzle estilo Sokoban)
+//  Empujá todas las cajas a las marcas. Solo se empuja, nunca se tira.
+//  Los niveles se generaron "jugando al revés" desde la solución, así que todos
+//  tienen solución y sabemos el mínimo de empujes (3 estrellas = lo hiciste en el mínimo).
+//  Tocá una casilla para caminar hasta ahí · deshacer ilimitado · aviso de caja trabada.
+//  Idea basada en "Sokoban" de 90s-games (MIT © 2026 Prateek), reescrito desde cero.
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 600, H = 720;
+const LEVELS = /*LEVELS*/[{"m":["#######","#    .#","# #  .#","# $$  #","#  @  #","#######"],"p":8},{"m":["#######","#     #","# # ..#","# $$  #","#  @  #","#######"],"p":8},{"m":[" ######","##   .#","# $#  #","#     #","# . $@#","#######"],"p":8},{"m":["#######","#     #","# .#$ #","#   $@#","#.    #","#######"],"p":8},{"m":["#####","#   #","# #.###","#  $$ #","#. @  #","#######"],"p":9},{"m":["#######","#  @  #","# $$  #","# # . #","#.  ###","#####"],"p":9},{"m":[" #######"," #    @#"," ## $$$#","##     #","#.    .#","#.  ####","#####"],"p":14},{"m":["  ####","###  ##","# $ . #","#  $$##","#.  @#","#.   #","######"],"p":14},{"m":[" #######"," #  .  #"," #$#   #","##  . .#","# $$   #","#  @  ##","#######"],"p":14},{"m":["######","#    ###","#   #  #","#.  $@ #","## $$ .#"," ###  .#","   #####"],"p":15},{"m":["   ####","   #  #"," ### .#","##  $$#","#    +#","#   $.#","#######"],"p":16},{"m":["  ####","  #  #","### .###","# $  #.#","#  $   #","# .$@  #","########"],"p":16},{"m":["#######","#  .  ###","# #     #","#.   #  #","# $ $ $ #","######@.#","     ####"],"p":22},{"m":["######","#    ####","#. .#   #","#.@$  $ #","#  # $  #","#####   #","    #####"],"p":22},{"m":["  ######","###    ##","#  $#.  #","#    $@ #","#  #$#  #","#  # .. #","#########"],"p":23},{"m":["#########","#  #    #","#   # $ #","#.+$    #","#  #$####","#.   #","######"],"p":23},{"m":["    #####","#####   #","#  $    #","# # # $##","#.   $.#","# .  @##","#######"],"p":27},{"m":["#########","#  # .  #","# $$..# #","#   $   #","#  #@#  #","#########"],"p":27},{"m":[" ########","## .  $@#","#   $$  #","#    ####","#    #  #","#.. $  .#","#########"],"p":28},{"m":["#######","# .   #","#   # #","#.   $###","#   @$  #","#. # $  #","#  . $  #","#########"],"p":28},{"m":["     ####","######  #","#@$    .#","#. $$  $#","#   #   #","# .#    #","###### .#","     ####"],"p":28},{"m":["  ######","  #    ##","###$   .#","# $@#  .#","#.$$#   #","#     ###","#   . #","#######"],"p":29},{"m":[" #######"," #  @  #"," # $$$##"," ##  $ ##","## #  $ #","#  .    #","#     . #","# ..  . #","#########"],"p":30},{"m":[" #######","##.    #","#  .. ##","#  # $#","# $  .####","####$$$  #","   #@ .  #","   #######"],"p":31},{"m":["  #######","  #   . #"," ##.   ###"," #     . #"," # $.  # #","##$  .$  #","# $$######","#  @#","#####"],"p":32},{"m":["  #######","  #   ..#","  #$ @ .#","  # #$. #","### # $ #","# $    ##","#     ##","#######"],"p":33},{"m":["#######","#..   #","# .  .####","#   @$   #","###  #$  #","  ## $ $ #","   ###   #","     #####"],"p":34},{"m":["  ########","  #      #"," ##   .. #","## ##+  .#","#   $$   #","# $$$ ####","#.    #","#     #","#######"],"p":34},{"m":[" #######","##     ###","# .#   $@#","#   .#$$ #","#. . #   #","#     $# #","###     ##","  #######"],"p":36}];
+
+BG.init({
+  id: 'bodeguero', title: 'BODEGUERO', icon: '📦', accent: '#ffb347', accent2: '#39ff88', music: true,
+  post: { bloom: .3, vignette: .35, thumbFx: true },
+  subtitle: 'Empujá todas las cajas a las marcas. Solo podés empujar, nunca tirar: pensá antes de moverte.',
+  hud: [{ id: 'level', label: 'Nivel', color: '#ffb347' }, { id: 'moves', label: 'Pasos' }, { id: 'pushes', label: 'Empujes', color: '#39ff88' }],
+  help: '<kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> mover · <kbd>Z</kbd> deshacer · <kbd>R</kbd> reiniciar · clic en una casilla para caminar hasta ahí',
+  helpTouch: 'Tocá una casilla para caminar · tocá una caja de al lado para empujarla · ↶ deshacer',
+  touch: { dpad: 'full', buttons: [{ action: 'undo', label: '↶' }, { action: 'restart', label: '⟲' }] },
+  onRestart: () => loadLevel(cur), onMenu: () => showMenu(),
+});
+BG.input.map.undo = ['KeyZ', 'KeyU', 'Backspace'];
+BG.input.map.restart = ['KeyR'];
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+
+let prog = BG.load('prog', { unlocked: 1, stars: {} });
+let cur = 0, grid = [], inside = new Set(), goals = new Set(), boxes = [], pl = { x: 0, y: 0, fx: 0, fy: 0, dir: 'down', push: 0 }, cols = 0, rows = 0;
+let hist = [], moves = 0, pushes = 0, state = 'menu', t = 0, queue = [], path = [], stepT = 0, cs = 40, ox = 0, oy = 0, stuckWarned = false, winT = 0;
+const DIR = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] };
+
+function parse(map) {
+  rows = map.length; cols = Math.max(...map.map(r => r.length));
+  grid = []; goals = new Set(); boxes = [];
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    const c = map[y][x] || ' ';
+    grid[y * cols + x] = c === '#' ? 1 : 0;
+    if (c === '.' || c === '*' || c === '+') goals.add(y * cols + x);
+    if (c === '$' || c === '*') boxes.push({ x, y, fx: x, fy: y, glow: 0 });
+    if (c === '@' || c === '+') pl = { x, y, fx: x, fy: y, dir: 'down', push: 0 };
+  }
+  // piso interior: lo alcanzable desde el jugador (lo de afuera no se dibuja)
+  inside = new Set(); const q = [[pl.x, pl.y]]; inside.add(pl.y * cols + pl.x);
+  while (q.length) { const [x, y] = q.pop(); for (const [dx, dy] of Object.values(DIR)) { const nx = x + dx, ny = y + dy, k = ny * cols + nx; if (nx >= 0 && ny >= 0 && nx < cols && ny < rows && !grid[k] && !inside.has(k)) { inside.add(k); q.push([nx, ny]); } } }
+  cs = Math.floor(Math.min((W - 40) / cols, (H - 150) / rows, 68));
+  ox = Math.round((W - cols * cs) / 2); oy = Math.round(110 + (H - 150 - rows * cs) / 2);
+}
+const boxAt = (x, y) => boxes.find(b => b.x === x && b.y === y);
+const wall = (x, y) => x < 0 || y < 0 || x >= cols || y >= rows || grid[y * cols + x] === 1;
+
+function loadLevel(i) {
+  cur = U.clamp(i, 0, LEVELS.length - 1);
+  parse(LEVELS[cur].m);
+  hist = []; moves = 0; pushes = 0; queue = []; path = []; stuckWarned = false; winT = 0;
+  BG.hud.setAll({ level: `${cur + 1}/${LEVELS.length}`, moves: 0, pushes: 0 });
+  FX.clear(); state = 'play'; BG.start();
+  if (!BG.music.playing) BG.music.play(SONG);
+}
+function snapshot() { return { p: [pl.x, pl.y, pl.dir], b: boxes.map(b => [b.x, b.y]), m: moves, u: pushes }; }
+function restore(s) {
+  pl.x = s.p[0]; pl.y = s.p[1]; pl.dir = s.p[2]; pl.fx = pl.x; pl.fy = pl.y;
+  s.b.forEach(([x, y], i) => { boxes[i].x = x; boxes[i].y = y; boxes[i].fx = x; boxes[i].fy = y; });
+  moves = s.m; pushes = s.u; BG.hud.setAll({ moves, pushes }); stuckWarned = false;
+}
+function tryMove(d) {
+  if (state !== 'play') return false;
+  const [dx, dy] = DIR[d], nx = pl.x + dx, ny = pl.y + dy;
+  pl.dir = d;
+  if (wall(nx, ny)) { SFX.tone({ f: 120, dur: .05, type: 'square', vol: .05 }); return false; }
+  const b = boxAt(nx, ny);
+  if (b) {
+    const bx = nx + dx, by = ny + dy;
+    if (wall(bx, by) || boxAt(bx, by)) { SFX.play('error'); pl.push = .15; return false; }
+    hist.push(snapshot());
+    b.x = bx; b.y = by; pushes++; pl.push = .2;
+    SFX.play('drop');
+    if (goals.has(by * cols + bx)) { b.glow = 1; SFX.play('coin'); FX.burst(ox + (bx + .5) * cs, oy + (by + .5) * cs, { n: 14, color: ['#39ff88', '#ffd400', '#fff'], speed: 160, life: .45 }); }
+  } else hist.push(snapshot());
+  pl.x = nx; pl.y = ny; moves++;
+  if (hist.length > 3000) hist.shift();
+  BG.hud.setAll({ moves, pushes });
+  checkState();
+  return true;
+}
+function undo() {
+  const s = hist.pop(); if (!s) return;
+  restore(s); queue = []; path = []; SFX.play('back');
+}
+// esquina sin meta = caja que nunca más se puede mover a su lugar
+function deadBox(b) {
+  if (goals.has(b.y * cols + b.x)) return false;
+  const L = wall(b.x - 1, b.y), R = wall(b.x + 1, b.y), T = wall(b.x, b.y - 1), B = wall(b.x, b.y + 1);
+  if ((L || R) && (T || B)) return true;
+  // dos cajas pegadas contra una pared
+  for (const [dx, dy] of [[1, 0], [0, 1]]) {
+    const o = boxAt(b.x + dx, b.y + dy); if (!o) continue;
+    if (dx && ((T && wall(o.x, o.y - 1)) || (B && wall(o.x, o.y + 1))) && !(goals.has(b.y * cols + b.x) && goals.has(o.y * cols + o.x))) return true;
+    if (dy && ((L && wall(o.x - 1, o.y)) || (R && wall(o.x + 1, o.y))) && !(goals.has(b.y * cols + b.x) && goals.has(o.y * cols + o.x))) return true;
+  }
+  return false;
+}
+function checkState() {
+  if (boxes.every(b => goals.has(b.y * cols + b.x))) return win();
+  if (!stuckWarned && boxes.some(deadBox)) { stuckWarned = true; BG.ui.toast('Una caja quedó trabada · deshacé con Z / ↶', '#ff3d6e'); SFX.play('hurt'); }
+}
+function starsFor(i, p) { const min = LEVELS[i].p; return p <= min ? 3 : p <= Math.ceil(min * 1.5) ? 2 : 1; }
+function totalStars() { return Object.values(prog.stars).reduce((a, b) => a + b, 0); }
+function win() {
+  state = 'won'; winT = 0; queue = []; path = []; BG.stop();
+  const st = starsFor(cur, pushes), prev = prog.stars[cur] || 0;
+  prog.stars[cur] = Math.max(prev, st); prog.unlocked = Math.max(prog.unlocked, Math.min(LEVELS.length, cur + 2)); BG.save('prog', prog);
+  SFX.play('win'); FX.flash('#39ff88', .25);
+  for (let i = 0; i < 4; i++) setTimeout(() => FX.burst(U.rand(100, W - 100), U.rand(150, 450), { n: 26, color: ['#ffb347', '#39ff88', '#ffd400', '#fff'], speed: 260, life: .9, gravity: 300 }), i * 150);
+  const total = totalStars(), r = BG.submitScore(total, { won: true });
+  const last = cur >= LEVELS.length - 1;
+  setTimeout(() => BG.ui.gameOver({
+    win: true, icon: '📦', title: last ? '¡TERMINASTE TODOS!' : `¡NIVEL ${cur + 1} RESUELTO!`,
+    scoreText: '★'.repeat(st) + '☆'.repeat(3 - st), scoreLabel: st === 3 ? '¡en el mínimo de empujes!' : `mínimo: ${LEVELS[cur].p} empujes`,
+    isRecord: r.isRecord || r.first, recordText: `★ ${total} ESTRELLAS EN TOTAL ★`,
+    stats: [{ label: 'Pasos', value: moves }, { label: 'Empujes', value: pushes }, { label: 'Estrellas', value: `${total}/${LEVELS.length * 3}` }],
+    retryLabel: last ? '☰ ELEGIR NIVEL' : '▶ SIGUIENTE', onRetry: () => last ? showMenu() : loadLevel(cur + 1),
+    buttons: [{ label: '↻ REPETIR', onClick: () => loadLevel(cur) }], onMenu: showMenu,
+  }), 900);
+}
+function showMenu() {
+  state = 'menu'; BG.stop();
+  if (!grid.length) parse(LEVELS[Math.min(prog.unlocked - 1, LEVELS.length - 1)].m);
+  const btns = LEVELS.map((L, i) => {
+    const lock = i >= prog.unlocked, s = prog.stars[i] || 0;
+    return `<button data-l="${i}" class="${lock ? 'lock' : ''} ${i === Math.min(prog.unlocked - 1, LEVELS.length - 1) ? 'cur' : ''}">${lock ? '🔒' : i + 1}<small>${s ? '★'.repeat(s) : ''}</small></button>`;
+  }).join('');
+  BG.ui.show({
+    icon: '📦', title: 'BODEGUERO', sub: BG.game.subtitle,
+    stats: [{ label: 'Estrellas', value: `${totalStars()}/${LEVELS.length * 3}` }, { label: 'Resueltos', value: `${Object.keys(prog.stars).length}/${LEVELS.length}` }],
+    html: `<div class="bg-label">Elegí un nivel</div><div class="lvgrid">${btns}</div>`,
+    buttons: [{ label: '▶ CONTINUAR', primary: true, onClick: () => loadLevel(Math.min(prog.unlocked - 1, LEVELS.length - 1)) }],
+    help: BG.isTouch ? BG.game.helpTouch : BG.game.help,
+    onShow: card => card.querySelectorAll('[data-l]').forEach(b => b.addEventListener('click', () => { const i = +b.dataset.l; if (i < prog.unlocked) { SFX.play('select'); loadLevel(i); } })),
+  });
+}
+// caminar hasta una casilla (sin empujar nada)
+function findPath(tx, ty) {
+  const prev = new Map(), start = pl.y * cols + pl.x, goal = ty * cols + tx, q = [start]; prev.set(start, null);
+  while (q.length) {
+    const c = q.shift(); if (c === goal) break;
+    const x = c % cols, y = (c / cols) | 0;
+    for (const [d, [dx, dy]] of Object.entries(DIR)) { const nx = x + dx, ny = y + dy, k = ny * cols + nx; if (!wall(nx, ny) && !boxAt(nx, ny) && !prev.has(k)) { prev.set(k, [c, d]); q.push(k); } }
+  }
+  if (!prev.has(goal)) return null;
+  const out = []; let k = goal; while (prev.get(k)) { const [p, d] = prev.get(k); out.unshift(d); k = p; }
+  return out;
+}
+function update(dt) {
+  t += dt;
+  for (const b of boxes) { b.fx = U.lerp(b.fx, b.x, Math.min(1, dt * 20)); b.fy = U.lerp(b.fy, b.y, Math.min(1, dt * 20)); b.glow = Math.max(goals.has(b.y * cols + b.x) ? .35 : 0, b.glow - dt); }
+  pl.fx = U.lerp(pl.fx, pl.x, Math.min(1, dt * 20)); pl.fy = U.lerp(pl.fy, pl.y, Math.min(1, dt * 20)); pl.push = Math.max(0, pl.push - dt);
+  if (state !== 'play') return;
+  const I = BG.input;
+  const u = I.pressed('undo'), r = I.pressed('restart');
+  if (u) undo();
+  if (r && hist.length) { restore(hist[0]); hist = []; queue = []; path = []; SFX.play('whoosh'); }
+  for (const d of Object.keys(DIR)) if (I.pressed(d)) { path = []; queue.push(d); }
+  stepT -= dt;
+  if (stepT <= 0) {
+    if (queue.length) { tryMove(queue.shift()); stepT = .085; }
+    else if (path.length) { tryMove(path.shift()); stepT = .06; }
+    else { const held = Object.keys(DIR).find(d => I.isDown(d)); if (held) { tryMove(held); stepT = .14; } }
+  }
+  if (queue.length > 4) queue.length = 4;
+}
+// ── Dibujo ────────────────────────────────────────────────────────────────
+function render() {
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#1a1208'); g.addColorStop(1, '#0a0705');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = .06; ctx.fillStyle = '#ffb347'; for (let i = 0; i < 9; i++) ctx.fillRect(0, i * 90 + ((t * 8) % 90), W, 1); ctx.globalAlpha = 1;
+  if (!grid.length) return;
+  ctx.save(); FX.applyShake(ctx);
+  // piso
+  for (const k of inside) {
+    const x = ox + (k % cols) * cs, y = oy + ((k / cols) | 0) * cs;
+    ctx.fillStyle = ((k % cols) + ((k / cols) | 0)) % 2 ? '#3a2a1a' : '#3f2e1c'; ctx.fillRect(x, y, cs, cs);
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(x, y + cs * .48, cs, 1.5);
+  }
+  // metas
+  for (const k of goals) {
+    const x = ox + (k % cols + .5) * cs, y = oy + (((k / cols) | 0) + .5) * cs, p = .8 + Math.sin(t * 4 + k) * .2;
+    ctx.save(); ctx.shadowColor = '#39ff88'; ctx.shadowBlur = 12; ctx.strokeStyle = '#39ff88'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(x, y - cs * .22 * p); ctx.lineTo(x + cs * .22 * p, y); ctx.lineTo(x, y + cs * .22 * p); ctx.lineTo(x - cs * .22 * p, y); ctx.closePath(); ctx.stroke(); ctx.restore();
+  }
+  // paredes (solo las que tocan el interior)
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    if (grid[y * cols + x] !== 1) continue;
+    let near = false; for (let dy = -1; dy <= 1 && !near; dy++) for (let dx = -1; dx <= 1; dx++) if (inside.has((y + dy) * cols + x + dx) && x + dx >= 0 && x + dx < cols) { near = true; break; }
+    if (!near) continue;
+    const X = ox + x * cs, Y = oy + y * cs;
+    ctx.fillStyle = '#6e4a2c'; ctx.fillRect(X, Y - cs * .12, cs, cs);
+    ctx.fillStyle = '#8a5e38'; ctx.fillRect(X, Y - cs * .12, cs, cs * .14);
+    ctx.fillStyle = '#4a311c'; if (inside.has((y + 1) * cols + x)) ctx.fillRect(X, Y + cs * .88, cs, cs * .12);
+    ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1;
+    for (let r = 0; r < 3; r++) { const yy = Y - cs * .12 + cs * .33 * r + cs * .14; ctx.beginPath(); ctx.moveTo(X, yy); ctx.lineTo(X + cs, yy); ctx.stroke(); const off = r % 2 ? cs * .5 : 0; ctx.beginPath(); ctx.moveTo(X + off + cs * .25, yy); ctx.lineTo(X + off + cs * .25, yy + cs * .33); ctx.stroke(); }
+  }
+  // cajas
+  for (const b of boxes) {
+    const x = ox + b.fx * cs, y = oy + b.fy * cs, on = goals.has(b.y * cols + b.x), dead = !on && stuckWarned && deadBox(b);
+    const m = cs * .08, s = cs - m * 2;
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x + m + 3, y + m + 5, s, s);
+    ctx.save(); if (on) { ctx.shadowColor = '#39ff88'; ctx.shadowBlur = 10 + b.glow * 30; }
+    const cg = ctx.createLinearGradient(0, y, 0, y + cs); cg.addColorStop(0, on ? '#ffe08a' : dead ? '#d0705a' : '#e0a050'); cg.addColorStop(1, on ? '#c89a3a' : dead ? '#8a3a2a' : '#9a6428');
+    ctx.fillStyle = cg; ctx.fillRect(x + m, y + m, s, s); ctx.restore();
+    ctx.strokeStyle = on ? '#6a5010' : '#5a3510'; ctx.lineWidth = Math.max(2, cs * .06);
+    ctx.strokeRect(x + m + 1, y + m + 1, s - 2, s - 2);
+    ctx.beginPath(); ctx.moveTo(x + m + 3, y + m + 3); ctx.lineTo(x + cs - m - 3, y + cs - m - 3); ctx.moveTo(x + cs - m - 3, y + m + 3); ctx.lineTo(x + m + 3, y + cs - m - 3); ctx.stroke();
+    if (on) D.text(ctx, '✔', x + cs / 2, y + cs / 2 + 1, { size: cs * .32, color: '#1d6b2e' });
+  }
+  drawWorker();
+  FX.draw(ctx);
+  ctx.restore();
+  if (state !== 'menu') {
+    D.text(ctx, `NIVEL ${cur + 1}`, W / 2, 34, { size: 20, color: '#ffb347', glow: '#ffb347' });
+    const best = prog.stars[cur] || 0;
+    D.text(ctx, `mínimo ${LEVELS[cur].p} empujes · ${'★'.repeat(best)}${'☆'.repeat(3 - best)}`, W / 2, 62, { size: 13, color: 'rgba(255,255,255,.6)', family: 'body' });
+    const onG = boxes.filter(b => goals.has(b.y * cols + b.x)).length;
+    D.text(ctx, `📦 ${onG}/${boxes.length}`, W / 2, 86, { size: 14, color: onG === boxes.length ? '#39ff88' : '#fff', family: 'body' });
+  }
+  FX.drawFlash(ctx, W, H);
+}
+function drawWorker() {
+  const x = ox + (pl.fx + .5) * cs, y = oy + (pl.fy + .5) * cs, r = cs * .34, [dx, dy] = DIR[pl.dir];
+  const bob = Math.abs(Math.sin(t * 14)) * (Math.hypot(pl.fx - pl.x, pl.fy - pl.y) > .05 ? 2 : 0), lean = pl.push * 18;
+  ctx.save(); ctx.translate(x + dx * lean * .3, y + dy * lean * .3 - bob);
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0, r * .9 + bob, r * .9, r * .3, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#2a64d8'; ctx.beginPath(); ctx.arc(0, r * .25, r * .8, 0, 7); ctx.fill();          // overol
+  ctx.fillStyle = '#f2c29b'; ctx.beginPath(); ctx.arc(0, -r * .35, r * .62, 0, 7); ctx.fill();       // cara
+  ctx.fillStyle = '#ff7a1a'; ctx.beginPath(); ctx.arc(0, -r * .55, r * .64, Math.PI, 0); ctx.fill();  // gorra
+  ctx.fillRect(dx >= 0 ? 0 : -r * .95, -r * .6, r * .95, r * .16);
+  if (dy <= 0 || dx) { ctx.fillStyle = '#111'; for (const s of [-1, 1]) { ctx.beginPath(); ctx.arc(dx * r * .3 + s * r * .22, -r * .3 + dy * r * .1, r * .09, 0, 7); ctx.fill(); } }
+  ctx.restore();
+}
+view.canvas.addEventListener('pointerdown', e => {
+  if (state !== 'play') return;
+  const p = view.toLocal(e.clientX, e.clientY), tx = Math.floor((p.x - ox) / cs), ty = Math.floor((p.y - oy) / cs);
+  if (tx < 0 || ty < 0 || tx >= cols || ty >= rows) return;
+  const dx = tx - pl.x, dy = ty - pl.y;
+  if (Math.abs(dx) + Math.abs(dy) === 1) { queue.push(dx === 1 ? 'right' : dx === -1 ? 'left' : dy === 1 ? 'down' : 'up'); return; }
+  if (boxAt(tx, ty) || wall(tx, ty)) return;
+  const pth = findPath(tx, ty); if (pth) { path = pth; queue = []; }
+});
+const SONG = { bpm: 92, tracks: [
+  { type: 'triangle', vol: .28, notes: 'E4 . G4 . A4 . . . G4 . E4 . D4 . . . C4 . D4 . E4 . G4 . A4 . G4 . E4 . . . E4 . G4 . A4 . C5 . B4 . A4 . G4 . . . E4 . D4 . C4 . D4 . E4 . . . . . . .' },
+  { type: 'sine', vol: .45, notes: 'A2 - - - - - - - F2 - - - - - - - C3 - - - - - - - G2 - - - - - - - A2 - - - - - - - F2 - - - - - - - G2 - - - - - - - E2 - - - - - - -' },
+  { drum: true, vol: .25, notes: 'K . . . H . . . K . . . H . H .' },
+] };
+if (BG.thumb) { parse(LEVELS[Math.min(16, LEVELS.length - 1)].m); state = 'thumb'; boxes.forEach((b, i) => { if (i === 0) { const k = [...goals][0]; b.x = b.fx = k % cols; b.y = b.fy = (k / cols) | 0; } }); cur = 16; update = () => { t += 1 / 60; }; }
+else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

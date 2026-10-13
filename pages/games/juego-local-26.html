@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Curve Fever</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  CURVE FEVER — BandaGamer
+//  Hasta 4 serpientes: cada una puede ser humana o CPU (antes hacían falta
+//  2 personas en el mismo teclado) · huecos en la estela · power-ups
+//  Cada vez que alguien choca, los que siguen vivos suman 1 punto
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 800, H = 560, CELL = 2, GW = W / CELL, GH = H / CELL;
+const PLAYERS = [
+  { name: 'ROJO', color: '#ff3d6e', keys: ['ArrowLeft', 'ArrowRight'], keyTxt: '← →' },
+  { name: 'CIAN', color: '#2ef2ff', keys: ['KeyA', 'KeyD'], keyTxt: 'A D' },
+  { name: 'LIMA', color: '#9dff3d', keys: ['KeyJ', 'KeyL'], keyTxt: 'J L' },
+  { name: 'VIOLETA', color: '#c04dff', keys: ['KeyB', 'KeyM'], keyTxt: 'B M' },
+];
+const POWERS = [
+  { id: 'fast', icon: '»', color: '#ff9a1f', name: 'VELOZ', self: true },
+  { id: 'slow', icon: '«', color: '#2ef2ff', name: 'LENTOS', self: false },
+  { id: 'ghost', icon: '◌', color: '#ffffff', name: 'FANTASMA', self: true },
+  { id: 'wrap', icon: '⟲', color: '#9dff3d', name: 'SIN PAREDES', self: true },
+  { id: 'clear', icon: '✕', color: '#ffd400', name: 'BORRAR', self: null },
+  { id: 'invert', icon: '⇄', color: '#ff3dd0', name: 'INVERTIDOS', self: false },
+];
+
+BG.init({
+  post: { bloom: .6, vignette: .35, thumbFx: true },
+  id: 'curvefever', title: 'CURVE FEVER', icon: '🐍', accent: '#ff3d6e', accent2: '#2ef2ff',
+  subtitle: 'Doblá a tiempo, no choques con ninguna estela y quedate último en pie.',
+  hud: [{ id: 'round', label: 'Ronda', color: '#ffd400' }, { id: 'goal', label: 'Meta', color: '#9dff3d' }, { id: 'you', label: 'Tus puntos', color: '#ff3d6e' }],
+  help: 'Rojo: <kbd>←</kbd><kbd>→</kbd> · Cian: <kbd>A</kbd><kbd>D</kbd> · Lima: <kbd>J</kbd><kbd>L</kbd> · Violeta: <kbd>B</kbd><kbd>M</kbd> · <kbd>Espacio</kbd> arranca la ronda',
+  helpTouch: 'Tocá la mitad izquierda o derecha de la pantalla para doblar.',
+  touch: { dpad: 'h', buttons: [] },
+  onRestart: () => startMatch(), onMenu: () => showMenu(),
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+const trail = document.createElement('canvas');   // las estelas se pintan acá una sola vez
+const tctx = trail.getContext('2d');
+let occ = new Int16Array(GW * GH), occT = new Float32Array(GW * GH);
+
+let cfg = BG.load('cfg', { slots: ['human', 'cpu', 'cpu', 'cpu'], diff: 1 });
+let snakes = [], scores = [], round = 0, goal = 10, state = 'menu', roundT = 0, power = [], powerT = 3, clock = 0, touchDir = 0;
+view.onResize = () => redrawTrail();
+
+function activeIdx() { return cfg.slots.map((s, i) => s !== 'off' ? i : -1).filter(i => i >= 0); }
+function startMatch() {
+  const act = activeIdx();
+  if (act.length < 2) { BG.ui.toast('Necesitás al menos 2 jugadores', '#ff3d6e'); return; }
+  BG.save('cfg', cfg);
+  scores = PLAYERS.map(() => 0); round = 0; goal = 5 * (act.length - 1) + 5;
+  BG.hud.set('goal', goal);
+  BG.start(); newRound();
+}
+function newRound() {
+  round++; BG.hud.set('round', round);
+  occ.fill(0); occT.fill(0); history = [];
+  trail.width = Math.round(W * view.scale); trail.height = Math.round(H * view.scale);
+  tctx.setTransform(view.scale, 0, 0, view.scale, 0, 0); tctx.lineCap = 'round';
+  power = []; powerT = U.rand(3, 5);
+  snakes = [];
+  for (const i of activeIdx()) {
+    let x, y, tries = 0;
+    do { x = U.rand(90, W - 90); y = U.rand(90, H - 90); } while (tries++ < 50 && snakes.some(o => U.dist(o.x, o.y, x, y) < 140));
+    // mirando hacia el centro (con algo de azar) para no arrancar contra la pared
+    const a = Math.atan2(H / 2 - y, W / 2 - x) + U.rand(-1, 1);
+    snakes.push({ i, x, y, a, alive: true, human: cfg.slots[i] === 'human', gap: 0, gapT: U.rand(1.5, 3), fx: {}, px: x, py: y, aiT: 0, aiTurn: 0, hue: PLAYERS[i].color });
+  }
+  state = 'ready'; roundT = 0; clock = 0;
+}
+let history = [];
+function showMenu() {
+  state = 'menu'; BG.stop();
+  const lab = { human: '🧑 HUMANO', cpu: '🤖 CPU', off: '— VACÍO' };
+  const diffs = ['FÁCIL', 'NORMAL', 'DIFÍCIL'];
+  BG.ui.show({
+    icon: '🐍', title: 'CURVE FEVER', sub: BG.game.subtitle,
+    html: `<div class="bg-label">Jugadores (tocá para cambiar)</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">${PLAYERS.map((p, i) => `
+        <button class="bg-btn" data-slot="${i}" style="display:flex;justify-content:space-between;align-items:center;border-color:${p.color}55">
+          <span style="color:${p.color}">● ${p.name} <small style="display:inline;color:#8b8ba3">${BG.isTouch && i ? '' : p.keyTxt}</small></span><span>${lab[cfg.slots[i]]}</span></button>`).join('')}</div>
+      <div class="bg-label">Dificultad CPU</div><div class="bg-seg">${diffs.map((d, k) => `<button class="bg-btn ${cfg.diff === k ? 'sel' : ''}" data-diff="${k}">${d}</button>`).join('')}</div>`,
+    buttons: [{ label: '▶ JUGAR', primary: true, onClick: startMatch }],
+    help: BG.isTouch ? BG.game.helpTouch : BG.game.help,
+    onShow: card => {
+      card.querySelectorAll('[data-slot]').forEach(b => b.addEventListener('click', () => {
+        const i = +b.dataset.slot, order = BG.isTouch ? (i === 0 ? ['human', 'cpu'] : ['cpu', 'off']) : ['human', 'cpu', 'off'];
+        cfg.slots[i] = order[(order.indexOf(cfg.slots[i]) + 1) % order.length];
+        b.lastElementChild.textContent = lab[cfg.slots[i]]; SFX.play('tick');
+      }));
+      card.querySelectorAll('[data-diff]').forEach(b => b.addEventListener('click', () => { cfg.diff = +b.dataset.diff; card.querySelectorAll('[data-diff]').forEach(x => x.classList.toggle('sel', x === b)); SFX.play('tick'); }));
+    },
+  });
+}
+
+// ── Ocupación (grilla de 2px) para choques exactos ────────────────────────
+function mark(x, y, id, r) {
+  const cx = Math.floor(x / CELL), cy = Math.floor(y / CELL), rr = Math.ceil(r / CELL);
+  for (let dy = -rr; dy <= rr; dy++) for (let dx = -rr; dx <= rr; dx++) {
+    if (dx * dx + dy * dy > rr * rr + 1) continue;
+    const gx = cx + dx, gy = cy + dy;
+    if (gx < 0 || gy < 0 || gx >= GW || gy >= GH) continue;
+    const k = gy * GW + gx; if (!occ[k]) { occ[k] = id + 1; occT[k] = clock; }
+  }
+}
+function hitAt(x, y, s) {
+  const gx = Math.floor(x / CELL), gy = Math.floor(y / CELL);
+  if (gx < 0 || gy < 0 || gx >= GW || gy >= GH) return 'wall';
+  const k = gy * GW + gx, o = occ[k];
+  if (!o) return null;
+  if (o === s.i + 1 && clock - occT[k] < .25) return null;   // la propia estela recién pintada
+  return 'trail';
+}
+function free(x, y, s) {
+  if (x < 3 || y < 3 || x > W - 3 || y > H - 3) return s.fx.wrap > 0;
+  return !hitAt(x, y, s);
+}
+function redrawTrail() {
+  if (!history.length) return;
+  trail.width = Math.round(W * view.scale); trail.height = Math.round(H * view.scale);
+  tctx.setTransform(view.scale, 0, 0, view.scale, 0, 0); tctx.lineCap = 'round';
+  for (const h of history) seg(h);
+}
+function seg(h) { tctx.strokeStyle = h.c; tctx.lineWidth = h.w; tctx.beginPath(); tctx.moveTo(h.x1, h.y1); tctx.lineTo(h.x2, h.y2); tctx.stroke(); }
+
+// ── IA: mira 3 rayos (izq / recto / der) y elige el más libre ─────────────
+function ray(s, ang, len) {
+  for (let d = 6; d <= len; d += 4) { const x = s.x + Math.cos(ang) * d, y = s.y + Math.sin(ang) * d; if (!free(x, y, s)) return d; }
+  return len;
+}
+function aiThink(s) {
+  const look = [70, 110, 160][cfg.diff];
+  const opts = [-1, 0, 1].map(t => {
+    let best = 0;
+    for (const off of [.25, .55, .95]) best += ray(s, s.a + t * off, look) * (off === .25 ? 1.4 : 1);
+    return { t, v: best + U.rand(0, [40, 20, 6][cfg.diff]) };
+  });
+  // buscar power-ups cercanos (nivel normal y difícil)
+  if (cfg.diff > 0) for (const p of power) { const ang = Math.atan2(p.y - s.y, p.x - s.x); let da = ((ang - s.a + Math.PI * 3) % (Math.PI * 2)) - Math.PI; if (Math.abs(da) < .9 && U.dist(p.x, p.y, s.x, s.y) < 180) opts[Math.sign(da) + 1].v += 30; }
+  opts.sort((a, b) => b.v - a.v);
+  s.aiTurn = opts[0].t;
+}
+
+function kill(s) {
+  s.alive = false;
+  FX.burst(s.x, s.y, { n: 26, color: [s.hue, '#fff'], speed: 220, life: .6 });
+  FX.shake(4, .2); SFX.play('hit');
+  snakes.forEach(o => { if (o.alive) { scores[o.i]++; } });
+  if (cfg.slots[0] === 'human') BG.hud.set('you', scores[0], true);
+}
+function grant(s, p) {
+  SFX.play('power'); FX.ring(p.x, p.y, { color: p.color, max: 40 });
+  if (p.id === 'clear') { occ.fill(0); history = []; tctx.clearRect(0, 0, W, H); BG.ui.toast('¡PANTALLA LIMPIA!', p.color); return; }
+  const targets = p.self ? [s] : snakes.filter(o => o !== s);
+  targets.forEach(o => { o.fx[p.id] = 5; });
+}
+
+function update(dt) {
+  if (state === 'menu' || state === 'matchover') return;
+  if (state === 'ready') { roundT += dt; if (roundT > 1.4 || BG.input.pressed('action')) { state = 'play'; SFX.play('go'); } return; }
+  if (state === 'roundover') { roundT += dt; if (roundT > 1.8) newRound(); return; }
+  clock += dt;
+  const I = BG.input;
+  // power-ups
+  powerT -= dt;
+  if (powerT <= 0 && power.length < 3) { power.push({ ...U.pick(POWERS), x: U.rand(50, W - 50), y: U.rand(50, H - 50), t: 0 }); powerT = U.rand(3, 6); }
+  power.forEach(p => p.t += dt);
+  power = power.filter(p => p.t < 12);
+  for (const s of snakes) {
+    if (!s.alive) continue;
+    for (const k in s.fx) s.fx[k] = Math.max(0, s.fx[k] - dt);
+    // giro
+    let turn = 0;
+    if (s.human) {
+      const [l, r] = PLAYERS[s.i].keys;
+      turn = (I.isDown(r) ? 1 : 0) - (I.isDown(l) ? 1 : 0);
+      if (s.i === 0) { turn = turn || touchDir || ((I.virt.right ? 1 : 0) - (I.virt.left ? 1 : 0)); }
+    } else { s.aiT -= dt; if (s.aiT <= 0) { s.aiT = [.12, .07, .04][cfg.diff]; aiThink(s); } turn = s.aiTurn; }
+    if (s.fx.invert > 0) turn = -turn;
+    let sp = 105 * (s.fx.fast > 0 ? 1.6 : 1) * (s.fx.slow > 0 ? .6 : 1);
+    s.a += turn * 3.1 * dt * (s.fx.fast > 0 ? 1.2 : 1);
+    s.px = s.x; s.py = s.y;
+    s.x += Math.cos(s.a) * sp * dt; s.y += Math.sin(s.a) * sp * dt;
+    // huecos
+    s.gapT -= dt; if (s.gapT <= 0) { s.gap = .28; s.gapT = U.rand(1.6, 3.2); }
+    s.gap = Math.max(0, s.gap - dt);
+    const drawing = s.gap <= 0 && !(s.fx.ghost > 0);
+    // paredes
+    if (s.fx.wrap > 0) {
+      let wr = false;
+      if (s.x < 0) { s.x += W; wr = true; } if (s.x > W) { s.x -= W; wr = true; } if (s.y < 0) { s.y += H; wr = true; } if (s.y > H) { s.y -= H; wr = true; }
+      if (wr) { s.px = s.x; s.py = s.y; }
+    }
+    const res = hitAt(s.x + Math.cos(s.a) * 3, s.y + Math.sin(s.a) * 3, s);
+    if (res === 'wall' || (res === 'trail' && !(s.fx.ghost > 0))) { kill(s); continue; }
+    if (drawing) {
+      const h = { x1: s.px, y1: s.py, x2: s.x, y2: s.y, c: s.hue, w: 4.5 };
+      history.push(h); seg(h);
+      mark(s.x, s.y, s.i, 2.6);
+    }
+    for (let k = power.length - 1; k >= 0; k--) if (U.dist(power[k].x, power[k].y, s.x, s.y) < 16) { grant(s, power[k]); power.splice(k, 1); }
+  }
+  const alive = snakes.filter(s => s.alive);
+  if (alive.length <= 1) {
+    state = 'roundover'; roundT = 0;
+    const w = alive[0];
+    if (w) { BG.ui.toast(`¡${PLAYERS[w.i].name} GANA LA RONDA!`, w.hue); SFX.play('coin'); }
+    const top = Math.max(...activeIdx().map(i => scores[i]));
+    const leaders = activeIdx().filter(i => scores[i] === top);
+    if (top >= goal && leaders.length === 1) endMatch(leaders[0]);
+  }
+}
+function endMatch(winner) {
+  state = 'matchover'; BG.stop();
+  const youHuman = cfg.slots[0] === 'human', cpus = cfg.slots.filter(s => s === 'cpu').length;
+  let r = null;
+  if (youHuman && cpus > 0) r = BG.submitScore(scores[0] * (cfg.diff + 1) * 10 + (winner === 0 ? 200 * (cfg.diff + 1) : 0), { won: winner === 0 });
+  SFX.play(winner === 0 || !youHuman ? 'win' : 'lose');
+  const tabla = activeIdx().sort((a, b) => scores[b] - scores[a]).map(i => ({ label: PLAYERS[i].name + (cfg.slots[i] === 'cpu' ? ' 🤖' : ''), value: scores[i] }));
+  setTimeout(() => BG.ui.gameOver({
+    win: winner === 0 || cfg.slots[winner] === 'human', title: `¡GANÓ ${PLAYERS[winner].name}!`, icon: '🏆',
+    score: r ? scores[0] * (cfg.diff + 1) * 10 + (winner === 0 ? 200 * (cfg.diff + 1) : 0) : null,
+    isRecord: r && (r.isRecord || r.first), stats: tabla, onRetry: startMatch, onMenu: showMenu,
+  }), 900);
+}
+
+// ── Dibujo ────────────────────────────────────────────────────────────────
+function render() {
+  ctx.fillStyle = '#06060f'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,.035)'; ctx.lineWidth = 1; ctx.beginPath();
+  for (let x = 40; x < W; x += 40) { ctx.moveTo(x, 0); ctx.lineTo(x, H); } for (let y = 40; y < H; y += 40) { ctx.moveTo(0, y); ctx.lineTo(W, y); } ctx.stroke();
+  ctx.save(); FX.applyShake(ctx);
+  ctx.drawImage(trail, 0, 0, W, H);
+  // borde (punteado si alguien tiene "sin paredes")
+  const anyWrap = snakes.some(s => s.alive && s.fx.wrap > 0);
+  ctx.strokeStyle = anyWrap ? 'rgba(157,255,61,.6)' : 'rgba(255,214,0,.7)'; ctx.lineWidth = 3; if (anyWrap) ctx.setLineDash([10, 8]);
+  ctx.strokeRect(1.5, 1.5, W - 3, H - 3); ctx.setLineDash([]);
+  for (const p of power) {
+    const pul = 1 + Math.sin(p.t * 6) * .08, fade = p.t > 10 ? (Math.floor(p.t * 8) % 2 ? .3 : 1) : 1;
+    ctx.globalAlpha = fade; D.glowCircle(ctx, p.x, p.y, 13 * pul, p.color, 18); ctx.globalAlpha = 1;
+    D.text(ctx, p.icon, p.x, p.y + 1, { size: 15, color: '#06060f' });
+  }
+  for (const s of snakes) {
+    if (!s.alive) continue;
+    const ghost = s.fx.ghost > 0;
+    D.glowCircle(ctx, s.x, s.y, 4.5, ghost ? 'rgba(255,255,255,.6)' : '#fff', 14);
+    if (state === 'ready') {
+      ctx.strokeStyle = s.hue; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x + Math.cos(s.a) * 30, s.y + Math.sin(s.a) * 30); ctx.stroke();
+      D.text(ctx, PLAYERS[s.i].name + (s.human ? '' : ' 🤖'), s.x, s.y - 18, { size: 10, color: s.hue });
+    }
+    const act = Object.entries(s.fx).filter(([, v]) => v > 0).map(([k]) => POWERS.find(p => p.id === k).icon).join('');
+    if (act) D.text(ctx, act, s.x, s.y - 14, { size: 11, color: '#fff', family: 'body' });
+  }
+  FX.draw(ctx);
+  ctx.restore();
+  // marcador
+  if (state !== 'menu') activeIdx().forEach((i, k) => {
+    D.text(ctx, `${PLAYERS[i].name} ${scores[i]}`, 14 + k * 130, 18, { size: 12, color: PLAYERS[i].color, align: 'left' });
+  });
+  if (state === 'ready') D.text(ctx, `RONDA ${round}`, W / 2, H / 2, { size: 30, color: '#fff', glow: '#ff3d6e', alpha: Math.min(1, roundT * 3) });
+}
+
+// ── Táctil (jugador 1) ────────────────────────────────────────────────────
+const tps = new Map();
+const rc = () => { let d = 0; tps.forEach(v => d += v); touchDir = U.clamp(d, -1, 1); };
+view.canvas.addEventListener('pointerdown', e => { const p = view.toLocal(e.clientX, e.clientY); tps.set(e.pointerId, p.x < W / 2 ? -1 : 1); rc(); });
+view.canvas.addEventListener('pointermove', e => { if (!tps.has(e.pointerId)) return; tps.set(e.pointerId, view.toLocal(e.clientX, e.clientY).x < W / 2 ? -1 : 1); rc(); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => view.canvas.addEventListener(ev, e => { tps.delete(e.pointerId); rc(); }));
+
+// ── Arranque ──────────────────────────────────────────────────────────────
+if (BG.isTouch) cfg.slots = cfg.slots.map((s, i) => i === 0 ? 'human' : (s === 'human' ? 'cpu' : s));
+if (BG.thumb) {
+  cfg = { slots: ['human', 'cpu', 'cpu', 'cpu'], diff: 1 }; scores = [3, 5, 2, 4];
+  newRound(); state = 'play';
+  // simular unos segundos de partida para dibujar estelas
+  snakes.forEach(s => { s.human = false; });
+  for (let k = 0; k < 300; k++) update(1 / 60);
+  state = 'play'; update = () => {};
+} else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

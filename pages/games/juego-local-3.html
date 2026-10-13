@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Memory Match</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  MEMORY MATCH — BandaGamer
+//  Encontrá todos los pares en el menor tiempo. 4 dificultades, 4 temas de cartas,
+//  combos, estrellas según intentos, control con teclado (flechas + Espacio) y
+//  "juego rápido": si fallás, tocá otra carta y las dos anteriores se dan vuelta al toque.
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 600, H = 760;
+const MODES = { easy: { cols: 3, rows: 4, n: 'FÁCIL', s: '3×4 · 6 pares' }, medium: { cols: 4, rows: 4, n: 'MEDIO', s: '4×4 · 8 pares' }, hard: { cols: 4, rows: 6, n: 'DIFÍCIL', s: '4×6 · 12 pares' }, expert: { cols: 5, rows: 6, n: 'EXPERTO', s: '5×6 · 15 pares' } };
+const THEMES = [
+  ['🎮', '🕹️', '👾', '🚀', '🎯', '🔥', '⚡', '💎', '🎲', '🏆', '🧩', '🎨', '🎭', '🌟', '💀', '🦄'],
+  ['🐶', '🐱', '🦊', '🐼', '🐸', '🐵', '🦁', '🐯', '🐨', '🐷', '🐙', '🦉', '🐧', '🦋', '🐢', '🦖'],
+  ['🍕', '🍔', '🌮', '🍩', '🍎', '🍓', '🍉', '🍇', '🧁', '🍦', '🥑', '🍒', '🥨', '🍿', '🍣', '🍪'],
+  ['⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏓', '🥊', '⛳', '🏒', '🎳', '🛹', '🥇', '🎿', '🏄', '🚴'],
+];
+const PCOL = ['#ff2b6e', '#ff8a1f', '#ffd400', '#39ff88', '#2ef2ff', '#a855f7', '#ff6ab0', '#4d7cff', '#b8ff3e', '#ff4d4d', '#00d1b2', '#ffb347', '#c77dff', '#7cffcb', '#ffd6a5', '#9ad0ff'];
+
+BG.init({
+  id: 'memory', title: 'MEMORY MATCH', icon: '🧠', accent: '#a855f7', accent2: '#2ef2ff', order: 'asc',
+  post: { bloom: .22, vignette: .3, thumbFx: true },
+  subtitle: 'Encontrá todos los pares lo más rápido que puedas. Menos intentos = más estrellas.',
+  hud: [{ id: 'time', label: 'Tiempo', value: '0s' }, { id: 'pairs', label: 'Pares', color: '#39ff88', value: '0/0' }, { id: 'tries', label: 'Intentos', color: '#ffd400', value: '0' }],
+  help: 'Clic en las cartas · o <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> + <kbd>Espacio</kbd> · <kbd>P</kbd> pausa',
+  helpTouch: 'Tocá las cartas para darlas vuelta',
+  onRestart: () => start(mode), onMenu: () => showMenu(),
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+const bokeh = Array.from({ length: 18 }, () => ({ x: U.rand(W), y: U.rand(H), r: U.rand(20, 70), vy: U.rand(-12, -4), c: U.pick(PCOL) }));
+
+let mode = 'easy', cards = [], open = [], state = 'menu', t = 0, time = 0, timerOn = false, tries = 0, pairs = 0, total = 0, combo = 0, bestCombo = 0;
+let matchT = 0, missT = 0, cursor = 0, hover = -1, showCursor = false, theme = THEMES[0], winT = 0;
+
+function layout(cfg) {
+  const top = 70, pad = 14, gw = W - 40, gh = H - top - 30;
+  const cw = Math.min((gw - pad * (cfg.cols - 1)) / cfg.cols, ((gh - pad * (cfg.rows - 1)) / cfg.rows) * .8);
+  const ch = cw * 1.25, ox = (W - (cw * cfg.cols + pad * (cfg.cols - 1))) / 2, oy = top + (gh - (ch * cfg.rows + pad * (cfg.rows - 1))) / 2;
+  return { cw, ch, ox, oy, pad };
+}
+function deal(m) {
+  const cfg = MODES[m], L = layout(cfg), n = cfg.cols * cfg.rows / 2;
+  theme = U.pick(THEMES);
+  const vals = U.shuffle(theme.slice()).slice(0, n);
+  const deck = U.shuffle([...vals.map((v, i) => [v, PCOL[i]]), ...vals.map((v, i) => [v, PCOL[i]])]);
+  cards = deck.map(([v, col], i) => {
+    const r = Math.floor(i / cfg.cols), c = i % cfg.cols;
+    return { v, col, i, x: L.ox + c * (L.cw + L.pad), y: L.oy + r * (L.ch + L.pad), w: L.cw, h: L.ch, flip: 0, target: 0, matched: false, shake: 0, pop: 0, deal: -i * .045, dx: W / 2, dy: H + 100 };
+  });
+  return n;
+}
+function start(m) {
+  mode = m; total = deal(m); open = []; tries = 0; pairs = 0; combo = 0; bestCombo = 0; time = 0; timerOn = false; matchT = 0; missT = 0; cursor = 0; winT = 0;
+  BG.hud.setAll({ time: '0s', pairs: `0/${total}`, tries: 0 });
+  FX.clear(); state = 'play'; BG.start(); SFX.play('whoosh');
+}
+function showMenu() {
+  state = 'menu'; BG.stop();
+  if (!cards.length) deal('medium');
+  const fmt = k => { const b = BG.getBest(k); return b != null ? `récord ${b}s` : MODES[k].s; };
+  BG.ui.menu({ stats: null, buttons: Object.keys(MODES).map((k, i) => ({ label: MODES[k].n, small: fmt(k), primary: k === mode, onClick: () => start(k) })) });
+}
+function flip(c) {
+  if (state !== 'play' || !c || c.matched || c.target === 1 || c.deal < 1) return;
+  if (missT > 0) resolveMiss();
+  if (open.length >= 2) return;
+  timerOn = true; c.target = 1; open.push(c);
+  SFX.play('flip');
+  if (open.length === 2) {
+    tries++; BG.hud.set('tries', tries, true);
+    if (open[0].v === open[1].v) matchT = .32; else missT = .85;
+  }
+}
+function resolveMatch() {
+  const [a, b] = open; open = [];
+  a.matched = b.matched = true; a.pop = b.pop = 1; pairs++; combo++; bestCombo = Math.max(bestCombo, combo);
+  BG.hud.set('pairs', `${pairs}/${total}`, true);
+  SFX.play(combo > 1 ? 'combo' : 'coin', combo);
+  for (const c of [a, b]) { FX.burst(c.x + c.w / 2, c.y + c.h / 2, { n: 16, color: [c.col, '#fff'], speed: 220, life: .55 }); FX.ring(c.x + c.w / 2, c.y + c.h / 2, { color: c.col, max: c.w * .8 }); }
+  if (combo >= 2) FX.text((a.x + b.x) / 2 + a.w / 2, Math.min(a.y, b.y), `¡COMBO ×${combo}!`, { color: '#ffd400', size: 18 + Math.min(10, combo * 2) });
+  if (pairs === total) win();
+}
+function resolveMiss() {
+  missT = 0;
+  for (const c of open) { c.target = 0; }
+  open = []; combo = 0;
+}
+function win() {
+  state = 'won'; winT = 0; timerOn = false; BG.stop();
+  const secs = Math.max(1, Math.round(time));
+  const stars = tries <= total * 1.35 ? 3 : tries <= total * 2 ? 2 : 1;
+  SFX.play('win');
+  for (let i = 0; i < 6; i++) setTimeout(() => FX.burst(U.rand(80, W - 80), U.rand(100, 400), { n: 30, color: PCOL, speed: 280, life: 1, gravity: 300 }), i * 140);
+  const r = BG.submitScore(secs, { mode, order: 'asc', won: true });
+  setTimeout(() => BG.ui.gameOver({
+    win: true, icon: '🧠', title: '¡COMPLETADO!', scoreText: secs + ' s', scoreLabel: 'tiempo · ' + MODES[mode].n, isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : '★ ¡NUEVO RÉCORD! ★',
+    stats: [{ label: 'Estrellas', value: '★'.repeat(stars) + '☆'.repeat(3 - stars) }, { label: 'Intentos', value: tries }, { label: 'Mejor combo', value: '×' + bestCombo }, { label: 'Récord', value: (BG.getBest(mode) || secs) + 's' }],
+    retryLabel: '↻ OTRA VEZ', onRetry: () => start(mode), onMenu: showMenu,
+  }), 1200);
+}
+function update(dt) {
+  t += dt;
+  for (const b of bokeh) { b.y += b.vy * dt; if (b.y < -80) { b.y = H + 80; b.x = U.rand(W); } }
+  for (const c of cards) {
+    if (c.deal < 1) c.deal = Math.min(1, c.deal + dt * 3.2);
+    c.flip += (c.target - c.flip) * Math.min(1, dt * 14);
+    if (Math.abs(c.target - c.flip) < .01) c.flip = c.target;
+    c.shake = Math.max(0, c.shake - dt * 2.5); c.pop = Math.max(0, c.pop - dt * 2.2);
+  }
+  if (state !== 'play') return;
+  if (timerOn) { time += dt; BG.hud.set('time', Math.floor(time) + 's'); }
+  if (matchT > 0) { matchT -= dt; if (matchT <= 0) resolveMatch(); }
+  if (missT > 0) { const pre = missT; missT -= dt; if (pre > .55 && missT <= .55) { open.forEach(c => c.shake = 1); SFX.play('error'); } if (missT <= 0) resolveMiss(); }
+  // teclado
+  const I = BG.input, cfg = MODES[mode];
+  const mv = (dx, dy) => { showCursor = true; const r = Math.floor(cursor / cfg.cols), c = cursor % cfg.cols; cursor = ((r + dy + cfg.rows) % cfg.rows) * cfg.cols + (c + dx + cfg.cols) % cfg.cols; SFX.play('tick'); };
+  if (I.pressed('left')) mv(-1, 0); if (I.pressed('right')) mv(1, 0); if (I.pressed('up')) mv(0, -1); if (I.pressed('down')) mv(0, 1);
+  const a = I.pressed('action'), b = I.pressed('confirm');
+  if (a || b) { showCursor = true; flip(cards[cursor]); }
+}
+function drawCard(c) {
+  const e = 1 - Math.pow(1 - Math.max(0, c.deal), 3);
+  if (c.deal <= 0) return;
+  const x = U.lerp(c.dx - c.w / 2, c.x, e), y = U.lerp(c.dy, c.y, e);
+  const sx = Math.abs(Math.cos(c.flip * Math.PI)), face = c.flip > .5;
+  const shake = c.shake > 0 ? Math.sin(c.shake * 40) * 6 * c.shake : 0, pop = 1 + c.pop * .12;
+  ctx.save(); ctx.translate(x + c.w / 2 + shake, y + c.h / 2); ctx.scale(Math.max(.02, sx) * pop, pop);
+  if (!face && !c.matched) { const lift = c.i === hover ? -4 : 0; ctx.translate(0, lift); }
+  const w = c.w, h = c.h, r = Math.min(14, w * .14);
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; D.rr(ctx, -w / 2 + 3, -h / 2 + 6, w, h, r); ctx.fill();
+  if (face) {
+    const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#e6e1f5');
+    ctx.fillStyle = g; D.rr(ctx, -w / 2, -h / 2, w, h, r); ctx.fill();
+    ctx.lineWidth = c.matched ? 5 : 3; ctx.strokeStyle = c.col; D.rr(ctx, -w / 2 + 2, -h / 2 + 2, w - 4, h - 4, r - 2); ctx.stroke();
+    if (c.matched) { ctx.fillStyle = c.col; ctx.globalAlpha = .14; D.rr(ctx, -w / 2, -h / 2, w, h, r); ctx.fill(); ctx.globalAlpha = 1; }
+    if (c.shake > 0) { ctx.fillStyle = `rgba(255,40,80,${c.shake * .25})`; D.rr(ctx, -w / 2, -h / 2, w, h, r); ctx.fill(); }
+    D.text(ctx, c.v, 0, 2, { size: w * .52, family: 'body' });
+  } else {
+    const g = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2); g.addColorStop(0, '#5b2bd6'); g.addColorStop(1, '#1a8fd6');
+    ctx.fillStyle = g; D.rr(ctx, -w / 2, -h / 2, w, h, r); ctx.fill();
+    ctx.save(); D.rr(ctx, -w / 2, -h / 2, w, h, r); ctx.clip();
+    ctx.strokeStyle = 'rgba(255,255,255,.10)'; ctx.lineWidth = 2;
+    for (let k = -h; k < w + h; k += 16) { ctx.beginPath(); ctx.moveTo(-w / 2 + k, -h / 2); ctx.lineTo(-w / 2 + k - h, h / 2); ctx.stroke(); }
+    const sh = ((t * .5 + c.i * .07) % 2.4) - .7; ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.beginPath(); ctx.moveTo(-w / 2 + sh * w, -h / 2); ctx.lineTo(-w / 2 + sh * w + 18, -h / 2); ctx.lineTo(-w / 2 + sh * w - h * .4 + 18, h / 2); ctx.lineTo(-w / 2 + sh * w - h * .4, h / 2); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2; D.rr(ctx, -w / 2 + 5, -h / 2 + 5, w - 10, h - 10, r - 4); ctx.stroke();
+    D.glowCircle(ctx, 0, 0, w * .2, 'rgba(255,255,255,.15)', 10);
+    D.text(ctx, 'BG', 0, 1, { size: w * .2, color: '#fff', glow: '#2ef2ff' });
+  }
+  ctx.restore();
+  if (showCursor && c.i === cursor && state === 'play') { ctx.strokeStyle = '#ffd400'; ctx.lineWidth = 3; ctx.shadowColor = '#ffd400'; ctx.shadowBlur = 12; D.rr(ctx, c.x - 5, c.y - 5, c.w + 10, c.h + 10, 16); ctx.stroke(); ctx.shadowBlur = 0; }
+}
+function render() {
+  const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#120a2e'); g.addColorStop(1, '#071a2e');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  for (const b of bokeh) { ctx.globalAlpha = .08; ctx.fillStyle = b.c; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  D.text(ctx, state === 'menu' ? 'MEMORY MATCH' : MODES[mode].n, W / 2, 34, { size: 18, color: 'rgba(255,255,255,.8)', glow: '#a855f7' });
+  if (state === 'play' && combo >= 2) D.text(ctx, `🔥 COMBO ×${combo}`, W - 20, 34, { size: 14, color: '#ffd400', align: 'right' });
+  ctx.save(); FX.applyShake(ctx);
+  for (const c of cards) drawCard(c);
+  FX.draw(ctx);
+  ctx.restore();
+  FX.drawFlash(ctx, W, H);
+}
+function cardAt(e) { const p = view.toLocal(e.clientX, e.clientY); return cards.find(c => p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h); }
+view.canvas.addEventListener('pointerdown', e => { const c = cardAt(e); if (c) { cursor = c.i; showCursor = false; flip(c); } });
+view.canvas.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; const c = cardAt(e); hover = c && !c.matched && c.target === 0 ? c.i : -1; view.canvas.style.cursor = hover >= 0 ? 'pointer' : ''; });
+if (BG.thumb) {
+  mode = 'hard'; deal('hard'); state = 'thumb';
+  cards.forEach(c => c.deal = 1);
+  [0, 5, 9, 14, 3, 20].forEach((i, k) => { const c = cards[i]; c.flip = c.target = 1; if (k < 2) c.matched = true; });
+  cards[5].v = cards[0].v; cards[5].col = cards[0].col;
+  update = () => { t += 1 / 60; };
+} else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

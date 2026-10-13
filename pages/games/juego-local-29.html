@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Crucigrama</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+<style>
+#wrap { display: flex; gap: 16px; padding: 10px; width: 100%; height: 100%; align-items: center; justify-content: center; }
+#wrap.col { flex-direction: column; justify-content: flex-start; overflow-y: auto; }
+#left { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+#clueBar { width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 12px; background: rgba(255,140,0,.12); border: 1px solid rgba(255,140,0,.35); font-weight: 700; font-size: 15px; line-height: 1.25; display: flex; align-items: center; gap: 8px; }
+#clueBar b { font-family: 'Orbitron', sans-serif; color: #ffb347; font-size: 12px; white-space: nowrap; }
+#grid { display: grid; gap: 2px; padding: 6px; border-radius: 12px; background: #0b0b1c; box-shadow: 0 0 0 1px rgba(255,140,0,.3), 0 14px 40px rgba(0,0,0,.6); user-select: none; }
+.cw { position: relative; width: var(--cs); height: var(--cs); }
+.cw.on { background: #f4f1ff; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: calc(var(--cs) * .52); color: #1b1b30; transition: background .1s; }
+.cw.on .n { position: absolute; top: 1px; left: 3px; font-family: 'Rajdhani', sans-serif; font-size: calc(var(--cs) * .27); font-weight: 700; color: #6b6b8a; }
+.cw.word { background: #ffe2b8; }
+.cw.cur { background: #ffb347; box-shadow: inset 0 0 0 2px #ff7a00; }
+.cw.bad { color: #e11d48; }
+.cw.good { color: #059669; }
+.cw.rev { color: #7c3aed; }
+.cw.win { animation: wincell .6s ease; }
+@keyframes wincell { 50% { transform: scale(1.15); background: #86efac; } }
+#clues { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 520px; max-height: 100%; overflow-y: auto; }
+#wrap.col #clues { grid-template-columns: 1fr; max-height: none; width: 100%; }
+#clues h3 { font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 2px; color: #ffb347; margin-bottom: 6px; }
+.clue { padding: 5px 8px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; line-height: 1.25; color: #d8d8ee; }
+.clue:hover { background: rgba(255,255,255,.05); }
+.clue.sel { background: rgba(255,140,0,.2); color: #fff; }
+.clue.done { color: #6b6b8a; text-decoration: line-through; }
+.clue b { color: #ffb347; margin-right: 4px; }
+#tools { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+#tools .bg-btn { padding: 8px 10px; font-size: 11px; }
+#okb { display: none; width: 100%; max-width: 520px; flex-direction: column; gap: 5px; }
+body.touchdev #okb { display: flex; }
+.okr { display: flex; gap: 4px; justify-content: center; }
+.okr button { flex: 1; max-width: 40px; height: 44px; border: none; border-radius: 7px; background: #3a3a58; color: #fff; font-weight: 700; font-size: 16px; font-family: 'Rajdhani', sans-serif; }
+.okr button.w { max-width: 64px; flex: 1.6; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="bg-stage">
+  <div id="wrap">
+    <div id="left">
+      <div id="clueBar"><b>—</b><span>Elegí una casilla para empezar</span></div>
+      <div id="grid"></div>
+      <div id="tools">
+        <button class="bg-btn" id="t-check">✔ COMPROBAR</button>
+        <button class="bg-btn" id="t-hint">💡 LETRA</button>
+        <button class="bg-btn" id="t-word">📖 PALABRA</button>
+        <button class="bg-btn" id="t-new">↻ NUEVO</button>
+      </div>
+      <div id="okb"></div>
+    </div>
+    <div id="clues"><div><h3>HORIZONTALES</h3><div id="ch"></div></div><div><h3>VERTICALES</h3><div id="cv"></div></div></div>
+  </div>
+</div>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  CRUCIGRAMA — BandaGamer
+//  Generador propio: cruza palabras horizontales y verticales · uno distinto
+//  cada partida · ~170 palabras con definiciones · comprobar, pistas, timer
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, sfx: SFX } = BG;
+const BANK = `SOL|Estrella que ilumina la Tierra
+LUNA|Satélite natural de la Tierra
+MAR|Gran masa de agua salada
+RIO|Corriente de agua que desemboca en el mar
+PERRO|El mejor amigo del hombre
+GATO|Felino doméstico que maúlla
+CASA|Lugar donde vivimos
+ARBOL|Planta con tronco y ramas
+LIBRO|Hojas impresas y encuadernadas
+MESA|Mueble con patas donde se come
+SILLA|Asiento con respaldo
+PIANO|Instrumento de teclas blancas y negras
+GUITARRA|Instrumento de seis cuerdas
+TREN|Transporte que va sobre rieles
+AVION|Vehículo con alas que vuela
+BARCO|Embarcación grande
+NUBE|Masa de vapor de agua en el cielo
+LLUVIA|Agua que cae de las nubes
+NIEVE|Agua helada que cae en copos
+FUEGO|Da calor y luz al quemar
+AGUA|Líquido vital: H2O
+TIERRA|Nuestro planeta
+MANZANA|Fruta que le cayó a Newton
+BANANA|Fruta amarilla y alargada
+NARANJA|Fruta cítrica y también un color
+LIMON|Cítrico amarillo y ácido
+FRUTILLA|Fruta roja con semillas por fuera
+UVA|Fruto con el que se hace el vino
+PAN|Se hornea con harina, agua y levadura
+QUESO|Lácteo que comen los ratones en los dibujos
+LECHE|Bebida blanca que da la vaca
+CAFE|Infusión negra que despierta
+MATE|Infusión que se toma con bombilla
+ASADO|Carne a la parrilla, clásico del domingo
+EMPANADA|Masa rellena, horneada o frita
+PIZZA|Comida italiana redonda con queso
+FUTBOL|Deporte de la pelota y los arcos
+TENIS|Deporte con raqueta y red
+GOL|Se grita cuando la pelota entra al arco
+ARQUERO|Defiende el arco
+PELOTA|Objeto redondo para jugar
+CANCHA|Lugar donde se juega un partido
+RELOJ|Instrumento que marca la hora
+NOCHE|Parte oscura del día
+SEMANA|Siete días
+MES|Unos treinta días
+AÑO|Doce meses
+VERANO|La estación más calurosa
+INVIERNO|La estación más fría
+OTOÑO|Estación en que caen las hojas
+PRIMAVERA|Estación de las flores
+ROJO|Color de la sangre
+AZUL|Color del cielo despejado
+VERDE|Color del pasto
+AMARILLO|Color del sol en los dibujos
+NEGRO|El color de la noche
+BLANCO|Color de la nieve
+CORAZON|Órgano que bombea la sangre
+CEREBRO|Órgano con el que pensamos
+MANO|Tiene cinco dedos
+PIE|Parte del cuerpo con la que caminamos
+OJO|Órgano de la vista
+OREJA|Parte externa del oído
+NARIZ|Órgano del olfato
+BOCA|Por donde comemos
+DIENTE|Pieza dura para masticar
+PELO|Crece en la cabeza
+MEDICO|Profesional que cura enfermos
+MAESTRO|Enseña en la escuela
+BOMBERO|Apaga incendios
+ESCUELA|Lugar donde se aprende
+LAPIZ|Escribe y se puede borrar
+GOMA|Borra lo escrito con lápiz
+PAPEL|Hoja para escribir o dibujar
+CARTA|Mensaje escrito que se envía
+ROBOT|Máquina que imita a una persona
+COHETE|Vehículo que viaja al espacio
+PLANETA|Gira alrededor de una estrella
+ESTRELLA|Brilla en el cielo de noche
+COMETA|Astro con cola; juguete que vuela con el viento
+VOLCAN|Montaña que expulsa lava
+ISLA|Tierra rodeada de agua
+PLAYA|Arena junto al mar
+MONTAÑA|Gran elevación del terreno
+DESIERTO|Zona muy seca con dunas
+SELVA|Bosque tropical muy espeso
+LEON|El rey de la selva
+TIGRE|Felino de rayas
+ELEFANTE|Mamífero con trompa
+JIRAFA|Animal de cuello muy largo
+MONO|Primate que trepa árboles
+OSO|Animal grande que hiberna
+LOBO|Le aúlla a la luna
+ZORRO|Animal astuto de cola peluda
+CONEJO|Orejas largas, salta y come zanahorias
+PATO|Ave que hace cuac
+GALLINA|Ave que pone huevos
+VACA|Da leche y hace muu
+CABALLO|Animal que relincha
+OVEJA|Animal que da lana
+CERDO|Animal rosado que hace oinc
+PEZ|Vive en el agua y tiene aletas
+TIBURON|Pez de dientes afilados
+BALLENA|El mamífero más grande del mar
+PULPO|Tiene ocho tentáculos
+ARAÑA|Teje telarañas
+ABEJA|Insecto que hace miel
+HORMIGA|Insecto pequeño y trabajador
+MARIPOSA|Insecto de alas coloridas
+DRAGON|Criatura mítica que escupe fuego
+MAGO|Hace trucos y hechizos
+PIRATA|Ladrón de los mares
+TESORO|Lo que buscan los piratas
+CASTILLO|Fortaleza de reyes
+REY|Monarca de un reino
+REINA|Pieza más poderosa del ajedrez
+CORONA|La usa el rey en la cabeza
+ESPADA|Arma de hoja larga
+JUEGO|Actividad para divertirse
+CONSOLA|Aparato para jugar videojuegos
+PANTALLA|Donde se ven las imágenes
+TECLADO|Tiene teclas para escribir
+RATON|Roedor; o lo que mueve el cursor
+CELULAR|Teléfono que llevás en el bolsillo
+INTERNET|Red mundial de computadoras
+MUSICA|El arte de los sonidos
+CANCION|Composición con letra para cantar
+BAILE|Moverse al ritmo de la música
+FIESTA|Celebración con amigos
+REGALO|Lo que se da en un cumpleaños
+TORTA|Postre de cumpleaños con velas
+VELA|Se apaga soplando
+GLOBO|Se infla en las fiestas
+AMIGO|Persona con la que tenés amistad
+FAMILIA|Padres, hijos y hermanos
+HERMANO|Hijo de los mismos padres
+ABUELO|Padre de tu papá o de tu mamá
+BEBE|Recién nacido
+PUENTE|Estructura para cruzar un río
+CALLE|Por donde pasan los autos
+AUTO|Vehículo de cuatro ruedas
+BICICLETA|Dos ruedas y pedales
+MOTO|Dos ruedas y motor
+RUEDA|Pieza circular que gira
+LLAVE|Abre la puerta
+PUERTA|Por donde se entra a un lugar
+VENTANA|Abertura en la pared para mirar afuera
+ESPEJO|Refleja tu imagen
+CAMA|Mueble para dormir
+ALMOHADA|Donde apoyás la cabeza para dormir
+ZAPATO|Calzado
+SOMBRERO|Se usa en la cabeza
+PARAGUAS|Te protege de la lluvia
+VIENTO|Aire en movimiento
+RAYO|Descarga eléctrica de una tormenta
+TRUENO|El ruido después del rayo
+ARCOIRIS|Siete colores en el cielo después de llover
+ORO|Metal precioso amarillo
+PLATA|Metal precioso gris; también, dinero
+DIAMANTE|La piedra preciosa más dura
+HIERRO|Metal que se oxida
+RISA|Sonido de la alegría
+LAGRIMA|Gota que sale al llorar
+MIEDO|Lo que se siente ante un peligro
+AMOR|Cariño muy profundo
+PAZ|Lo contrario de la guerra
+HOLA|Saludo
+CHAU|Despedida rioplatense
+TANGO|Baile típico de Buenos Aires
+GAUCHO|Hombre de campo de la pampa
+PAMPA|Llanura argentina
+CONDOR|Gran ave de los Andes
+NIDO|Casa de los pájaros
+HUEVO|Lo pone la gallina
+SAL|Condimento blanco del mar
+AZUCAR|Endulza el café
+MIEL|La hacen las abejas
+CHOCOLATE|Dulce hecho con cacao
+HELADO|Postre frío que se derrite
+SOPA|Comida líquida y caliente
+ARROZ|Grano blanco que se hierve
+TOMATE|Fruto rojo de la ensalada
+PAPA|Tubérculo de las papas fritas
+CEBOLLA|Te hace llorar al cortarla
+ZANAHORIA|Verdura naranja que comen los conejos
+NUMERO|El siete es uno
+LETRA|La A es la primera
+PALABRA|Conjunto de letras con significado
+IDIOMA|El español es uno
+MAPA|Dibujo de un territorio
+BRUJULA|Siempre marca el norte
+VIAJE|Ir de un lugar a otro
+MALETA|Valija para viajar
+FOTO|Imagen que saca una cámara
+CINE|Lugar donde se ven películas
+TEATRO|Lugar donde actúan en vivo
+PAYASO|Hace reír en el circo
+CIRCO|Espectáculo con payasos y malabaristas`;
+const norm = s => s.toUpperCase().replace(/Ñ/g, '#').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/#/g, 'Ñ');
+const WORDS = BANK.split('\n').map(l => { const [w, c] = l.split('|'); return { w: norm(w.trim()), clue: c.trim() }; }).filter(o => o.w.length >= 3 && o.w.length <= 10);
+
+BG.init({
+  id: 'crucigrama', title: 'CRUCIGRAMA', icon: '📝', accent: '#ff8c00', accent2: '#ffd400', scroll: true, muteKey: false,
+  subtitle: 'Completá las palabras horizontales y verticales a partir de las definiciones.',
+  hud: [{ id: 'time', label: 'Tiempo', value: '0:00' }, { id: 'left', label: 'Faltan', color: '#ffd400' }, { id: 'pen', label: 'Penalización', color: '#ff4d6d', value: '0s' }],
+  help: 'Clic en una casilla y escribí · clic otra vez (o <kbd>Espacio</kbd>) cambia de dirección · <kbd>Tab</kbd> siguiente palabra · <kbd>←↑↓→</kbd> moverse',
+  onRestart: () => newPuzzle(), onMenu: () => newPuzzle(),
+});
+if (BG.isTouch) document.body.classList.add('touchdev');
+BG.input.map.pause = ['Escape'];   // la P se usa para escribir
+
+// ── Generador ─────────────────────────────────────────────────────────────
+const MAXS = 15;
+function tryBuild(target) {
+  const pool = U.shuffle(WORDS.slice());
+  const grid = new Map(); const dirAt = new Map(); const placed = [];
+  const key = (r, c) => r + ',' + c;
+  function canPlace(w, r, c, dr, dc) {
+    let cross = 0;
+    if (grid.has(key(r - dr, c - dc)) || grid.has(key(r + dr * w.length, c + dc * w.length))) return -1;
+    for (let k = 0; k < w.length; k++) {
+      const rr = r + dr * k, cc = c + dc * k, kk = key(rr, cc), ch = grid.get(kk);
+      if (ch) { if (ch !== w[k] || (dirAt.get(kk) || '').includes(dr ? 'v' : 'h')) return -1; cross++; }
+      else {
+        const s1 = dr ? key(rr, cc - 1) : key(rr - 1, cc), s2 = dr ? key(rr, cc + 1) : key(rr + 1, cc);
+        if (grid.has(s1) || grid.has(s2)) return -1;
+      }
+    }
+    // tamaño máximo
+    const cells = [...grid.keys()].map(s => s.split(',').map(Number)).concat([[r, c], [r + dr * (w.length - 1), c + dc * (w.length - 1)]]);
+    const rs = cells.map(x => x[0]), cs = cells.map(x => x[1]);
+    if (Math.max(...rs) - Math.min(...rs) >= MAXS || Math.max(...cs) - Math.min(...cs) >= MAXS) return -1;
+    return cross;
+  }
+  function put(o, r, c, dr, dc) {
+    for (let k = 0; k < o.w.length; k++) { const kk = key(r + dr * k, c + dc * k); grid.set(kk, o.w[k]); dirAt.set(kk, (dirAt.get(kk) || '') + (dr ? 'v' : 'h')); }
+    placed.push({ ...o, r, c, dir: dr ? 'v' : 'h' });
+  }
+  const first = pool.slice(0, 8).sort((a, b) => b.w.length - a.w.length)[0];
+  put(first, 0, 0, 0, 1); pool.splice(pool.indexOf(first), 1);
+  for (const o of pool) {
+    if (placed.length >= target) break;
+    if (placed.some(p => p.w === o.w)) continue;
+    let best = null;
+    for (const p of placed) for (let i = 0; i < o.w.length; i++) for (let j = 0; j < p.w.length; j++) {
+      if (o.w[i] !== p.w[j]) continue;
+      const pr = p.dir === 'h' ? p.r : p.r + j, pc = p.dir === 'h' ? p.c + j : p.c;
+      const dr = p.dir === 'h' ? 1 : 0, dc = p.dir === 'h' ? 0 : 1;
+      const r = pr - dr * i, c = pc - dc * i;
+      const s = canPlace(o.w, r, c, dr, dc);
+      if (s > 0 && (!best || s > best.s || (s === best.s && Math.random() < .3))) best = { r, c, dr, dc, s };
+    }
+    if (best) put(o, best.r, best.c, best.dr, best.dc);
+  }
+  return placed;
+}
+function generate() {
+  let best = null;
+  for (let i = 0; i < 40; i++) {
+    const p = tryBuild(14);
+    const score = p.length * 10 + p.reduce((n, w) => n + w.w.length, 0) / 10;
+    if (!best || score > best.score) best = { p, score };
+    if (p.length >= 14) break;
+  }
+  const p = best.p;
+  const minR = Math.min(...p.map(w => w.r)), minC = Math.min(...p.map(w => w.c));
+  p.forEach(w => { w.r -= minR; w.c -= minC; });
+  const R = Math.max(...p.map(w => w.dir === 'v' ? w.r + w.w.length : w.r + 1)), C = Math.max(...p.map(w => w.dir === 'h' ? w.c + w.w.length : w.c + 1));
+  // numeración en orden de lectura
+  const starts = new Map();
+  p.slice().sort((a, b) => a.r - b.r || a.c - b.c).forEach(w => { const k = w.r + ',' + w.c; if (!starts.has(k)) starts.set(k, starts.size + 1); w.num = starts.get(k); });
+  return { words: p, R, C };
+}
+
+// ── Estado ────────────────────────────────────────────────────────────────
+let P, sol, inp, cellsEl, sel = null, dir = 'h', t0, timerId, pen = 0, over = false, revealed = new Set();
+const gridEl = document.getElementById('grid');
+function cellKey(r, c) { return r * 100 + c; }
+
+function newPuzzle() {
+  P = generate(); sol = new Map(); inp = new Map(); revealed = new Set(); pen = 0; over = false;
+  P.words.forEach(w => { for (let k = 0; k < w.w.length; k++) { const r = w.r + (w.dir === 'v' ? k : 0), c = w.c + (w.dir === 'h' ? k : 0); sol.set(cellKey(r, c), w.w[k]); } });
+  buildGrid(); buildClues();
+  const first = P.words.slice().sort((a, b) => a.num - b.num)[0];
+  dir = first.dir; select(first.r, first.c);
+  clearInterval(timerId); t0 = performance.now();
+  timerId = setInterval(() => { if (!over && !BG.paused) BG.hud.set('time', U.fmtTime((performance.now() - t0) / 1000 + pen)); }, 300);
+  BG.hud.set('pen', '0s'); updLeft(); BG.start();
+}
+BG.on('pause', () => { BG._pauseAt = performance.now(); gridEl.style.filter = 'blur(8px)'; }).on('resume', () => { if (BG._pauseAt) t0 += performance.now() - BG._pauseAt; gridEl.style.filter = ''; });
+
+function sizeGrid() {
+  const st = BG.stage.getBoundingClientRect();
+  const row = st.width > 820;
+  document.getElementById('wrap').classList.toggle('col', !row);
+  const aw = row ? st.width - 560 : st.width - 30, ah = row ? st.height - 140 : Math.min(st.height * .62, st.height - 200);
+  const cs = Math.floor(Math.max(22, Math.min(46, (aw - 12) / P.C - 2, (ah - 12) / P.R - 2)));
+  document.documentElement.style.setProperty('--cs', cs + 'px');
+}
+function buildGrid() {
+  gridEl.innerHTML = ''; cellsEl = new Map();
+  gridEl.style.gridTemplateColumns = `repeat(${P.C}, var(--cs))`;
+  const nums = new Map(); P.words.forEach(w => nums.set(cellKey(w.r, w.c), w.num));
+  for (let r = 0; r < P.R; r++) for (let c = 0; c < P.C; c++) {
+    const d = document.createElement('div'); const k = cellKey(r, c);
+    d.className = 'cw' + (sol.has(k) ? ' on' : '');
+    if (sol.has(k)) { d.dataset.r = r; d.dataset.c = c; if (nums.has(k)) d.innerHTML = `<span class="n">${nums.get(k)}</span>`; d.appendChild(document.createElement('span')).className = 'l'; cellsEl.set(k, d); }
+    gridEl.appendChild(d);
+  }
+  sizeGrid();
+}
+function buildClues() {
+  for (const [id, d] of [['ch', 'h'], ['cv', 'v']]) {
+    document.getElementById(id).innerHTML = P.words.filter(w => w.dir === d).sort((a, b) => a.num - b.num)
+      .map(w => `<div class="clue" data-num="${w.num}" data-dir="${d}"><b>${w.num}.</b>${U.esc(w.clue)}<span style="color:#6b6b8a">(${w.w.length})</span></div>`).join('');
+  }
+}
+function wordAt(r, c, d) { return P.words.find(w => w.dir === d && (d === 'h' ? (w.r === r && c >= w.c && c < w.c + w.w.length) : (w.c === c && r >= w.r && r < w.r + w.w.length))); }
+function select(r, c) {
+  if (!sol.has(cellKey(r, c))) return;
+  if (!wordAt(r, c, dir)) dir = dir === 'h' ? 'v' : 'h';
+  sel = { r, c }; paint();
+}
+function paint() {
+  const w = sel && wordAt(sel.r, sel.c, dir);
+  cellsEl.forEach((d, k) => { d.classList.remove('cur', 'word'); });
+  if (w) for (let k = 0; k < w.w.length; k++) { const rr = w.r + (w.dir === 'v' ? k : 0), cc = w.c + (w.dir === 'h' ? k : 0); cellsEl.get(cellKey(rr, cc)).classList.add('word'); }
+  if (sel) cellsEl.get(cellKey(sel.r, sel.c)).classList.add('cur');
+  document.querySelectorAll('.clue').forEach(el => el.classList.toggle('sel', !!w && +el.dataset.num === w.num && el.dataset.dir === w.dir));
+  if (w) { document.querySelector('#clueBar b').textContent = `${w.num} ${w.dir === 'h' ? 'HORIZ.' : 'VERT.'}`; document.querySelector('#clueBar span').textContent = w.clue; }
+  P.words.forEach(x => { const el = document.querySelector(`.clue[data-num="${x.num}"][data-dir="${x.dir}"]`); if (el) el.classList.toggle('done', wordFilled(x)); });
+  const cur = document.querySelector('.clue.sel'); if (cur && !BG.isTouch) cur.scrollIntoView({ block: 'nearest' });
+}
+function wordFilled(w) { for (let k = 0; k < w.w.length; k++) { const rr = w.r + (w.dir === 'v' ? k : 0), cc = w.c + (w.dir === 'h' ? k : 0); if (inp.get(cellKey(rr, cc)) !== w.w[k]) return false; } return true; }
+function setLetter(r, c, ch) {
+  const k = cellKey(r, c), d = cellsEl.get(k);
+  if (revealed.has(k)) return;
+  if (ch) inp.set(k, ch); else inp.delete(k);
+  d.querySelector('.l').textContent = ch || '';
+  d.classList.remove('bad', 'good');
+}
+function step(delta) {
+  const w = wordAt(sel.r, sel.c, dir); if (!w) return;
+  const idx = dir === 'h' ? sel.c - w.c : sel.r - w.r, n = idx + delta;
+  if (n >= 0 && n < w.w.length) { sel = dir === 'h' ? { r: w.r, c: w.c + n } : { r: w.r + n, c: w.c }; }
+}
+function typeLetter(ch) {
+  if (!sel || over) return;
+  setLetter(sel.r, sel.c, ch); SFX.play('click');
+  step(1); paint(); updLeft(); checkWin();
+}
+function backspace() {
+  if (!sel || over) return;
+  const k = cellKey(sel.r, sel.c);
+  if (!inp.get(k) || revealed.has(k)) step(-1);
+  setLetter(sel.r, sel.c, null); paint(); updLeft();
+}
+function nextWord(back) {
+  const list = P.words.slice().sort((a, b) => (a.dir === b.dir ? 0 : a.dir === 'h' ? -1 : 1) || a.num - b.num);
+  const w = wordAt(sel.r, sel.c, dir); let i = list.indexOf(w);
+  for (let n = 0; n < list.length; n++) { i = (i + (back ? -1 : 1) + list.length) % list.length; if (!wordFilled(list[i])) break; }
+  dir = list[i].dir; sel = { r: list[i].r, c: list[i].c }; paint();
+}
+function updLeft() { BG.hud.set('left', P.words.filter(w => !wordFilled(w)).length); }
+function addPen(s) { pen += s; BG.hud.set('pen', pen + 's'); BG.ui.toast(`+${s}s`, '#ff4d6d'); }
+function check() {
+  let bad = 0;
+  inp.forEach((ch, k) => { const d = cellsEl.get(k); if (revealed.has(k)) return; const ok = sol.get(k) === ch; d.classList.toggle('bad', !ok); d.classList.toggle('good', ok); if (!ok) bad++; });
+  SFX.play(bad ? 'error' : 'select'); BG.ui.toast(bad ? `${bad} letra${bad > 1 ? 's' : ''} mal` : '¡Todo bien hasta ahora!', bad ? '#ff4d6d' : '#39ff88');
+  addPen(10);
+}
+function hintLetter() {
+  if (!sel || over) return;
+  const k = cellKey(sel.r, sel.c);
+  revealed.delete(k); setLetter(sel.r, sel.c, sol.get(k)); revealed.add(k); cellsEl.get(k).classList.add('rev');
+  addPen(20); SFX.play('power'); step(1); paint(); updLeft(); checkWin();
+}
+function revealWord() {
+  const w = sel && wordAt(sel.r, sel.c, dir); if (!w || over) return;
+  for (let k = 0; k < w.w.length; k++) { const rr = w.r + (w.dir === 'v' ? k : 0), cc = w.c + (w.dir === 'h' ? k : 0), kk = cellKey(rr, cc); revealed.delete(kk); setLetter(rr, cc, w.w[k]); revealed.add(kk); cellsEl.get(kk).classList.add('rev'); }
+  addPen(60); SFX.play('power'); paint(); updLeft(); checkWin();
+}
+function checkWin() {
+  for (const [k, ch] of sol) if (inp.get(k) !== ch) return;
+  over = true; clearInterval(timerId); BG.stop();
+  const secs = Math.round((performance.now() - t0) / 1000 + pen);
+  let i = 0; cellsEl.forEach(d => setTimeout(() => d.classList.add('win'), (i++) * 18));
+  SFX.play('win');
+  const r = BG.submitScore(secs, { order: 'asc', won: true });
+  setTimeout(() => BG.ui.gameOver({
+    win: true, icon: '📝', title: '¡COMPLETO!', score: secs, scoreText: U.fmtTime(secs), scoreLabel: 'TIEMPO (CON PENALIZACIÓN)',
+    isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Récord', value: U.fmtTime(BG.getBest() || secs) }, { label: 'Palabras', value: P.words.length }, { label: 'Penalización', value: pen + 's' }],
+    onRetry: newPuzzle, retryLabel: '↻ OTRO CRUCIGRAMA',
+  }), 1200);
+}
+
+// ── Entrada ───────────────────────────────────────────────────────────────
+gridEl.addEventListener('pointerdown', e => {
+  const d = e.target.closest('.cw.on'); if (!d) return;
+  const r = +d.dataset.r, c = +d.dataset.c;
+  if (sel && sel.r === r && sel.c === c && wordAt(r, c, dir === 'h' ? 'v' : 'h')) dir = dir === 'h' ? 'v' : 'h';
+  select(r, c); SFX.play('tick');
+});
+document.getElementById('clues').addEventListener('click', e => { const el = e.target.closest('.clue'); if (!el) return; const w = P.words.find(x => x.num === +el.dataset.num && x.dir === el.dataset.dir); dir = w.dir; sel = { r: w.r, c: w.c }; paint(); });
+BG.input.onKey((e, code, down) => {
+  if (!down || BG.ui.open || !sel) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key;
+  if (k === 'Backspace' || k === 'Delete') { backspace(); return; }
+  if (k === 'Tab') { e.preventDefault && e.preventDefault(); nextWord(e.shiftKey); return; }
+  if (k === ' ') { if (wordAt(sel.r, sel.c, dir === 'h' ? 'v' : 'h')) { dir = dir === 'h' ? 'v' : 'h'; paint(); } return; }
+  const mv = { ArrowLeft: [0, -1, 'h'], ArrowRight: [0, 1, 'h'], ArrowUp: [-1, 0, 'v'], ArrowDown: [1, 0, 'v'] }[k];
+  if (mv) {
+    if (dir !== mv[2] && wordAt(sel.r, sel.c, mv[2])) { dir = mv[2]; paint(); return; }
+    let r = sel.r + mv[0], c = sel.c + mv[1];
+    while (r >= 0 && c >= 0 && r < P.R && c < P.C && !sol.has(cellKey(r, c))) { r += mv[0]; c += mv[1]; }
+    if (sol.has(cellKey(r, c))) select(r, c);
+    return;
+  }
+  if (k && k.length === 1) { const ch = norm(k); if (/^[A-ZÑ]$/.test(ch)) typeLetter(ch); }
+});
+window.addEventListener('keydown', e => { if (e.key === 'Tab') e.preventDefault(); });
+// teclado en pantalla (celulares)
+(function () {
+  const okb = document.getElementById('okb');
+  ['QWERTYUIOP', 'ASDFGHJKLÑ', '⇄ZXCVBNM⌫'].forEach(row => {
+    const d = document.createElement('div'); d.className = 'okr';
+    [...row].forEach(ch => { const b = document.createElement('button'); b.textContent = ch === '⇄' ? '⇄ DIR' : ch; if (ch === '⇄' || ch === '⌫') b.className = 'w';
+      b.addEventListener('click', () => { if (ch === '⌫') backspace(); else if (ch === '⇄') { if (sel && wordAt(sel.r, sel.c, dir === 'h' ? 'v' : 'h')) { dir = dir === 'h' ? 'v' : 'h'; paint(); } } else typeLetter(ch); });
+      d.appendChild(b); });
+    okb.appendChild(d);
+  });
+})();
+document.getElementById('t-check').onclick = check;
+document.getElementById('t-hint').onclick = hintLetter;
+document.getElementById('t-word').onclick = revealWord;
+document.getElementById('t-new').onclick = () => { SFX.play('select'); newPuzzle(); };
+new ResizeObserver(() => { if (P) sizeGrid(); }).observe(BG.stage);
+
+if (BG.thumb) {
+  newPuzzle(); BG.stop();
+  let i = 0; for (const [k, ch] of sol) { if (i++ % 3 !== 0) { const r = Math.floor(k / 100), c = k % 100; setLetter(r, c, ch); } }
+  document.getElementById('tools').style.display = 'none'; paint();
+} else BG.ready.then(newPuzzle);
+</script>
+</body>
+</html>

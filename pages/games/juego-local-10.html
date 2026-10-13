@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>¡Adrián Come!</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  ¡ADRIÁN COME! — BandaGamer
+//  Adrián tiene hambre: atrapá la comida que cae y esquivá la basura.
+//  Barra de hambre (si se vacía, perdés una vida) · la panza crece con cada bocado
+//  (más lento pero más ancho) y la ensalada lo deshincha · especiales:
+//  🌶️ fuego (quema la basura) · ⭐ puntos ×2 · 🧲 imán · 🥤 turbo · 🍀 vida
+//  Cada 5 niveles: ¡LLUVIA DE PIZZA! · DASH con Espacio
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 520, H = 720, GROUND = H - 70;
+const FOODS = [['🍕', 12], ['🍔', 14], ['🌮', 12], ['🍩', 10], ['🍗', 14], ['🍣', 12], ['🍦', 9], ['🧁', 9], ['🥪', 12], ['🍟', 10], ['🌭', 12], ['🥟', 11]];
+const TRASH = ['🗑️', '💩', '🪲', '🧟', '☠️', '🔩', '🧦', '🪳'];
+const SPECIALS = { chili: { e: '🌶️', n: '¡FUEGO! QUEMÁ LA BASURA', c: '#ff6a00', t: 6 }, star: { e: '⭐', n: 'PUNTOS ×2', c: '#ffd400', t: 8 }, magnet: { e: '🧲', n: 'IMÁN DE COMIDA', c: '#ff3d6e', t: 7 }, soda: { e: '🥤', n: 'TURBO', c: '#2ef2ff', t: 6 }, clover: { e: '🍀', n: '+1 VIDA', c: '#39ff88', t: 0 }, salad: { e: '🥗', n: 'ENSALADA: ¡A DIETA!', c: '#7dff4d', t: 0 } };
+
+BG.init({
+  id: 'adrian', title: '¡ADRIÁN COME!', icon: '🍕', accent: '#ff9a1f', accent2: '#ffd400', music: true,
+  post: { bloom: .35, vignette: .35, thumbFx: true },
+  subtitle: 'Adrián tiene un hambre terrible. Atrapá la comida, esquivá la basura y no dejes que se le vacíe la panza.',
+  hud: [{ id: 'score', label: 'Puntos' }, { id: 'level', label: 'Nivel', color: '#ffd400' }, { id: 'lives', label: 'Vidas', color: '#ff3d6e', value: '❤❤❤' }],
+  help: '<kbd>←</kbd><kbd>→</kbd> mover · <kbd>Espacio</kbd> DASH (pique rápido) · <kbd>P</kbd> pausa',
+  helpTouch: 'Arrastrá el dedo para mover a Adrián · tocá ⚡ para el DASH',
+  touch: { dpad: 'h', buttons: [{ action: 'action', label: '⚡' }] },
+  onRestart: () => start(), onMenu: () => showMenu(),
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+const stars = D.stars(70, W, 360, 9);
+const bldFar = Array.from({ length: 12 }, (_, i) => ({ x: i * 48, w: U.rand(36, 50), h: U.rand(80, 170) }));
+const bldNear = Array.from({ length: 9 }, (_, i) => ({ x: i * 64, w: U.rand(50, 66), h: U.rand(60, 130), seed: Math.random() }));
+
+let ad, items, score, lives, level, hunger, combo, comboT, spawnT, power = {}, frenzy = 0, state = 'menu', t = 0, pointerX = null, eatenTotal = 0, nextLevelAt = 0, bubble = null;
+function start() {
+  ad = { x: W / 2, vx: 0, face: 1, belly: 0, dash: 0, dashCD: 0, chew: 0, mood: 'idle', moodT: 0, hit: 0, arms: 0, walk: 0 };
+  items = []; score = 0; lives = 3; level = 1; hunger = 100; combo = 0; comboT = 0; spawnT = .4; power = {}; frenzy = 0; eatenTotal = 0; nextLevelAt = 150; bubble = null;
+  BG.hud.setAll({ score: 0, level: 1 }); updLives(); FX.clear(); state = 'play'; BG.start(); BG.music.play(SONG);
+}
+function showMenu() { state = 'menu'; BG.stop(); BG.music.stop(); if (!ad) { ad = { x: W / 2, vx: 0, face: 1, belly: .3, dash: 0, dashCD: 0, chew: 0, mood: 'happy', moodT: 99, hit: 0, arms: 0, walk: 0 }; items = []; } BG.ui.menu({ buttons: [{ label: '▶ ¡A COMER!', primary: true, onClick: start }] }); }
+function updLives() { BG.hud.set('lives', lives > 0 ? '❤'.repeat(lives) : '—'); }
+function say(txt, col = '#fff') { bubble = { txt, col, t: 1.1 }; }
+const speed = () => 360 * (1 - ad.belly * .35) * (power.soda > 0 ? 1.45 : 1);
+const reach = () => 34 + ad.belly * 26;
+function spawn() {
+  const diff = Math.min(1, (level - 1) / 12);
+  let it;
+  if (frenzy > 0) { it = { kind: 'food', e: '🍕', pts: 12 }; }
+  else {
+    const r = Math.random();
+    if (r < .2 + diff * .2) it = { kind: 'trash', e: U.pick(TRASH) };
+    else if (r < .26 + diff * .2) { const k = U.pick(['chili', 'star', 'magnet', 'soda', 'salad', 'salad', 'clover']); if (k === 'clover' && Math.random() < .6) { const f = U.pick(FOODS); it = { kind: 'food', e: f[0], pts: f[1] }; } else it = { kind: 'special', k, e: SPECIALS[k].e }; }
+    else { const f = U.pick(FOODS); it = { kind: 'food', e: f[0], pts: f[1] }; }
+  }
+  it.x = U.rand(30, W - 30); it.y = -30; it.vy = U.rand(150, 210) * (1 + diff * .9) * (frenzy > 0 ? 1.3 : 1); it.vx = U.rand(-25, 25); it.rot = U.rand(6); it.vr = U.rand(-2.5, 2.5);
+  if (it.kind === 'trash' && level > 3 && Math.random() < .3) it.vx = U.rand(-90, 90);   // basura que viene en diagonal
+  items.push(it);
+}
+function catchIt(it) {
+  const mouthX = ad.x, mouthY = GROUND - 120 - ad.belly * 6;
+  if (it.kind === 'trash') {
+    if (power.chili > 0) { addScore(15); FX.burst(it.x, it.y, { n: 18, color: ['#ff6a00', '#ffd400', '#333'], speed: 200, life: .5 }); SFX.play('hit'); say('¡QUEMADO!', '#ff6a00'); return; }
+    if (ad.hit > 0) { FX.burst(it.x, it.y, { n: 10, color: ['#7a5', '#fff'], speed: 160, life: .4 }); return; }   // invulnerable un instante tras un golpe
+    lives--; updLives(); combo = 0; ad.hit = 1; ad.mood = 'sick'; ad.moodT = 1.2;
+    SFX.play('hurt'); FX.shake(8, .35); FX.flash('#ff3d6e', .3);
+    FX.burst(it.x, it.y, { n: 24, color: ['#7a5', '#553', '#fff'], speed: 220, life: .6 });
+    say(U.pick(['¡PUAJ!', '¡QUÉ ASCO!', '¡NOOO!']), '#9be15d');
+    if (lives <= 0) over();
+    return;
+  }
+  if (it.kind === 'special') {
+    const S = SPECIALS[it.k];
+    if (it.k === 'clover') { lives = Math.min(5, lives + 1); updLives(); }
+    else if (it.k === 'salad') { ad.belly = Math.max(0, ad.belly - .35); hunger = Math.min(100, hunger + 10); }
+    else power[it.k] = S.t;
+    SFX.play('power'); BG.ui.toast(S.n, S.c); FX.ring(mouthX, mouthY, { color: S.c, max: 70 });
+    ad.mood = 'happy'; ad.moodT = 1;
+    return;
+  }
+  combo = comboT > 0 ? combo + 1 : 1; comboT = 1.8;
+  const mult = (power.star > 0 ? 2 : 1) * (1 + Math.floor(combo / 6));
+  const pts = it.pts * level * mult;
+  addScore(pts);
+  hunger = Math.min(100, hunger + it.pts * 1.3);
+  ad.belly = Math.min(1, ad.belly + .028); ad.chew = .35; ad.arms = .3; ad.mood = 'happy'; ad.moodT = .6; eatenTotal++;
+  SFX.tone({ f: 600 + Math.min(combo, 16) * 40, f2: 1200, dur: .07, type: 'sine', vol: .18 });
+  FX.burst(it.x, it.y, { n: 8, color: ['#ffd400', '#ff9a1f', '#fff'], speed: 140, life: .4 });
+  FX.text(it.x, it.y - 18, '+' + pts, { color: mult > 1 ? '#ffd400' : '#fff', size: 15 + Math.min(10, mult * 2) });
+  if (combo % 6 === 0) { say(U.pick(['¡ÑAM ÑAM!', '¡QUÉ RICO!', '¡MÁS!', '¡BANQUETE!']), '#ffd400'); SFX.play('combo', combo / 6); }
+}
+function addScore(n) {
+  score += n; BG.hud.set('score', score, true);
+  if (score >= nextLevelAt) {
+    level++; nextLevelAt += 150 * level; BG.hud.set('level', level, true); SFX.play('levelup');
+    if (level % 5 === 0) { frenzy = 9; BG.ui.toast('🍕 ¡LLUVIA DE PIZZA! 🍕', '#ffd400'); FX.flash('#ffd400', .35); }
+    else BG.ui.toast(`¡NIVEL ${level}!`, '#ff9a1f');
+  }
+}
+function over() {
+  state = 'over'; BG.stop(); BG.music.stop(); SFX.play('lose');
+  ad.mood = 'dead'; ad.moodT = 99;
+  const r = BG.submitScore(score);
+  setTimeout(() => BG.ui.gameOver({ icon: '😵', title: hunger <= 0 ? '¡ADRIÁN SE DESMAYÓ DE HAMBRE!' : '¡ADRIÁN COMIÓ BASURA!', score, isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Récord', value: U.fmt(BG.getBest() || score) }, { label: 'Comidas', value: eatenTotal }, { label: 'Nivel', value: level }], onRetry: start, onMenu: showMenu }), 1100);
+}
+function update(dt) {
+  t += dt;
+  if (bubble) { bubble.t -= dt; if (bubble.t <= 0) bubble = null; }
+  if (state !== 'play') return;
+  for (const k in power) power[k] = Math.max(0, power[k] - dt);
+  if (frenzy > 0) frenzy -= dt;
+  if (comboT > 0) comboT -= dt; else combo = 0;
+  ad.chew = Math.max(0, ad.chew - dt); ad.arms = Math.max(0, ad.arms - dt); ad.hit = Math.max(0, ad.hit - dt * 1.5);
+  if (ad.moodT > 0) { ad.moodT -= dt; if (ad.moodT <= 0) ad.mood = 'idle'; }
+  // hambre
+  hunger -= dt * (4.5 + level * .45) * (frenzy > 0 ? .3 : 1);
+  if (hunger <= 0) { lives--; updLives(); hunger = 55; ad.mood = 'sick'; ad.moodT = 1.2; SFX.play('hurt'); say('¡TENGO HAMBRE!', '#ff3d6e'); FX.shake(6, .3); if (lives <= 0) { hunger = 0; over(); return; } }
+  // movimiento
+  const I = BG.input;
+  if (pointerX != null) { const d = pointerX - ad.x; ad.vx = U.clamp(d * 9, -speed() * 1.2, speed() * 1.2); }
+  else ad.vx = U.lerp(ad.vx, I.axisX() * speed(), Math.min(1, dt * 12));
+  ad.dashCD -= dt;
+  if (I.pressed('action') && ad.dashCD <= 0) { ad.dash = .18; ad.dashCD = .8; SFX.play('whoosh'); }
+  if (ad.dash > 0) { ad.dash -= dt; ad.x += (ad.vx >= 0 ? 1 : -1) * (Math.abs(ad.vx) > 20 || pointerX == null ? 1 : 0) * 950 * dt * (ad.vx === 0 ? ad.face : 1); FX.burst(ad.x, GROUND - 60, { n: 2, color: ['#ff9a1f', '#fff'], speed: 60, life: .25, size: 4 }); }
+  ad.x = U.clamp(ad.x + ad.vx * dt, 30, W - 30);
+  if (Math.abs(ad.vx) > 15) { ad.face = Math.sign(ad.vx); ad.walk += dt * Math.abs(ad.vx) / 30; }
+  // caída de cosas
+  spawnT -= dt;
+  if (spawnT <= 0) { spawn(); spawnT = (frenzy > 0 ? .12 : Math.max(.3, .95 - level * .05)) * U.rand(.7, 1.3); }
+  for (const it of items) {
+    if (power.magnet > 0 && it.kind !== 'trash' && it.y > 120) it.vx = U.lerp(it.vx, (ad.x - it.x) * 3.5, dt * 5);
+    it.x += it.vx * dt; it.y += it.vy * dt; it.rot += it.vr * dt;
+    if (it.x < 18 || it.x > W - 18) it.vx *= -1;
+    const by = GROUND - 120 - ad.belly * 6;
+    if (!it.done && it.y > by - 30 && it.y < GROUND - 20 && Math.abs(it.x - ad.x) < reach()) { it.done = true; catchIt(it); continue; }
+    if (!it.done && it.y > GROUND) { it.done = true; if (it.kind === 'food') { combo = 0; FX.burst(it.x, GROUND, { n: 8, color: ['#c0392b', '#ffd400'], speed: 110, gravity: 500, life: .5 }); SFX.tone({ f: 180, dur: .1, type: 'triangle', vol: .12 }); } }
+  }
+  items = items.filter(i => !i.done && i.y < H + 40);
+}
+
+// ── Dibujo ────────────────────────────────────────────────────────────────
+function skyColors() {
+  const k = Math.min(1, (level - 1) / 8);       // noche → amanecer
+  return [U.lerp(0, 1, k) > .5 ? '#3b2a6b' : '#070a24', k > .5 ? '#ff8a5c' : '#1b1650', k];
+}
+function drawAdrian() {
+  const x = ad.x, base = GROUND, b = ad.belly, f = ad.face;
+  const bob = Math.abs(Math.sin(ad.walk)) * 3, flash = ad.hit > 0 && Math.floor(ad.hit * 12) % 2;
+  ctx.save(); ctx.translate(x, base);
+  if (ad.dash > 0) { for (let i = 1; i <= 3; i++) { ctx.globalAlpha = .18; ctx.fillStyle = '#ff9a1f'; D.rr(ctx, -18 - f * i * 14 - b * 10, -120, 36 + b * 20, 100, 16); ctx.fill(); } ctx.globalAlpha = 1; }
+  // sombra
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0, 4, 26 + b * 14, 7, 0, 0, 7); ctx.fill();
+  if (flash) ctx.globalAlpha = .45;
+  // piernas
+  ctx.strokeStyle = '#2b3a67'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+  const sw = Math.sin(ad.walk) * 8 * (Math.abs(ad.vx) > 15 ? 1 : 0);
+  ctx.beginPath(); ctx.moveTo(-6, -38); ctx.lineTo(-6 + sw, -2); ctx.moveTo(6, -38); ctx.lineTo(6 - sw, -2); ctx.stroke();
+  ctx.fillStyle = '#222'; ctx.fillRect(-12 + sw, -6, 12, 6); ctx.fillRect(1 - sw, -6, 12, 6);
+  // cuerpo / remera (la panza crece)
+  ctx.translate(0, -bob);
+  const bw = 20 + b * 22;
+  ctx.fillStyle = power.chili > 0 ? '#ff3d1f' : '#ff9a1f';
+  ctx.beginPath(); ctx.moveTo(-16, -92); ctx.quadraticCurveTo(-bw - 6, -60, -16, -36); ctx.lineTo(16, -36); ctx.quadraticCurveTo(bw + 6 + b * 8 * f, -60, 16, -92); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; D.text(ctx, 'A', 0, -66, { size: 16, color: '#fff' });
+  if (b > .5) { ctx.fillStyle = '#e8b28a'; ctx.beginPath(); ctx.ellipse(f * 4, -38, 8 + b * 6, 3, 0, 0, Math.PI); ctx.fill(); }   // ombligo al aire
+  // brazos (se levantan al atrapar)
+  ctx.strokeStyle = '#e8b28a'; ctx.lineWidth = 6;
+  const up = ad.arms > 0 ? -1 : 0;
+  ctx.beginPath(); ctx.moveTo(-16, -86); ctx.lineTo(-28 - b * 6, up ? -112 : -58); ctx.moveTo(16, -86); ctx.lineTo(28 + b * 6, up ? -112 : -58); ctx.stroke();
+  // cabeza
+  ctx.fillStyle = '#f0c49c'; ctx.beginPath(); ctx.ellipse(0, -114, 22 + b * 3, 24, 0, 0, 7); ctx.fill();
+  // pelo
+  ctx.fillStyle = '#4a2a14'; ctx.beginPath(); ctx.moveTo(-23, -118);
+  for (let i = 0; i <= 6; i++) ctx.lineTo(-22 + i * 7.5, -140 - (i % 2 ? 9 : 0) + Math.sin(t * 3 + i) * 1);
+  ctx.lineTo(23, -118); ctx.quadraticCurveTo(0, -128, -23, -118); ctx.fill();
+  // cara
+  const mood = ad.mood, ex = f * 3;
+  if (mood === 'dead') { ctx.strokeStyle = '#111'; ctx.lineWidth = 2.5; for (const sx of [-9, 9]) { ctx.beginPath(); ctx.moveTo(sx - 4 + ex, -122); ctx.lineTo(sx + 4 + ex, -114); ctx.moveTo(sx + 4 + ex, -122); ctx.lineTo(sx - 4 + ex, -114); ctx.stroke(); } }
+  else {
+    for (const sx of [-9, 9]) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(sx + ex, -118, 5.5, mood === 'happy' ? 3 : 6, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#1a1a2e'; ctx.beginPath(); ctx.arc(sx + ex + f * 1.5, -118, 2.6, 0, 7); ctx.fill(); }
+    if (mood === 'sick') { ctx.fillStyle = 'rgba(120,200,80,.5)'; ctx.beginPath(); ctx.ellipse(ex, -108, 18, 9, 0, 0, 7); ctx.fill(); }
+  }
+  // boca: masticando / feliz / asco
+  ctx.fillStyle = '#7a1f2a';
+  if (ad.chew > 0) { const o = Math.abs(Math.sin(ad.chew * 30)) * 6; ctx.beginPath(); ctx.ellipse(ex, -102, 7, 2 + o, 0, 0, 7); ctx.fill(); }
+  else if (mood === 'sick') { ctx.strokeStyle = '#7a1f2a'; ctx.lineWidth = 2.5; ctx.beginPath(); for (let i = 0; i < 5; i++) ctx.lineTo(ex - 8 + i * 4, -100 + (i % 2 ? -3 : 3)); ctx.stroke(); }
+  else { ctx.beginPath(); ctx.arc(ex, -105, 8, .15 * Math.PI, .85 * Math.PI); ctx.fill(); }
+  // fuego por la boca
+  if (power.chili > 0) for (let i = 0; i < 3; i++) FX.burst(x + f * 14, base - bob - 102, { n: 1, color: ['#ff6a00', '#ffd400'], speed: 120, angle: -Math.PI / 2 + f * .4, spread: .5, life: .35, size: 4 });
+  ctx.restore();
+  if (power.magnet > 0) { ctx.strokeStyle = `rgba(255,61,110,${.3 + Math.sin(t * 10) * .2})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, base - 110, 70, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); }
+}
+function render() {
+  const [c1, c2, k] = skyColors();
+  const sky = ctx.createLinearGradient(0, 0, 0, GROUND); sky.addColorStop(0, c1); sky.addColorStop(1, c2);
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = 1 - k; for (const s of stars) { ctx.fillStyle = '#fff'; ctx.globalAlpha = (1 - k) * (.4 + .6 * Math.abs(Math.sin(t * 1.5 + s.tw))); ctx.fillRect(s.x, s.y, s.z * 2, s.z * 2); } ctx.globalAlpha = 1;
+  // luna / sol
+  const sunY = 130 + (1 - k) * 0;
+  if (k < .5) { D.glowCircle(ctx, W - 90, 110, 30, '#fff7d6', 40); ctx.fillStyle = 'rgba(200,190,160,.5)'; ctx.beginPath(); ctx.arc(W - 98, 104, 6, 0, 7); ctx.arc(W - 80, 120, 4, 0, 7); ctx.fill(); }
+  else D.glowCircle(ctx, 90, sunY, 40, '#ffd27a', 60);
+  // ciudad en capas (parallax según la posición de Adrián)
+  const par = ad ? (ad.x - W / 2) : 0;
+  ctx.fillStyle = k < .5 ? '#151238' : '#5a3a6a';
+  for (const b of bldFar) { const x = b.x - par * .05; ctx.fillRect(x, GROUND - b.h - 40, b.w, b.h + 40); }
+  for (const b of bldNear) {
+    const x = b.x - par * .12; ctx.fillStyle = k < .5 ? '#1f1a4a' : '#7a4a6a'; ctx.fillRect(x, GROUND - b.h, b.w, b.h);
+    for (let wy = GROUND - b.h + 10; wy < GROUND - 10; wy += 16) for (let wx = x + 7; wx < x + b.w - 8; wx += 13) { const on = ((wx * 7 + wy * 3 + b.seed * 999) | 0) % 5 < 2; ctx.fillStyle = on ? (k < .5 ? 'rgba(255,214,120,.75)' : 'rgba(255,255,255,.25)') : 'rgba(0,0,0,.25)'; ctx.fillRect(wx, wy, 6, 8); }
+  }
+  // vereda
+  const g = ctx.createLinearGradient(0, GROUND, 0, H); g.addColorStop(0, '#3a3f5c'); g.addColorStop(1, '#1d2033');
+  ctx.fillStyle = g; ctx.fillRect(0, GROUND, W, H - GROUND);
+  ctx.fillStyle = '#ff9a1f'; ctx.globalAlpha = .6; ctx.fillRect(0, GROUND, W, 3); ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(255,255,255,.07)'; for (let x = (-t * 0) % 60; x < W; x += 60) ctx.fillRect(x, GROUND + 26, 34, 4);
+  ctx.save(); FX.applyShake(ctx);
+  if (frenzy > 0) { ctx.fillStyle = `rgba(255,212,0,${.06 + Math.sin(t * 8) * .04})`; ctx.fillRect(0, 0, W, H); }
+  for (const it of items || []) {
+    ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(it.rot * .25);
+    if (it.kind === 'special') D.glowCircle(ctx, 0, 0, 22, SPECIALS[it.k].c + '55', 22);
+    if (it.kind === 'trash') { ctx.shadowColor = '#9be15d'; ctx.shadowBlur = 10; }
+    D.text(ctx, it.e, 0, 0, { size: 34, family: 'body' });
+    ctx.restore();
+  }
+  if (ad) drawAdrian();
+  FX.draw(ctx);
+  ctx.restore();
+  // barra de hambre
+  if (state === 'play' || state === 'over') {
+    const bw = 220, x = W / 2 - bw / 2, y = H - 34;
+    ctx.fillStyle = 'rgba(0,0,0,.5)'; D.rr(ctx, x - 2, y - 2, bw + 4, 16, 8); ctx.fill();
+    const hg = ctx.createLinearGradient(x, 0, x + bw, 0); hg.addColorStop(0, '#ff3d6e'); hg.addColorStop(.5, '#ffd400'); hg.addColorStop(1, '#39ff88');
+    ctx.fillStyle = hg; D.rr(ctx, x, y, Math.max(8, bw * hunger / 100), 12, 6); ctx.fill();
+    D.text(ctx, hunger < 25 ? '¡HAMBRE!' : 'PANZA', x - 40, y + 6, { size: 10, color: hunger < 25 && Math.floor(t * 4) % 2 ? '#ff3d6e' : '#fff' });
+    let px = W / 2 + bw / 2 + 14; for (const [kk, e] of [['chili', '🌶️'], ['star', '⭐'], ['magnet', '🧲'], ['soda', '🥤']]) if (power[kk] > 0) { D.text(ctx, e, px, y + 6, { size: 16, family: 'body' }); px += 24; }
+  }
+  if (bubble && ad) {
+    const bx = U.clamp(ad.x + 40, 70, W - 70), by = GROUND - 190;
+    ctx.globalAlpha = Math.min(1, bubble.t * 3); ctx.fillStyle = '#fff'; D.rr(ctx, bx - 56, by - 18, 112, 34, 12); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(bx - 20, by + 14); ctx.lineTo(bx - 34, by + 30); ctx.lineTo(bx - 6, by + 14); ctx.fill();
+    D.text(ctx, bubble.txt, bx, by, { size: 12, color: '#1a1a2e' }); ctx.globalAlpha = 1;
+  }
+  if (combo >= 6 && comboT > 0) D.text(ctx, `COMBO ×${1 + Math.floor(combo / 6)}`, W - 14, 26, { size: 14, color: '#ffd400', align: 'right' });
+  FX.drawFlash(ctx, W, H);
+}
+view.canvas.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) pointerX = view.toLocal(e.clientX, e.clientY).x; });
+view.canvas.addEventListener('pointerdown', e => { pointerX = view.toLocal(e.clientX, e.clientY).x; });
+view.canvas.addEventListener('pointerleave', () => { pointerX = null; });
+window.addEventListener('keydown', e => { if (/Arrow|KeyA|KeyD/.test(e.code)) pointerX = null; });
+const SONG = { bpm: 126, tracks: [
+  { type: 'square', vol: .2, notes: 'C5 . E5 G5 . E5 C5 . D5 . F5 A5 . F5 D5 . E5 . G5 C6 . G5 E5 . D5 . B4 G4 . B4 D5 .' },
+  { type: 'triangle', vol: .55, notes: 'C3 . G2 . C3 . G2 . D3 . A2 . D3 . A2 . E3 . B2 . E3 . B2 . G2 . D3 . G2 . D3 .' },
+  { drum: true, vol: .5, notes: 'K . H . S . H . K . H K S . H .' },
+] };
+if (BG.thumb) {
+  ad = { x: 250, vx: 60, face: 1, belly: .55, dash: 0, dashCD: 0, chew: .2, mood: 'happy', moodT: 9, hit: 0, arms: .2, walk: 1 }; level = 3; hunger = 70; power = { star: 3 };
+  items = [{ kind: 'food', e: '🍕', x: 260, y: 470, rot: 0 }, { kind: 'trash', e: '💩', x: 120, y: 300, rot: .3 }, { kind: 'food', e: '🍔', x: 380, y: 220, rot: .2 }, { kind: 'special', k: 'chili', e: '🌶️', x: 180, y: 160, rot: 0 }, { kind: 'food', e: '🍩', x: 420, y: 420, rot: .5 }];
+  state = 'thumb'; update = () => {};
+} else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>
