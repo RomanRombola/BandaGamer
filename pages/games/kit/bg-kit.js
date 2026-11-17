@@ -658,6 +658,15 @@
     }
     if (d.type === 'bg-hello-ack') {
       BG.portal.user = d.user || null;
+      if (d.user && d.user.avatarHtml) {
+        let pBadge = document.getElementById('bg-player-plato');
+        const btns = document.getElementById('bg-btns');
+        if (!pBadge && btns) {
+          pBadge = U.el('div', { id: 'bg-player-plato', style: 'display:flex;align-items:center;gap:6px;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:12px;font-weight:700' });
+          btns.parentNode.insertBefore(pBadge, btns);
+        }
+        if (pBadge) pBadge.innerHTML = d.user.avatarHtml + `<span style="max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${U.esc(d.user.nombre || '')}</span>`;
+      }
       // Fusionar el récord de la nube con el local (por si jugó en otro dispositivo)
       if (d.records && typeof d.records === 'object') {
         const bests = BG.load('best', {}); let changed = false;

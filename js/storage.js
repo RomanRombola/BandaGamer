@@ -631,3 +631,192 @@ const Storage = (() => {
   };
 
 })();
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  ALTOVICIO V9 — MOTOR PLATO DE AVATARES, TIENDA, TÍTULOS Y BURBUJAS
+// ═══════════════════════════════════════════════════════════════════════════
+window.ACCESORIOS_DEFAULT = {
+  emoji: "e_smile",
+  sombrero: "s_none",
+  lentes: "l_none",
+  bigote: "b_none",
+  marco: "m_none",
+  efecto: "ef_none",
+  mascota: "pet_none",
+  titulo: "t_none",
+  burbuja: "chat_default",
+  offsetY: 0,
+  scale: 100
+};
+
+window.ACCESORIOS = {
+  sombreros: [
+    { id: "s_none",       emoji: "",     nombre: "Sin sombrero",   precio: 0,    reqNivel: 1, rareza: "comun" },
+    { id: "s_gorra",      emoji: "🧢",   nombre: "Gorra Street",   precio: 40,   reqNivel: 1, rareza: "comun" },
+    { id: "s_auris",      emoji: "🎧",   nombre: "Auris Streamer", precio: 90,   reqNivel: 1, rareza: "raro" },
+    { id: "s_cowboy",     emoji: "🤠",   nombre: "Vaquero Picante",precio: 120,  reqNivel: 2, rareza: "raro" },
+    { id: "s_chef",       emoji: "👨‍🍳",  nombre: "Master Chef",    precio: 150,  reqNivel: 2, rareza: "raro" },
+    { id: "s_casco",      emoji: "⛑️",   nombre: "Casco Rescate",  precio: 160,  reqNivel: 3, rareza: "raro" },
+    { id: "s_bruja",      emoji: "🎩",   nombre: "Galera VIP",     precio: 220,  reqNivel: 3, rareza: "epico" },
+    { id: "s_angel",      emoji: "😇",   nombre: "Santo Inocente", precio: 260,  reqNivel: 4, rareza: "epico" },
+    { id: "s_diablo",     emoji: "😈",   nombre: "Diablito",       precio: 280,  reqNivel: 4, rareza: "epico" },
+    { id: "s_santa",      emoji: "🎅",   nombre: "Papá Noel",      precio: 250,  reqNivel: 4, rareza: "epico" },
+    { id: "s_corona",     emoji: "👑",   nombre: "Corona del Rey", precio: 400,  reqNivel: 5, rareza: "legendario" },
+    { id: "s_vikingo",    emoji: "🪖",   nombre: "Casco Táctico",  precio: 420,  reqNivel: 6, rareza: "epico" },
+    { id: "s_mago",       emoji: "🧙‍♂️",  nombre: "Hechicero",      precio: 500,  reqNivel: 7, rareza: "legendario" },
+    { id: "s_astronauta", emoji: "👨‍🚀",  nombre: "Cosmonauta",     precio: 650,  reqNivel: 8, rareza: "legendario" },
+    { id: "s_alien_hat",  emoji: "🛸",   nombre: "Abducción OVNI", precio: 850,  reqNivel: 9, rareza: "mitico" },
+    { id: "s_supremo",    emoji: "🏆",   nombre: "Copa del Mundo", precio: 1000, reqNivel: 10, rareza: "mitico" }
+  ],
+  lentes: [
+    { id: "l_none",   emoji: "",    nombre: "Sin lentes",      precio: 0,   reqNivel: 1, rareza: "comun" },
+    { id: "l_cool",   emoji: "🕶️",  nombre: "Deal With It",    precio: 60,  reqNivel: 1, rareza: "comun" },
+    { id: "l_nerd",   emoji: "👓",  nombre: "Intelectual",     precio: 90,  reqNivel: 1, rareza: "comun" },
+    { id: "l_monoc",  emoji: "🧐",  nombre: "Fino Señores",    precio: 150, reqNivel: 2, rareza: "raro" },
+    { id: "l_fuego",  emoji: "🥸",  nombre: "Incógnito",       precio: 160, reqNivel: 3, rareza: "raro" },
+    { id: "l_star",   emoji: "🤩",  nombre: "Ojos Estrella",   precio: 220, reqNivel: 4, rareza: "epico" },
+    { id: "l_heart",  emoji: "😍",  nombre: "Enamorado",       precio: 240, reqNivel: 4, rareza: "epico" },
+    { id: "l_vr",     emoji: "🥽",  nombre: "Visor Meta VR",   precio: 350, reqNivel: 5, rareza: "epico" },
+    { id: "l_fire",   emoji: "🔥",  nombre: "Mirada Ígnea",    precio: 480, reqNivel: 6, rareza: "legendario" },
+    { id: "l_cyber",  emoji: "⚡",  nombre: "Láser Voltaico",  precio: 650, reqNivel: 8, rareza: "mitico" }
+  ],
+  bigotes: [
+    { id: "b_none",    emoji: "",    nombre: "Sin accesorio",  precio: 0,   reqNivel: 1, rareza: "comun" },
+    { id: "b_mate",    emoji: "🧉",  nombre: "Mate Amargo",    precio: 80,  reqNivel: 1, rareza: "raro" },
+    { id: "b_fino",    emoji: "🥸",  nombre: "Mostacho",       precio: 60,  reqNivel: 1, rareza: "comun" },
+    { id: "b_pizza",   emoji: "🍕",  nombre: "Porción Muzza",  precio: 120, reqNivel: 2, rareza: "raro" },
+    { id: "b_largo",   emoji: "🧔",  nombre: "Barba Leñador",  precio: 140, reqNivel: 2, rareza: "raro" },
+    { id: "b_rosa",    emoji: "🌹",  nombre: "Galán Seductor", precio: 180, reqNivel: 3, rareza: "epico" },
+    { id: "b_pirata",  emoji: "🏴‍☠️", nombre: "Parche Pirata",  precio: 220, reqNivel: 4, rareza: "epico" },
+    { id: "b_ninja",   emoji: "🥷",  nombre: "Máscara Shinobi",precio: 320, reqNivel: 5, rareza: "epico" },
+    { id: "b_fuego",   emoji: "🌶️",  nombre: "Picante",        precio: 380, reqNivel: 6, rareza: "legendario" },
+    { id: "b_king",    emoji: "💎",  nombre: "Grillz Diamante",precio: 550, reqNivel: 7, rareza: "mitico" }
+  ],
+  marcos: [
+    { id: "m_none",    css: "", nombre: "Sin marco", precio: 0, reqNivel: 1, rareza: "comun" },
+    { id: "m_naranja", css: "box-shadow:0 0 0 3px #ff6600, 0 0 14px #ff6600;", nombre: "Neón Naranja", precio: 50, reqNivel: 1, rareza: "comun" },
+    { id: "m_azul",    css: "box-shadow:0 0 0 3px #00aaff, 0 0 14px #00aaff;", nombre: "Láser Azul", precio: 50, reqNivel: 1, rareza: "comun" },
+    { id: "m_verde",   css: "box-shadow:0 0 0 3px #39ff14, 0 0 16px #39ff14;", nombre: "Tóxico Radioactivo", precio: 100, reqNivel: 2, rareza: "raro" },
+    { id: "m_rojo",    css: "box-shadow:0 0 0 3px #ff0055, 0 0 18px #ff0055;", nombre: "Furia Carmesí", precio: 150, reqNivel: 2, rareza: "raro" },
+    { id: "m_dorado",  css: "box-shadow:0 0 0 3px #ffe600, 0 0 20px #ff9900;", nombre: "Oro Puro", precio: 220, reqNivel: 3, rareza: "epico" },
+    { id: "m_arg",     css: "background:conic-gradient(#74acdf 0 33%, #fff 33% 66%, #ffd700 66% 100%);padding:3px;box-shadow:0 0 18px rgba(116,172,223,0.8);", nombre: "Campeón ⭐⭐⭐", precio: 350, reqNivel: 3, rareza: "legendario", spin: true },
+    { id: "m_morado",  css: "box-shadow:0 0 0 3px #a855f7, 0 0 20px #a855f7;", nombre: "Abismo Púrpura", precio: 200, reqNivel: 3, rareza: "epico" },
+    { id: "m_celeste", css: "box-shadow:0 0 0 3px #00ffcc, 0 0 20px #00ffcc;", nombre: "Hielo Eterno", precio: 260, reqNivel: 4, rareza: "epico" },
+    { id: "m_galaxy",  css: "background:conic-gradient(#ff0055,#ff6600,#ffe600,#39ff14,#00aaff,#a855f7,#ff0055);padding:3px;box-shadow:0 0 22px rgba(0,170,255,0.7);", nombre: "RGB Gamer Pro", precio: 500, reqNivel: 5, rareza: "legendario", spin: true },
+    { id: "m_fuego",   css: "background:conic-gradient(#ff0000,#ff6600,#ffe600,#ff6600,#ff0000);padding:3px;box-shadow:0 0 24px rgba(255,80,0,0.9);", nombre: "Llama Solar", precio: 650, reqNivel: 7, rareza: "legendario", spin: true },
+    { id: "m_aurora",  css: "background:conic-gradient(#00ffcc,#00aaff,#a855f7,#ff00aa,#00ffcc);padding:3px;box-shadow:0 0 26px rgba(168,85,247,0.85);", nombre: " Galaxia Mítica", precio: 800, reqNivel: 8, rareza: "mitico", spin: true },
+    { id: "m_banda",   css: "background:conic-gradient(#ffe600,#ff6600,#ffffff,#ff6600,#ffe600);padding:3.5px;box-shadow:0 0 30px rgba(255,215,0,0.95);", nombre: "Dios del Vicio", precio: 1000, reqNivel: 10, rareza: "mitico", spin: true }
+  ],
+  efectos: [
+    { id: "ef_none",   badge: "",   css: "", nombre: "Sin aura", precio: 0, reqNivel: 1, rareza: "comun" },
+    { id: "ef_stars",  badge: "✨", css: "box-shadow:0 0 24px rgba(255,230,0,0.55);", nombre: "Polvo Estelar", precio: 180, reqNivel: 2, rareza: "raro" },
+    { id: "ef_hearts", badge: "💖", css: "box-shadow:0 0 24px rgba(255,51,153,0.65);", nombre: "Rompecorazones", precio: 240, reqNivel: 3, rareza: "epico" },
+    { id: "ef_fire",   badge: "🔥", css: "box-shadow:0 0 28px rgba(255,80,0,0.8), 0 -6px 20px rgba(255,200,0,0.6);", nombre: "Aura Ígnea", precio: 380, reqNivel: 4, rareza: "epico" },
+    { id: "ef_saiyan", badge: "⚡", css: "box-shadow:0 0 32px rgba(255,230,0,0.95), 0 0 12px #00e5ff;", nombre: "Ki Saiyajin", precio: 550, reqNivel: 6, rareza: "legendario" },
+    { id: "ef_dark",   badge: "🌀", css: "box-shadow:0 0 32px rgba(147,51,234,0.9), inset 0 0 12px #000;", nombre: "Materia Oscura", precio: 750, reqNivel: 8, rareza: "mitico" }
+  ],
+  mascotas: [
+    { id: "pet_none",  emoji: "",   nombre: "Sin mascota",     precio: 0,   reqNivel: 1, rareza: "comun" },
+    { id: "pet_capi",  emoji: "🦫", nombre: "Capibara Chill",  precio: 150, reqNivel: 1, rareza: "raro" },
+    { id: "pet_cat",   emoji: "🐱", nombre: "Michi Vicioso",   precio: 180, reqNivel: 2, rareza: "raro" },
+    { id: "pet_dog",   emoji: "🐶", nombre: "Doge Guardián",   precio: 180, reqNivel: 2, rareza: "raro" },
+    { id: "pet_duck",  emoji: "🦆", nombre: "Patito Táctico",  precio: 260, reqNivel: 3, rareza: "epico" },
+    { id: "pet_ghost", emoji: "👻", nombre: "Gasparín",        precio: 320, reqNivel: 4, rareza: "epico" },
+    { id: "pet_alien", emoji: "👾", nombre: "Invasor 8-Bit",   precio: 450, reqNivel: 5, rareza: "legendario" },
+    { id: "pet_drag",  emoji: "🐉", nombre: "Shenlong Mini",   precio: 700, reqNivel: 7, rareza: "mitico" }
+  ],
+  titulos: [
+    { id: "t_none",     texto: "",                     color: "#888888", precio: 0,   reqNivel: 1, rareza: "comun" },
+    { id: "t_cebador",  texto: "🧉 Cebador Oficial",   color: "#39ff88", precio: 80,  reqNivel: 1, rareza: "comun" },
+    { id: "t_tryhard",  texto: "💦 Tryhard 24/7",      color: "#00aaff", precio: 140, reqNivel: 2, rareza: "raro" },
+    { id: "t_impostor", texto: "🔪 Impostor Pro",      color: "#ff3366", precio: 200, reqNivel: 3, rareza: "epico" },
+    { id: "t_campeon",  texto: "⭐⭐⭐ Campeón Mundial", color: "#74acdf", precio: 300, reqNivel: 3, rareza: "legendario" },
+    { id: "t_millo",    texto: "💸 Magnate VicioCoin", color: "#ffe600", precio: 500, reqNivel: 5, rareza: "legendario" },
+    { id: "t_dios",     texto: "👑 Rey de AltoVicio",  color: "#ff6600", precio: 900, reqNivel: 8, rareza: "mitico" }
+  ],
+  burbujas: [
+    { id: "chat_default", nombre: "Clásica",         precio: 0,   reqNivel: 1, rareza: "comun",      css: "background:rgba(255,102,0,0.2);border:1px solid rgba(255,102,0,0.35);color:#fff;" },
+    { id: "chat_cyber",   nombre: "Cyberpunk Neón",  precio: 120, reqNivel: 1, rareza: "raro",       css: "background:linear-gradient(135deg,rgba(0,170,255,0.28),rgba(168,85,247,0.28));border:1px solid #00e5ff;color:#e0faff;box-shadow:0 0 12px rgba(0,229,255,0.25);" },
+    { id: "chat_toxic",   nombre: "Ácido Verde",     precio: 180, reqNivel: 2, rareza: "raro",       css: "background:rgba(57,255,20,0.16);border:1px solid #39ff14;color:#d8ffd0;box-shadow:0 0 10px rgba(57,255,20,0.2);" },
+    { id: "chat_fire",    nombre: "Fuego Infernal",  precio: 280, reqNivel: 4, rareza: "epico",      css: "background:linear-gradient(135deg,rgba(255,0,60,0.3),rgba(255,120,0,0.3));border:1px solid #ff4500;color:#fff2e6;box-shadow:0 0 14px rgba(255,69,0,0.3);" },
+    { id: "chat_gold",    nombre: "VIP Oro Real",    precio: 450, reqNivel: 6, rareza: "legendario", css: "background:linear-gradient(135deg,rgba(255,215,0,0.28),rgba(180,100,0,0.35));border:1px solid #ffd700;color:#fffbe0;box-shadow:0 0 16px rgba(255,215,0,0.35);font-weight:700;" }
+  ],
+  emojis: [
+    { id: "e_smile",     emoji: "😊", nombre: "Sonrisa",   precio: 0,    reqNivel: 1, rareza: "comun" },
+    { id: "e_cool",      emoji: "😎", nombre: "Fachero",   precio: 50,   reqNivel: 1, rareza: "comun" },
+    { id: "e_clown",     emoji: "🤡", nombre: "Payaso",    precio: 80,   reqNivel: 1, rareza: "raro" },
+    { id: "e_fire",      emoji: "🔥", nombre: "Fuego",     precio: 100,  reqNivel: 2, rareza: "raro" },
+    { id: "e_Ghostface", emoji: "😱", nombre: "Scream",    precio: 150,  reqNivel: 2, rareza: "raro" },
+    { id: "e_skull",     emoji: "💀", nombre: "Calavera",  precio: 220,  reqNivel: 3, rareza: "epico" },
+    { id: "e_alien",     emoji: "👽", nombre: "visitante", precio: 280,  reqNivel: 4, rareza: "epico" },
+    { id: "e_robot",     emoji: "🤖", nombre: "Mecha",     precio: 340,  reqNivel: 5, rareza: "epico" },
+    { id: "e_ninja",     emoji: "🥷", nombre: "Sombra",    precio: 420,  reqNivel: 6, rareza: "legendario" },
+    { id: "e_dragon",    emoji: "🐲", nombre: "Dragón",    precio: 550,  reqNivel: 7, rareza: "legendario" },
+    { id: "e_diamond",   emoji: "💎", nombre: "Diamante",  precio: 750,  reqNivel: 8, rareza: "mitico" },
+    { id: "e_supreme",   emoji: "🌌", nombre: "Cósmico",   precio: 1000, reqNivel: 10, rareza: "mitico" }
+  ]
+};
+
+window.urlFotoSeguraGlobal = function(u) {
+  if (typeof u !== "string") return "";
+  if (!/^(data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+\/=]+|https:\/\/[^\s"'<>]+)$/.test(u)) return "";
+  return u;
+};
+
+// Renderiza el avatar completo estilo Plato: funciona TANTO sobre tu foto de perfil subida como sobre el emoji base
+window.renderAvatar = function(base, accesorios={}, size=44, fotoUrl="") {
+  // Permitir pasar el objeto usuario entero como primer parámetro si se desea
+  if (base && typeof base === "object") {
+    const uObj = base;
+    accesorios = uObj.accesorios || {};
+    fotoUrl = uObj.fotoPerfil || "";
+    base = uObj.avatar || "😊";
+  }
+  const acc = { ...window.ACCESORIOS_DEFAULT, ...(accesorios || {}) };
+  const foto = window.urlFotoSeguraGlobal(fotoUrl);
+  const emojiBase = window.ACCESORIOS.emojis.find(a => a.id === acc.emoji)?.emoji || base || "😊";
+  const sombrero  = window.ACCESORIOS.sombreros.find(a => a.id === acc.sombrero)?.emoji || "";
+  const lentes    = window.ACCESORIOS.lentes.find(a => a.id === acc.lentes)?.emoji || "";
+  const bigote    = window.ACCESORIOS.bigotes.find(a => a.id === acc.bigote)?.emoji || "";
+  const marcoAcc  = window.ACCESORIOS.marcos.find(a => a.id === acc.marco);
+  const efectoAcc = window.ACCESORIOS.efectos.find(a => a.id === acc.efecto);
+  const mascota   = window.ACCESORIOS.mascotas.find(a => a.id === acc.mascota)?.emoji || "";
+
+  const offY = Math.max(-25, Math.min(25, Number(acc.offsetY) || 0)) * (size / 80);
+  const sc   = Math.max(0.7, Math.min(1.4, (Number(acc.scale) || 100) / 100));
+
+  const auraStyle = efectoAcc?.css || "";
+  const marcoStyle = marcoAcc?.css || "border:1.5px solid rgba(255,255,255,0.16);";
+  const innerContent = foto
+    ? `<img src="${foto}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">`
+    : `<span style="font-size:${Math.round(size * 0.64)}px;line-height:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%">${emojiBase}</span>`;
+
+  return `<div class="av-plato-wrap" style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;flex-shrink:0;vertical-align:middle;overflow:visible !important;">
+    ${auraStyle ? `<div class="av-aura-layer" style="position:absolute;inset:-4px;border-radius:50%;pointer-events:none;${auraStyle}"></div>` : ""}
+    <div class="av-frame-ring ${marcoAcc?.spin ? 'av-spin-ring' : ''}" style="position:relative;width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#161628;${marcoStyle}">
+      <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 30% 30%,#252542,#0f0f1d);display:flex;align-items:center;justify-content:center;">
+        ${innerContent}
+      </div>
+    </div>
+    ${sombrero ? `<span style="position:absolute;top:${Math.round(-size * 0.34 + offY)}px;left:50%;transform:translateX(-50%) scale(${sc});font-size:${Math.round(size * 0.52)}px;line-height:1;pointer-events:none;z-index:5;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.75))">${sombrero}</span>` : ""}
+    ${lentes ? `<span style="position:absolute;top:${Math.round(size * 0.16 + offY)}px;left:50%;transform:translateX(-50%) scale(${sc});font-size:${Math.round(size * 0.42)}px;line-height:1;pointer-events:none;z-index:4;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.7))">${lentes}</span>` : ""}
+    ${bigote ? `<span style="position:absolute;bottom:${Math.round(-size * 0.08 - offY * 0.6)}px;left:50%;transform:translateX(-50%) scale(${sc});font-size:${Math.round(size * 0.38)}px;line-height:1;pointer-events:none;z-index:4;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.75))">${bigote}</span>` : ""}
+    ${mascota ? `<span class="av-pet-float" style="position:absolute;bottom:${Math.round(-size * 0.12)}px;right:${Math.round(-size * 0.20)}px;font-size:${Math.round(size * 0.44)}px;line-height:1;pointer-events:none;z-index:6;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.8))">${mascota}</span>` : ""}
+    ${efectoAcc?.badge ? `<span class="av-badge-spark" style="position:absolute;top:${Math.round(-size * 0.12)}px;left:${Math.round(-size * 0.14)}px;font-size:${Math.round(size * 0.30)}px;line-height:1;pointer-events:none;z-index:6">${efectoAcc.badge}</span>` : ""}
+  </div>`;
+};
+
+window.renderTituloBadge = function(accesorios={}) {
+  const id = accesorios?.titulo || "t_none";
+  const t = window.ACCESORIOS.titulos.find(x => x.id === id);
+  if (!t || !t.texto) return "";
+  return `<span class="av-titulo-pill" style="display:inline-block;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:800;padding:2px 8px;border-radius:99px;background:rgba(0,0,0,0.45);border:1px solid ${t.color};color:${t.color};letter-spacing:0.6px;box-shadow:0 0 8px ${t.color}33;vertical-align:middle">${t.texto}</span>`;
+};
+
+window.getChatBubbleCSS = function(accesorios={}) {
+  const id = accesorios?.burbuja || "chat_default";
+  const b = window.ACCESORIOS.burbujas.find(x => x.id === id) || window.ACCESORIOS.burbujas[0];
+  return b.css;
+};
+

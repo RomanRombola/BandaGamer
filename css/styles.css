@@ -1736,3 +1736,145 @@ header {
   filter: contrast(1.06) saturate(1.12);
   transform: scale(1.02);
 }
+
+/* === PLATO V9 STORE & AVATAR FX === */
+@keyframes avPetBob {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-4px) rotate(6deg); }
+}
+@keyframes avSparkPulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.85; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+.av-pet-float { animation: avPetBob 2.2s ease-in-out infinite; }
+.av-badge-spark { animation: avSparkPulse 1.6s ease-in-out infinite; }
+.av-aura-layer { animation: avSparkPulse 2s ease-in-out infinite; }
+
+.ranking-avatar, .perfil-avatar-mini, .perfil-avatar-grande, .user-avatar, .am-av, .qc-av {
+  overflow: visible !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Estudio en vivo estilo Plato */
+.plato-studio {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  background: radial-gradient(circle at 20% 20%, rgba(255, 102, 0, 0.18), rgba(14, 14, 28, 0.96) 70%);
+  border: 1px solid rgba(255, 102, 0, 0.4);
+  border-radius: 18px;
+  padding: 22px;
+  margin-bottom: 20px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65);
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .plato-studio { grid-template-columns: 1fr; text-align: center; }
+}
+.plato-stage-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(8, 8, 16, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.plato-controls-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.plato-sliders {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.plato-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 700;
+}
+.plato-slider-row input[type="range"] {
+  accent-color: var(--color-primary);
+  width: 100%;
+  cursor: pointer;
+}
+.plato-chat-preview {
+  padding: 10px 14px;
+  border-radius: 14px 14px 4px 14px;
+  font-size: 13px;
+  max-width: 320px;
+  line-height: 1.35;
+}
+.plato-cat-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+  scrollbar-width: none;
+}
+.plato-cat-tabs::-webkit-scrollbar { display: none; }
+.plato-tab-btn {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-muted);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 9px 14px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.plato-tab-btn.activo, .plato-tab-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 102, 0, 0.25), rgba(255, 180, 0, 0.15));
+  border-color: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 0 14px rgba(255, 102, 0, 0.3);
+}
+.tienda-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
+  gap: 14px !important;
+}
+.tienda-card {
+  position: relative;
+  padding: 16px 12px 12px !important;
+  border-radius: 14px !important;
+  overflow: visible !important;
+}
+.rareza-tag {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  text-transform: uppercase;
+}
+.rareza-comun { background: rgba(255,255,255,0.08); color: #aaa; }
+.rareza-raro { background: rgba(0,170,255,0.18); color: #38bdf8; border: 1px solid rgba(0,170,255,0.35); }
+.rareza-epico { background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.4); }
+.rareza-legendario { background: rgba(255,215,0,0.2); color: #fde047; border: 1px solid rgba(255,215,0,0.45); box-shadow: 0 0 10px rgba(255,215,0,0.2); }
+.rareza-mitico { background: linear-gradient(90deg, #ff0055, #ff6600, #00aaff); color: #fff; box-shadow: 0 0 12px rgba(255,0,85,0.4); }
+.av-btn-probar {
+  background: rgba(255,255,255,0.06);
+  color: #ccc;
+  border: 1px solid rgba(255,255,255,0.12);
+  font-size: 9px !important;
+  padding: 4px 8px !important;
+  margin-top: 2px;
+}
+.av-btn-probar:hover { border-color: #fff; color: #fff; }

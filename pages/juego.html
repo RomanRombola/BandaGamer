@@ -192,7 +192,7 @@ function fmtScore(v, m) {
 
 // ── Header ─────────────────────────────────────────────────────────────────
 async function actualizarPerfil() {
-  const u = await Storage.getUsuario();
+  const u = await Storage.getUsuario(); window._miUsuarioCache = u;
   if (typeof Social !== "undefined" && u.uid && Storage.auth.currentUser) {
     Social.initPresence(u.uid, u.nombre);
     Notifs.iniciar(u.uid);
@@ -202,7 +202,7 @@ async function actualizarPerfil() {
   $("perfil-nombre").textContent = u.nombre || "—";
   $("perfil-nivel").textContent = `Nv.${u.nivel || 1}`;
   $("perfil-monedas").textContent = (u.monedas || 0).toLocaleString();
-  $("perfil-avatar").textContent = u.avatar || "😊";
+  $("perfil-avatar").innerHTML = window.renderAvatar ? window.renderAvatar(u.avatar || "😊", u.accesorios, 32, u.fotoPerfil) : (u.avatar || "😊");
   $("xp-bar-fill").style.width = (xpActual / 10) + "%";
   $("xp-texto").textContent = maxNivel ? "NIVEL MÁXIMO" : `${xpActual}/1000 XP`;
   $("perfil-nivel-texto").textContent = NOMBRES_NIVEL[u.nivel] || "";
@@ -331,11 +331,11 @@ window.addEventListener("message", async (e) => {
     const code = typeof d.code === "string" ? d.code.slice(0, 40) : null;
     try { window.Social && Social.setJugando(juegoActual.nombre, juegoActual.id, code); } catch (err) {}
   } else if (d.type === "bg-hello") {
-    const u = await Storage.getUsuario();
+    const u = await Storage.getUsuario(); window._miUsuarioCache = u;
     const logueado = !!Storage.auth.currentUser;
     iframe.contentWindow.postMessage({
       type: "bg-hello-ack",
-      user: { uid: logueado ? u.uid : null, nombre: u.nombre || "Jugador", avatar: u.avatar || "😊", nivel: u.nivel || 1 },
+      user: { uid: logueado ? u.uid : null, nombre: u.nombre || "Jugador", avatar: u.avatar || "😊", nivel: u.nivel || 1, fotoPerfil: u.fotoPerfil || "", accesorios: u.accesorios || {}, avatarHtml: window.renderAvatar ? window.renderAvatar(u.avatar || "😊", u.accesorios, 30, u.fotoPerfil) : "" },
       records: (u.records && u.records[juegoActual.id]) || {},
     }, "*");
   } else if (d.type === "bg-score") {
@@ -489,7 +489,7 @@ function abrirChat(uid) {
   if (_unsubMsgs) _unsubMsgs();
   _unsubMsgs = Social.onMensajes(uid, msgs => {
     const box = $("qc-msgs");
-    box.innerHTML = msgs.length ? msgs.map(m => `<div class="qc-msg ${m.from === Social.uid ? "mio" : ""}">${esc(m.texto)}</div>`).join("") : '<div class="jp-vacio">¡Mandale un saludo! 👋</div>';
+    box.innerHTML = msgs.length ? msgs.map(m => `<div class="qc-msg ${m.from === Social.uid ? "mio" : ""}" style="${m.from === Social.uid && window.getChatBubbleCSS ? window.getChatBubbleCSS((window._miUsuarioCache||{}).accesorios) : ""}">${esc(m.texto)}</div>`).join("") : '<div class="jp-vacio">¡Mandale un saludo! 👋</div>';
     box.scrollTop = box.scrollHeight;
     if (msgs.some(m => m.from === uid && !m.leido)) Social.marcarLeido(uid);
   });

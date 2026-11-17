@@ -876,7 +876,7 @@ async function init() {
     try {
       const userData = await Storage.getUsuario();   // Storage.leer() no existe: init fallaba y la presencia nunca arrancaba
       _userData = userData;
-      document.getElementById('mi-avatar').textContent = userData.avatar || '😊';
+      document.getElementById('mi-avatar').innerHTML = window.renderAvatar ? window.renderAvatar(userData.avatar || '😊', userData.accesorios, 62, userData.fotoPerfil) : (userData.avatar || '😊');
       document.getElementById('mi-nombre').textContent = userData.nombre || user.displayName || 'Usuario';
       document.getElementById('mi-nivel').textContent = `Nv.${userData.nivel || 1} · ${userData.xp || 0} XP`;
       document.getElementById('mi-xp').textContent = userData.xp || 0;
