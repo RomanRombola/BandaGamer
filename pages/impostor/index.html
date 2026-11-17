@@ -433,6 +433,7 @@ async function createRoom(){
     show("s-lobby");
     subscribeRoom();
     toast("Sala creada. ¡Compartí el código!","🏠");
+    try{ window.parent.postMessage({type:"bg-room", code:roomCode}, "*"); }catch(e){}
   }catch(e){
     console.error("[Impostor] Error:",e);
     toast("Error al crear sala: "+e.message,"❌");
@@ -465,6 +466,7 @@ async function joinRoom(){
   show("s-lobby");
   subscribeRoom();
   toast(`Te uniste a la sala ${roomCode}`,"🚪");
+  try{ window.parent.postMessage({type:"bg-room", code:roomCode}, "*"); }catch(e){}
 }
 
 function copyCode(){ navigator.clipboard?.writeText(roomCode).then(()=>toast("Código copiado","📋")).catch(()=>toast(`Código: ${roomCode}`,"📋")); }
@@ -754,6 +756,7 @@ function showResult(room,players){
     document.getElementById("result-guest-info").style.display="block";
   }
   show("s-result");
+  try{ window.parent.postMessage({type:"bg-score", score:100, mode:"default"}, "*"); }catch(e){}
 }
 
 // ── NUEVA RONDA ────────────────────────────────────────────────────────────
@@ -792,14 +795,27 @@ async function endGame(){
 
 async function leaveRoom(){
   if(roomListener) rref(`impost/${roomCode}`).off("value",roomListener);
-  if(isHost){ await rref(`impost/${roomCode}`).remove(); }
-  else { await rref(`impost/${roomCode}/players/${myId}`).remove(); }
+  if(isHost){
+    const snap = await rref(`impost/${roomCode}/players`).once("value");
+    const pls = snap.val() || {};
+    delete pls[myId];
+    const rem = Object.keys(pls);
+    if(rem.length > 0){
+      const nextHost = rem[0];
+      await rref(`impost/${roomCode}/players/${myId}`).remove();
+      await rref(`impost/${roomCode}/players/${nextHost}/isHost`).set(true);
+      await rref(`impost/${roomCode}/host`).set(nextHost);
+    } else {
+      await rref(`impost/${roomCode}`).remove();
+    }
+  } else {
+    await rref(`impost/${roomCode}/players/${myId}`).remove();
+  }
   backToHome();
 }
 
 function backToHome(){
-  // Volver al lobby manteniendo la sala y los jugadores
-  if(!roomCode){ _resetCompleto(); return; }
+  if(!roomCode || !isHost){ _resetCompleto(); return; }
   myRole=""; myWord=""; myHint=""; lastStatus=null;
   // Resetear sala a estado lobby sin eliminarla
   rref(`impost/${roomCode}`).update({

@@ -1,4 +1,4 @@
-// notifs.js — Notificaciones sociales globales de BandaGamer
+// notifs.js — Notificaciones sociales globales de AltoVicio
 // ─────────────────────────────────────────────────────────────────────────────
 // Se usa en el index, en la página de juego y en la página social.
 //  · Contador en el header (elementos con [data-social-badge]) y en el título de la pestaña

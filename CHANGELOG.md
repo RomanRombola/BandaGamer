@@ -1,4 +1,4 @@
-# BandaGamer — Changelog
+# AltoVicio — Changelog
 
 ## 🕹️ V6 — Clásicos de los 90 (desde el zip de 90s-games, licencia MIT)
 

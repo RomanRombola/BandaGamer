@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   BG Kit v1 — motor compartido para los juegos de BandaGamer
+   BG Kit v1 — motor compartido para los juegos de AltoVicio
    ───────────────────────────────────────────────────────────────────────────
    Uso mínimo:
      <link rel="stylesheet" href="kit/bg-kit.css">
@@ -20,7 +20,8 @@
   const BG = global.BG = {};
   const params = new URLSearchParams(location.search);
   BG.params = params;
-  BG.thumb = params.has('thumb');                       // modo captura de miniatura
+  BG.thumb = params.has('thumb') || params.has('preview');
+  BG.preview = params.has('preview');                       // modo captura de miniatura
   BG.isTouch = (global.matchMedia && matchMedia('(pointer: coarse)').matches) || ('ontouchstart' in global);
   BG.inPortal = (() => { try { return global.parent !== global; } catch (e) { return true; } })();
   BG.game = { id: 'juego', title: 'JUEGO', icon: '🎮', order: 'desc' };
@@ -87,6 +88,7 @@
       return ac;
     }
     function tone(o) {
+      if (BG.preview) return;
       const a = ctx(); if (!a || muted) return;
       const t = a.currentTime + (o.delay || 0), dur = o.dur || 0.1;
       const osc = a.createOscillator(), g = a.createGain();
@@ -102,6 +104,7 @@
       osc.start(t); osc.stop(t + dur + 0.03);
     }
     function noise(o) {
+      if (BG.preview) return;
       const a = ctx(); if (!a || muted) return;
       if (!noiseBuf) { noiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
       const t = a.currentTime + (o.delay || 0), dur = o.dur || 0.2;
@@ -723,6 +726,25 @@
     BG.ready = (document.fonts && document.fonts.load)
       ? Promise.race([Promise.all([document.fonts.load('700 16px Orbitron'), document.fonts.load('600 16px Rajdhani')]), new Promise(r => setTimeout(r, 1200))]).catch(() => { })
       : Promise.resolve();
+
+    if (BG.preview) {
+      const acts = ['left', 'right', 'up', 'down', 'action'];
+      let stepAuto = 0;
+      setInterval(() => {
+        stepAuto++;
+        const a = acts[stepAuto % acts.length];
+        Input._pressed.add(a);
+        fire(a, {});
+        Input.virt[a] = true;
+        setTimeout(() => { Input.virt[a] = false; }, 180);
+        if (BG.view && BG.view.canvas) {
+          const rect = BG.view.canvas.getBoundingClientRect();
+          const cx = rect.left + rect.width * (0.25 + 0.5 * Math.abs(Math.sin(stepAuto * 0.7)));
+          const cy = rect.top + rect.height * (0.3 + 0.4 * Math.abs(Math.cos(stepAuto * 0.5)));
+          BG.view.canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: cx, clientY: cy, pointerType: 'mouse', buttons: 1 }));
+        }
+      }, 280);
+    }
     return BG;
   };
 })(window);

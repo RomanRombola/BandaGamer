@@ -1,4 +1,4 @@
-// games-data.js — Catálogo BandaGamer
+// games-data.js — Catálogo AltoVicio
 //
 // Campos de cada juego:
 //   id, nombre, categoria, tags, thumbnail, embed_url, descripcion, tipo ("local" | "iframe" | "emulador")
@@ -65,7 +65,7 @@ const juegos = [
   { id:"game-054", nombre:"Ahorcado",          categoria:"puzzle",     tags:["palabras","ahorcado","español","letras"],  thumbnail:"assets/thumbs/cover-game-054.jpg", embed_url:"games/juego-local-40.html",  descripcion:"El clásico ahorcado en español con 20 palabras y pistas. Estadísticas de victorias.",        tipo:"local" , nuevo:true, movil:true },
   { id:"game-055", nombre:"8 Ball Pool",       categoria:"multijugador", tags:["pool","billar","bolas","8ball","online","versus"], thumbnail:"assets/thumbs/cover-game-055.jpg", embed_url:"games/juego-local-41.html", descripcion:"Billar 8 Ball con física realista, efecto (english) y modo online 1v1. Jugá contra la CPU o contra un amigo con código de sala.", tipo:"local", multi:true },
 
-  // ── V6: adaptados de 90s-games (MIT © 2026 Prateek) y reescritos para BandaGamer ──
+  // ── V6: adaptados de 90s-games (MIT © 2026 Prateek) y reescritos para AltoVicio ──
   { id:"game-056", nombre:"Bodeguero (Sokoban)", categoria:"puzzle",   tags:["sokoban","cajas","logica","clasico"],        thumbnail:"assets/thumbs/cover-game-056.jpg", embed_url:"games/juego-local-42.html", descripcion:"Empujá las cajas a las marcas. 29 niveles generados y verificados por computadora, deshacer ilimitado y 3 estrellas si lo hacés en el mínimo de empujes.", tipo:"local", nuevo:true, movil:true },
   { id:"game-057", nombre:"Salta Rana",          categoria:"arcade",   tags:["frogger","rana","cruzar","clasico"],         thumbnail:"assets/thumbs/cover-game-057.jpg", embed_url:"games/juego-local-43.html", descripcion:"Cruzá la ruta y el río hasta los 5 nidos: troncos, tortugas que se sumergen, cocodrilos y mosca de bonus. Estilo Frogger.", tipo:"local", nuevo:true, movil:true },
   { id:"game-058", nombre:"Retro Racer",         categoria:"carreras", tags:["autos","carreras","contrarreloj","retro"],   thumbnail:"assets/thumbs/cover-game-058.jpg", embed_url:"games/juego-local-44.html", descripcion:"Carreras pseudo-3D como los arcades de los 90: curvas, lomas, tráfico, nitro y checkpoints por Costa, Desierto y Ciudad Neón.", tipo:"local", nuevo:true, movil:true },
@@ -75,7 +75,6 @@ const juegos = [
   { id:"game-004", nombre:"Krunker.io",      categoria:"accion",     tags:["fps","shooter","multi"],  thumbnail:"assets/thumbs/game-004.jpg", embed_url:"https://krunker.io/",                         descripcion:"FPS multijugador en el navegador.",                              tipo:"iframe" },
   { id:"game-005", nombre:"HexGL Racing",    categoria:"carreras",   tags:["naves","3d","webgl"],     thumbnail:"assets/thumbs/game-005.jpg", embed_url:"https://hexgl.bkcore.com/play/",              descripcion:"Carreras de naves futuristas en WebGL.",                         tipo:"iframe" },
   { id:"game-006", nombre:"Diep.io",         categoria:"accion",     tags:["tanques","io","multi"],   thumbnail:"assets/thumbs/game-006.jpg", embed_url:"https://diep.io/",                            descripcion:"Tanques multijugador. Evolucioná y destruí a todos.",            tipo:"iframe" },
-  { id:"game-009", nombre:"Pacman",          categoria:"arcade",     tags:["clasico","laberinto"],    thumbnail:"assets/thumbs/game-009.jpg", embed_url:"https://freepacman.org/",                     descripcion:"Pacman clásico en el navegador.",                                tipo:"iframe" },
   { id:"game-010", nombre:"1v1.lol",          categoria:"accion",     tags:["construccion","shooter","multi"],  thumbnail:"assets/thumbs/game-010.svg", embed_url:"https://1v1.lol/",               descripcion:"Shooter con construcción de estructuras. El original del navegador.",    tipo:"iframe" },
   { id:"game-007", nombre:"Smash Karts",      categoria:"carreras",   tags:["karts","multi","armas","3d"],     thumbnail:"assets/thumbs/game-007.svg", embed_url:"https://smashkarts.io/",          descripcion:"Carreras de karts con armas. Multijugador online.",                       tipo:"iframe" },
   { id:"game-008", nombre:"Narrow One",       categoria:"accion",     tags:["arco","flecha","multi","estrategia"],thumbnail:"assets/thumbs/game-008.svg", embed_url:"https://narrow.one/",          descripcion:"Defensa del castillo con arco y flecha. Multijugador en tiempo real.",   tipo:"iframe" },

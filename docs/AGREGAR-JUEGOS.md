@@ -1,4 +1,4 @@
-# Cómo traer juegos viejos (o clásicos) a BandaGamer
+# Cómo traer juegos viejos (o clásicos) a AltoVicio
 
 Esta guía explica cómo pasarme el código de un juego viejo —un Mario, un clon de Minecraft, Doom, lo que sea— para que lo adapte, le arregle los bugs, lo mejore y quede integrado al portal (récords, ranking, XP, celular, portada).
 

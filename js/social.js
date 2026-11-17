@@ -1,4 +1,4 @@
-// social.js — Sistema social V3 BandaGamer
+// social.js — Sistema social V3 AltoVicio
 // Firestore: perfiles, amigos, solicitudes, historial de chat
 // Realtime DB: presencia online, salas de juego
 // ─────────────────────────────────────────────────────────────────────────────

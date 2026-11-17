@@ -1,4 +1,4 @@
-// main.js — BandaGamer V2
+// main.js — AltoVicio V2
 // Maneja autenticación, perfil en Firestore, ranking global y logros.
 
 // ── Helpers de seguridad ──────────────────────────────────────────────────
@@ -89,7 +89,7 @@ const ACCESORIOS = {
     { id: "m_fuego",   color: "linear-gradient(135deg,#ff3300,#ffe600)",   nombre: "Fuego",      precio: 600,  reqNivel: 8 },
     { id: "m_aurora",  color: "linear-gradient(135deg,#39ff14,#00aaff,#a855f7)", nombre: "Aurora", precio: 700, reqNivel: 9 },
     { id: "m_gold",    color: "linear-gradient(135deg,#ffe600,#ff6600)",   nombre: "Premium",    precio: 800,  reqNivel: 9 },
-    { id: "m_banda",   color: "linear-gradient(135deg,#ff6600,#ffe600,#ff6600)", nombre: "BandaGamer", precio: 1000, reqNivel: 10 },
+    { id: "m_banda",   color: "linear-gradient(135deg,#ff6600,#ffe600,#ff6600)", nombre: "AltoVicio", precio: 1000, reqNivel: 10 },
   ],
   emojis: [
     { id: "e_smile",   emoji: "😊",  nombre: "Sonrisa",       precio: 0,    reqNivel: 1 },
@@ -220,6 +220,7 @@ function iniciarInterfaz(usuario) {
   configurarFavoritosDelegado();
   actualizarPerfil();
   renderizarGrid(juegos);
+  renderizarHeroYMisiones();
   renderizarDestacados();
   renderizarSidebar();
   renderizarRecientes();
@@ -269,7 +270,12 @@ async function actualizarPerfil() {
   if (el("perfil-nombre"))      el("perfil-nombre").textContent      = u.nombre || "—";
   if (el("perfil-nivel"))       el("perfil-nivel").textContent       = `Nv.${u.nivel}`;
   if (el("perfil-monedas"))     el("perfil-monedas").textContent     = (u.monedas || 0).toLocaleString();
-  if (el("perfil-avatar"))      el("perfil-avatar").textContent      = u.avatar || "😊";
+  if (el("perfil-avatar")) {
+    const f = urlFotoSegura(u.fotoPerfil);
+    el("perfil-avatar").innerHTML = f
+      ? `<img src="${f}" alt="" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--color-primary)">`
+      : renderAvatar(u.avatar || "😊", u.accesorios, 30);
+  }
   if (el("xp-bar-fill"))        el("xp-bar-fill").style.width        = pct + "%";
   if (el("xp-texto"))           el("xp-texto").textContent           = maxNivel ? "NIVEL MÁXIMO" : `${xpAct}/1000 XP`;
   if (el("perfil-nivel-texto")) el("perfil-nivel-texto").textContent = NOMBRES_NIVEL[u.nivel] || "";
@@ -318,7 +324,7 @@ function crearCardHTML(juego, indice, esFav, visitas) {
   return `
     <a class="game-card" href="pages/juego.html?id=${esc(juego.id)}"
        style="animation-delay:${indice*0.04}s"
-       ${tieneVideo ? `data-preview-video="${esc(juego.preview_video)}"` : (tienePreview ? `data-preview="pages/${esc(juego.embed_url)}"` : "")}
+       ${tieneVideo ? `data-preview-video="${esc(juego.preview_video)}"` : (tienePreview ? `data-preview="pages/${esc(juego.embed_url)}${juego.embed_url.includes("?") ? "&" : "?"}preview=1"` : "")}
        onmouseenter="iniciarPreview(this)"
        onmouseleave="detenerPreview(this)">
       <div class="card-thumb">
@@ -332,7 +338,7 @@ function crearCardHTML(juego, indice, esFav, visitas) {
         </div>
         <!-- Preview iframe — se muestra al hover -->
         <div class="card-preview-wrap" style="display:none">
-          <div class="card-preview-label">▶ PREVIEW</div>
+          <div class="card-preview-label">🎬 GAMEPLAY</div>
         </div>
         <button class="btn-favorito ${esFav?'activo':''}" data-id="${esc(juego.id)}"
                 title="${esFav?'Quitar de favoritos':'Agregar a favoritos'}">${esFav?'♥':'♡'}</button>
@@ -436,7 +442,7 @@ function iniciarPreview(card) {
     wrap.style.opacity = '0';
     wrap.style.transition = 'opacity .25s ease';
     requestAnimationFrame(() => { wrap.style.opacity = '1'; });
-  }, 500);
+  }, 220);
 }
 
 function detenerPreview(card) {
@@ -648,7 +654,7 @@ async function renderizarRankingGlobal() {
     // Mostrar foto de perfil si tiene, si no el emoji avatar
     const avatarHtml = foto
       ? `<img src="${foto}" alt="" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,102,0,0.35)" onerror="this.style.display='none'">`
-      : `<span style="font-size:26px">${esc(p.avatar || "😊")}</span>`;
+      : renderAvatar(p.avatar || "😊", p.accesorios, 36);
     return `
       <div class="ranking-fila ${esSoy ? "ranking-yo" : ""}" data-uid="${esc(p.uid)}"
            style="cursor:pointer;transition:background .15s"
@@ -783,7 +789,7 @@ async function renderizarPerfil() {
       <div class="perfil-avatar-grande" title="Cambiar foto" onclick="document.getElementById('foto-input').click()" style="cursor:pointer;position:relative">
         ${fotoSegura
           ? `<img src="${fotoSegura}" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,102,0,0.4)">`
-          : `<span style="font-size:64px">${esc(u.avatar||"😊")}</span>`}
+          : renderAvatar(u.avatar || "😊", u.accesorios, 78)}
         <div style="position:absolute;bottom:0;right:0;background:rgba(255,102,0,0.8);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:14px">📷</div>
       </div>
       <input type="file" id="foto-input" accept="image/*" style="display:none" onchange="cambiarFotoPerfil(this)">
@@ -960,7 +966,7 @@ async function comprarAccesorio(id, catKey /*, precio ignorado: se toma del cat�
   if (error) { mostrarToast(error, "❌"); return; }
   await actualizarPerfil();
   await renderizarTienda();
-  mostrarToast("Accesorio comprado y equipado", "🎉");
+  UISfx.coin(); mostrarToast("Accesorio comprado y equipado", "🎉");
 }
 
 async function equiparAccesorio(catKey, id) {
@@ -977,7 +983,7 @@ async function equiparAccesorio(catKey, id) {
   if (error) { mostrarToast(error, "❌"); return; }
   await actualizarPerfil();
   await renderizarTienda();
-  mostrarToast("Accesorio equipado", "✅");
+  UISfx.equip(); mostrarToast("Accesorio equipado", "✅");
 }
 
 async function comprarAvatar(avId, emoji, precio) { await comprarAccesorio(avId,"sombrero",precio); }
@@ -1056,7 +1062,7 @@ function mostrarOverlayNivel(nombreNivel) {
     p.style.setProperty("--color", ["#ff6600","#ffe600","#00aaff","#ff0055"][Math.floor(Math.random()*4)]);
     particulas.appendChild(p);
   }
-  overlay.classList.add("visible");
+  UISfx.win(); overlay.classList.add("visible");
   // Verificar logros después de subir de nivel
   setTimeout(() => { overlay.classList.remove("visible"); verificarLogros(); }, 3000);
 }
@@ -1083,4 +1089,119 @@ function crearToastContainer() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────
+
+// ── ALTOVICIO V8: SONIDOS UI, HERO BANNER Y MISIONES DIARIAS ──────────────
+const UISfx = (() => {
+  let ctx = null;
+  function tone(f, dur, type='triangle', delay=0, vol=0.12) {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!ctx) ctx = new AC();
+      if (ctx.state === 'suspended') ctx.resume();
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      const t = ctx.currentTime + delay;
+      osc.type = type; osc.frequency.setValueAtTime(f, t);
+      g.gain.setValueAtTime(0.001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(t); osc.stop(t + dur + 0.02);
+    } catch(e) {}
+  }
+  return {
+    coin: () => { tone(988, 0.08, 'square', 0, 0.1); tone(1319, 0.22, 'square', 0.07, 0.12); },
+    win: () => { [523, 659, 784, 1047].forEach((n, i) => tone(n, 0.16, 'triangle', i * 0.08, 0.14)); },
+    equip: () => { tone(587, 0.07, 'sine', 0, 0.1); tone(880, 0.12, 'sine', 0.06, 0.1); }
+  };
+})();
+
+async function renderizarHeroYMisiones() {
+  const heroEl = document.getElementById("av-hero-panel");
+  const misEl = document.getElementById("av-misiones-panel");
+  if (!heroEl || !misEl) return;
+
+  const u = await Storage.getUsuario();
+  const hoy = new Date().toISOString().slice(0, 10);
+  const bonusReclamado = localStorage.getItem("av_bonus_diario") === hoy;
+
+  heroEl.innerHTML = `
+    <div class="av-hero">
+      <div class="av-hero-info">
+        <span class="av-hero-badge">🔥 PORTAL OFICIAL ALTOVICIO</span>
+        <div class="av-hero-title">¡Viciá con amigos sin descargar nada!</div>
+        <div class="av-hero-desc">Salas online en tiempo real para Impostor, Gartic Phone, 8 Ball Pool y Ajedrez + 45 arcades con ranking global y VicioCoins.</div>
+      </div>
+      <div class="av-hero-actions">
+        <button class="av-btn-glow primary" onclick="jugarAlAzar()">🎲 JUEGO AL AZAR</button>
+        <a class="av-btn-glow secondary" href="pages/juego.html?id=game-022">🕵️ IMPOSTOR ONLINE</a>
+        <button class="av-btn-glow bonus" onclick="reclamarBonusDiario()" ${bonusReclamado ? "disabled style='opacity:0.5;cursor:default'" : ""}>
+          ${bonusReclamado ? "✅ BONUS RECLAMADO" : "🎁 +50 VICIOCOINS GRATIS"}
+        </button>
+      </div>
+    </div>
+  `;
+
+  const reclamadas = JSON.parse(localStorage.getItem("av_misiones_" + hoy) || "[]");
+  const misiones = [
+    { id: "m_jugar1", titulo: "Calentando motores", desc: "Jugá al menos 1 partida", actual: Math.min(u.juegos_jugados || 0, 1), meta: 1, premio: 25 },
+    { id: "m_fav3",   titulo: "Curador del Vicio",  desc: "Marcá 3 juegos favoritos", actual: Math.min((u.favoritos || []).length, 3), meta: 3, premio: 40 },
+    { id: "m_xp300",  titulo: "Subiendo de Rango",  desc: "Alcanzá 300 XP totales",   actual: Math.min(u.xp || 0, 300), meta: 300, premio: 60 }
+  ];
+
+  misEl.innerHTML = `<div class="av-misiones-bar">` + misiones.map(m => {
+    const pct = Math.min(100, Math.round((m.actual / m.meta) * 100));
+    const ya = reclamadas.includes(m.id);
+    const lista = m.actual >= m.meta && !ya;
+    return `
+      <div class="av-mision-card ${lista ? 'lista' : ''}">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px;color:#fff">${m.titulo} <span style="color:var(--color-accent);font-size:12px">+${m.premio} 🪙</span></div>
+          <div style="font-size:12px;color:var(--color-muted)">${m.desc} (${m.actual}/${m.meta})</div>
+          <div class="av-mision-prog"><div class="av-mision-fill" style="width:${pct}%"></div></div>
+        </div>
+        ${ya
+          ? `<button class="av-mision-btn done" disabled>✓ LISTO</button>`
+          : (lista
+              ? `<button class="av-mision-btn claim" onclick="reclamarMision('${m.id}', ${m.premio})">RECLAMAR</button>`
+              : `<span style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--color-muted)">${pct}%</span>`
+            )
+        }
+      </div>`;
+  }).join("") + `</div>`;
+}
+
+function jugarAlAzar() {
+  const locales = juegos.filter(j => j.tipo === "local");
+  const elegido = locales[Math.floor(Math.random() * locales.length)] || juegos[0];
+  if (elegido) window.location.href = `pages/juego.html?id=${encodeURIComponent(elegido.id)}`;
+}
+
+async function reclamarBonusDiario() {
+  const hoy = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem("av_bonus_diario") === hoy) return;
+  localStorage.setItem("av_bonus_diario", hoy);
+  await Storage.sumarMonedas(50);
+  await Storage.sumarXP(25);
+  UISfx.coin();
+  mostrarToast("¡Bonus diario: +50 VicioCoins y +25 XP!", "🎁");
+  await actualizarPerfil();
+  await renderizarHeroYMisiones();
+}
+
+async function reclamarMision(id, premio) {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const key = "av_misiones_" + hoy;
+  const reclamadas = JSON.parse(localStorage.getItem(key) || "[]");
+  if (reclamadas.includes(id)) return;
+  reclamadas.push(id);
+  localStorage.setItem(key, JSON.stringify(reclamadas));
+  await Storage.sumarMonedas(premio);
+  await Storage.sumarXP(30);
+  UISfx.win();
+  mostrarToast(`¡Misión completada! +${premio} VicioCoins`, "🏆");
+  await actualizarPerfil();
+  await renderizarHeroYMisiones();
+}
+
 document.addEventListener("DOMContentLoaded", iniciarApp);

@@ -53,7 +53,7 @@
 <script src="kit/bg-kit.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  WORDLE ES — BandaGamer
+//  WORDLE ES — AltoVicio
 //  Palabra del día (la misma para todos) + modo libre ilimitado · Ñ incluida
 //  Las tildes no importan · estadísticas, rachas y distribución · compartir
 // ═══════════════════════════════════════════════════════════════════════════
@@ -208,7 +208,7 @@ const PRAISE = ['¡GENIAL!', '¡MAGNÍFICO!', '¡IMPRESIONANTE!', '¡MUY BIEN!',
 function shareText() {
   const rows = guesses.map(g => score(g).map(x => x === 'ok' ? '🟩' : x === 'near' ? '🟨' : '⬛').join('')).join('\n');
   const won = guesses.length && score(guesses[guesses.length - 1]).every(x => x === 'ok');
-  return `BandaGamer Wordle ${mode === 'daily' ? '#' + dayIndex() : '(libre)'} ${won ? guesses.length : 'X'}/6\n${rows}`;
+  return `AltoVicio Wordle ${mode === 'daily' ? '#' + dayIndex() : '(libre)'} ${won ? guesses.length : 'X'}/6\n${rows}`;
 }
 function statsHtml(hl) {
   const max = Math.max(1, ...stats.dist);

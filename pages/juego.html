@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BandaGamer — Jugando</title>
+<title>AltoVicio — Jugando</title>
 <link rel="icon" type="image/x-icon" href="../favicon.ico">
 <link rel="icon" type="image/svg+xml" href="../assets/logo/logo.svg">
 <link rel="stylesheet" href="../css/styles.css">
@@ -22,9 +22,9 @@
 
 <!-- === HEADER === -->
 <header>
-  <a id="logo-container" href="../index.html" title="BandaGamer">
+  <a id="logo-container" href="../index.html" title="AltoVicio">
     <div class="logo-icon">🎮</div>
-    <span class="logo-texto">BANDAGAMER</span>
+    <span class="logo-texto">ALTOVICIO</span>
   </a>
 
   <nav id="nav-menu">
@@ -145,7 +145,7 @@
           </div>
           <div class="jp-xpinfo">
             <b>¿Cómo gano XP?</b><br>
-            +10 XP cada 30 s jugando · +5 XP por partida terminada · +25 XP por récord personal · +10 🪙 cada 10 min.
+            +10 XP cada 30 s jugando · +5 XP por partida terminada · +25 XP por récord personal · +5 🪙 por partida · +25 🪙 por récord · +10 🪙 cada 5 min.
           </div>
         </section>
       </aside>
@@ -226,9 +226,9 @@ function iniciarContadorTiempo() {
       const n = segundosSinGuardar; segundosSinGuardar = 0;
       Storage.sumarTiempoJugado(n).catch(() => {});
     }
-    if (monedaAcum >= 600) {
+    if (monedaAcum >= 300) {
       monedaAcum = 0;
-      Storage.sumarMonedas(10).then(() => { actualizarPerfil(); toastJuego("+10 🪙 por jugar 10 minutos"); }).catch(() => {});
+      Storage.sumarMonedas(10).then(() => { actualizarPerfil(); toastJuego("+10 🪙 VicioCoins por jugar 5 minutos"); }).catch(() => {});
     }
   }, 1000);
 }
@@ -357,6 +357,8 @@ async function registrarPuntaje(d) {
   if (partidasConXP < MAX_PARTIDAS_XP) { partidasConXP++; xp += XP_PARTIDA; }
   if (res.isRecord && recordsConXP < MAX_RECORDS_XP) { recordsConXP++; xp += res.prev == null ? XP_PRIMER_RECORD : XP_RECORD; }
   if (xp) darXP(xp);
+  const monedasGanadas = (res.isRecord ? 25 : 5);
+  Storage.sumarMonedas(monedasGanadas).then(() => actualizarPerfil()).catch(() => {});
 
   if (res.isRecord) {
     toastJuego(`🏆 ${res.prev == null ? "Primer récord" : "¡Nuevo récord!"} en ${juegoActual.nombre}${modos().length > 1 ? " (" + info.nombre + ")" : ""}: ${fmtScore(score, info)}${xp ? "  +" + xp + " XP" : ""}`);
@@ -543,7 +545,7 @@ $("qc-form").addEventListener("submit", async e => {
 // ── Render de la página ────────────────────────────────────────────────────
 async function renderizarJuego(juego) {
   juegoActual = juego;
-  document.title = `${juego.nombre} — BandaGamer`;
+  document.title = `${juego.nombre} — AltoVicio`;
   $("juego-titulo").textContent = juego.nombre;
   $("juego-descripcion").textContent = juego.descripcion;
   const tags = [`<span class="jp-tag">${esc(juego.categoria)}</span>`];

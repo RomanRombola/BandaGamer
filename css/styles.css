@@ -1630,3 +1630,109 @@ header {
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.09) !important;
 }
+
+/* === ALTOVICIO V8 FEATURES === */
+.av-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px;
+  margin-bottom: 18px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 102, 0, 0.22) 0%, rgba(18, 18, 34, 0.95) 55%, rgba(0, 170, 255, 0.18) 100%);
+  border: 1px solid rgba(255, 102, 0, 0.4);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(255, 102, 0, 0.15);
+  flex-wrap: wrap;
+}
+.av-hero-info { flex: 1; min-width: 240px; }
+.av-hero-badge {
+  display: inline-block;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: rgba(255, 230, 0, 0.15);
+  color: var(--color-accent);
+  border: 1px solid rgba(255, 230, 0, 0.4);
+  margin-bottom: 8px;
+}
+.av-hero-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.av-hero-desc { color: #b8b8cc; font-size: 15px; max-width: 580px; }
+.av-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.av-btn-glow {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+}
+.av-btn-glow.primary {
+  background: linear-gradient(135deg, #ff6600, #ffb300);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(255, 102, 0, 0.45);
+}
+.av-btn-glow.secondary {
+  background: rgba(0, 170, 255, 0.14);
+  color: #38bdf8;
+  border: 1px solid rgba(0, 170, 255, 0.4);
+}
+.av-btn-glow.bonus {
+  background: rgba(57, 255, 20, 0.14);
+  color: #39ff88;
+  border: 1px solid rgba(57, 255, 20, 0.4);
+}
+.av-btn-glow:hover { transform: translateY(-2px); filter: brightness(1.12); }
+
+.av-misiones-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.av-mision-card {
+  background: rgba(20, 20, 34, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.av-mision-card.lista { border-color: rgba(57, 255, 20, 0.45); background: rgba(57, 255, 20, 0.06); }
+.av-mision-prog { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.av-mision-fill { height: 100%; background: linear-gradient(90deg, #ff6600, #ffe600); border-radius: 3px; }
+.av-mision-btn {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.av-mision-btn.claim { background: linear-gradient(135deg, #39ff14, #00c853); color: #051b05; }
+.av-mision-btn.done { background: rgba(255,255,255,0.06); color: #888; cursor: default; }
+
+.card-preview-wrap iframe, .card-preview-wrap video {
+  filter: contrast(1.06) saturate(1.12);
+  transform: scale(1.02);
+}

@@ -2,12 +2,12 @@
 
 ## 90s Games — Prateek (MIT)
 
-Los siguientes juegos de BandaGamer se basan en ideas del proyecto **90s Games**
+Los siguientes juegos de AltoVicio se basan en ideas del proyecto **90s Games**
 (<https://github.com/prateek121/90s-games>). En todos los casos el código se
-reescribió desde cero sobre el motor de BandaGamer (BG Kit); se conserva el aviso
+reescribió desde cero sobre el motor de AltoVicio (BG Kit); se conserva el aviso
 de la licencia original como pide la MIT.
 
-| Juego en BandaGamer | Archivo | Basado en |
+| Juego en AltoVicio | Archivo | Basado en |
 |---|---|---|
 | Bodeguero (Sokoban) | `pages/games/juego-local-42.html` | `games/sokoban.html` |
 | Salta Rana | `pages/games/juego-local-43.html` | `games/frogger.html` |

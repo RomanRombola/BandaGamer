@@ -10,7 +10,7 @@
 <script src="kit/bg-kit.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  SNAKE — BandaGamer
+//  SNAKE — AltoVicio
 //  Cuerpo continuo con movimiento suave · cola de giros (no se pierden teclas)
 //  Modos: Clásico (paredes), Sin bordes, Laberinto (8 niveles con salida)
 //  Frutas: 🍎 +1 · ⭐ dorada +5 (dura poco) · 🌶️ velocidad ×2 puntos · 👻 atravesarte
@@ -166,7 +166,17 @@ function nextLevel() {
   score += 25 * (level + 1); level++; SFX.play('win');
   BG.ui.toast(`NIVEL ${level + 1}`, '#c04dff');
   FX.flash('#c04dff', .4);
-  if (level >= MAZES.length) { BG.submitScore(score, { mode, won: true }); }
+  if (level >= MAZES.length) {
+    state = 'over'; BG.stop(); BG.music.stop();
+    const r = BG.submitScore(score, { mode, won: true });
+    BG.ui.gameOver({
+      win: true, icon: '🏆', title: '¡LABERINTO COMPLETADO!', score,
+      isRecord: r.isRecord || r.first,
+      stats: [{ label: 'Niveles', value: MAZES.length }, { label: 'Récord', value: BG.getBest(mode) || score }],
+      onRetry: () => { level = 0; state = 'menu'; start('maze'); }, onMenu: showMenu
+    });
+    return;
+  }
   state = 'next'; start('maze');
 }
 function die(why) {

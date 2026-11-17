@@ -1,4 +1,4 @@
-// storage.js — Capa de datos BandaGamer V2
+// storage.js — Capa de datos AltoVicio V2
 // ─────────────────────────────────────────────────────────────────────────────
 // Usa Firestore como driver principal cuando el usuario está autenticado.
 // Si no hay usuario autenticado, usa localStorage como fallback temporal.
