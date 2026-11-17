@@ -3,7 +3,9 @@
 // Realtime DB: presencia online, salas de juego
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _rtdb = firebase.database();
+// Sin Firebase (bloqueado o sin conexión) el módulo queda inerte pero definido: así
+// las páginas siguen andando en modo invitado en vez de romperse.
+const _rtdb = (typeof firebase !== 'undefined') ? firebase.database() : null;
 
 // ── Colecciones Firestore ─────────────────────────────────────────────────
 // /users/{uid}                     → perfil público
@@ -24,7 +26,7 @@ const INVITE_TTL_MS      = 2 * 60 * 60 * 1000; // las invitaciones vencen a las 
 // llamaba (o fallaba antes) TODAS las funciones sociales quedaban inertes.
 // Ahora sigue directamente a Firebase Auth.
 let _currentUid = null;
-firebase.auth().onAuthStateChanged(u => {
+if (_rtdb) firebase.auth().onAuthStateChanged(u => {
   _currentUid = u ? u.uid : null;
   if (!u) Social_goOffline();
 });

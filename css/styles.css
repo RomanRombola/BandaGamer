@@ -503,3 +503,22 @@ nav#nav-menu {
   #games-grid, #recientes-grid, #favoritos-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .plato-studio { grid-template-columns: 1fr; text-align: center; }
 }
+
+/* === V14: ajustes de celular ===
+   - El header no entraba en 390 px y el botón ☰ quedaba medio fuera de la pantalla.
+   - El juego medía ~490 px de alto en un iPhone y los menús internos quedaban cortados. */
+@media (max-width: 768px) {
+  header { padding: 0 12px; gap: 10px; }
+  #hamburger { flex-shrink: 0; margin-left: 0; }
+  .perfil-header { gap: 8px; padding: 4px 10px 4px 4px; min-width: 0; }
+  .juego-frame-wrap { height: calc(100vh - var(--header-h) - 16px); height: calc(100svh - var(--header-h) - 16px); min-height: 520px; }
+}
+@media (max-width: 480px) {
+  #logo-container { gap: 8px; }
+  .logo-icon { width: 36px; height: 36px; border-radius: 11px; }
+  .logo-texto { font-size: 17px; }
+  #perfil-nivel { display: none; }
+}
+@media (max-width: 360px) {
+  .logo-texto { display: none; }
+}

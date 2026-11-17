@@ -16,12 +16,15 @@
 <meta property="og:url" content="https://romanrombola.github.io/BandaGamer/">
 <meta property="og:title" content="AltoVicio — Jugá y Viciá en Banda">
 <meta property="og:description" content="El portal definitivo para viciar con amigos. Juegos online, multijugador, ranking global y accesorios personalizables.">
-<meta property="og:image" content="https://romanrombola.github.io/BandaGamer/assets/og-image.png">
+<meta property="og:image" content="https://romanrombola.github.io/BandaGamer/assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="AltoVicio — Portal de Juegos Online Gratis">
 <meta name="twitter:description" content="Jugá juegos gratis en el navegador. Snake, Tetris, 2048 y más.">
+<meta name="twitter:image" content="https://romanrombola.github.io/BandaGamer/assets/og-image.jpg">
 
 <!-- Datos estructurados para Google (JSON-LD) -->
 <script type="application/ld+json">
@@ -44,7 +47,7 @@
 <link rel="icon" type="image/svg+xml" href="assets/logo/logo.svg">
 <link rel="apple-touch-icon" href="assets/logo/icon-192.png">
 <meta name="theme-color" content="#ff6600">
-<link rel="stylesheet" href="css/styles.css?v=13">
+<link rel="stylesheet" href="css/styles.css?v=14">
 </head>
 <body>
 
@@ -87,10 +90,10 @@
 
     <div id="guest-form" style="width:100%">
       <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;">
-        <div style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:var(--color-muted);letter-spacing:1px;margin-bottom:10px">ENTRAR COMO INVITADO</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--color-muted);letter-spacing:1px;margin-bottom:10px">ENTRAR COMO INVITADO</div>
         <input type="text" id="guest-name-input" placeholder="Tu nombre de jugador..." maxlength="20"
-          style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--color-text);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;padding:10px 13px;border-radius:10px;outline:none;margin-bottom:10px;">
-        <button onclick="loginComoInvitado()" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:var(--color-text);font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;padding:11px;border-radius:10px;cursor:pointer;letter-spacing:1px;transition:all .2s;">
+          style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--color-text);font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:600;padding:10px 13px;border-radius:10px;outline:none;margin-bottom:10px;">
+        <button onclick="loginComoInvitado()" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:var(--color-text);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;padding:11px;border-radius:10px;cursor:pointer;letter-spacing:1px;transition:all .2s;">
           👤 ENTRAR SIN CUENTA
         </button>
         <p style="color:var(--color-muted);font-size:11px;margin-top:8px;line-height:1.5;text-align:center">
@@ -113,7 +116,7 @@
 
 <!-- ── HEADER ────────────────────────────────────────────────────────── -->
 <header>
-  <a id="logo-container" href="./?v=13" title="AltoVicio">
+  <a id="logo-container" href="./?v=14" title="AltoVicio">
     <div class="logo-icon"><svg viewBox="0 0 48 48" width="24" height="24"><rect x="4" y="12" width="40" height="24" rx="12" fill="#fff"/><circle cx="16" cy="24" r="5" fill="#ff6600"/><circle cx="31" cy="20" r="2.8" fill="#0f172a"/><circle cx="36" cy="26" r="2.8" fill="#ff2a5f"/></svg></div>
     <span class="logo-texto">ALTOVICIO</span>
   </a>
@@ -139,7 +142,7 @@
       <span id="xp-texto">0/1000 XP</span>
     </div>
     <span class="perfil-monedas">🪙 <span id="perfil-monedas">0</span></span>
-    <span id="perfil-nivel" style="font-family:'Orbitron',sans-serif;font-size:12px;color:var(--color-muted)">Nv.1</span>
+    <span id="perfil-nivel" style="font-family:'Outfit',sans-serif;font-size:12px;color:var(--color-muted)">Nv.1</span>
   </div>
 
   <button id="hamburger" aria-label="Menú">☰<span class="nav-badge" data-social-badge style="display:none">0</span></button>
@@ -239,10 +242,11 @@
 </div>
 </div>
 
-<script src="js/games-data.js?v=13"></script>
-<script src="js/storage.js?v=13"></script>
-<script src="js/social.js?v=13"></script>
-<script src="js/notifs.js?v=13"></script>
-<script src="js/main.js?v=13"></script>
+<script src="js/games-data.js?v=14"></script>
+<script src="js/storage.js?v=14"></script>
+<script src="js/social.js?v=14"></script>
+<script src="js/notifs.js?v=14"></script>
+<script src="js/avatar.js?v=14"></script>
+<script src="js/main.js?v=14"></script>
 </body>
 </html>

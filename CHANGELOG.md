@@ -1,5 +1,43 @@
 # AltoVicio — Changelog
 
+## 🛠️ V14 — Auditoría completa: economía, seguridad, móvil
+
+### Economía (VicioCoins / XP)
+- **Misiones diarias reales**: antes medían totales acumulados ("300 XP totales") y se volvían a cobrar todos los días sin hacer nada. Ahora "Jugá 1 partida hoy" y "Ganá 300 XP hoy" miden lo hecho en el día; "Marcá 3 favoritos" se cobra una sola vez.
+- **Bonus diario y misiones guardados en la cuenta** (`usuario.diario`), no en el navegador: ya no se cobran de nuevo en otro dispositivo, en incógnito ni borrando datos. El día usa la hora local (antes UTC: en Argentina cambiaba a las 21 h).
+- **Premios por partida con tope diario** (`Storage.premiarPartida`): 40 partidas y 10 récords premiados por día. Antes el tope era por visita (se reiniciaba recargando) y las monedas por partida no tenían límite.
+- **XP y monedas por tiempo solo con actividad real**: si no tocás nada en 60 s el contador se pausa. Antes alcanzaba con dejar la pestaña abierta (~1200 XP por hora).
+- Los premios se validan y cobran dentro de una transacción: no se pueden cobrar dos veces ni pasar otro premio desde la consola.
+- El cartel "¡SUBISTE DE NIVEL!" ahora también aparece al subir con el bonus o las misiones (la función existía pero nadie la llamaba).
+
+### Cuentas
+- **El progreso de invitado ya no se pierde al entrar con Google**: la migración buscaba solo la clave V1 (`gor2games_usuario`), no la actual (`bandagamer_usuario_v2`).
+- **El sitio funciona sin Firebase** (bloqueadores de anuncios, redes de colegio/empresa, sin conexión): antes quedaba en blanco con "firebase is not defined"; ahora entra en modo invitado.
+
+### Avatares
+- Nuevo `js/avatar.js` con el motor de avatares, compartido por el inicio, la página de juego y Social. Antes la página de juego mostraba "😊" en vez del avatar con accesorios y las burbujas de chat compradas no se aplicaban.
+- El ranking global ahora guarda `accesorios` (antes todos aparecían con el avatar por defecto). El ranking de cada juego también los muestra.
+
+### Seguridad (`firebase/firestore.rules` — hay que publicarlas en la consola)
+- Amistades: ya no se puede escribir en la lista de amigos de otro sin una solicitud previa.
+- Chat: solo se puede marcar un mensaje como leído (antes se podía reescribir el texto ajeno).
+- Grupos: un miembro ya no puede cambiar el dueño.
+- Rankings por juego: se valida el nombre (máx. 24) y que el puntaje sea positivo.
+
+### Celular
+- El botón ☰ quedaba medio fuera de la pantalla en 390 px; el menú no se cerraba al elegir una sección.
+- El juego ahora ocupa casi toda la pantalla (antes ~490 px y los menús quedaban cortados).
+
+### Otros
+- Buscador + categoría combinados (antes buscar ignoraba la categoría y elegirla borraba la búsqueda); la búsqueda ignora tildes en tags.
+- Juegos externos: ya no se ocultan si tardan más de 4 s en cargar; aparece "¿No carga? Abrilo en otra pestaña".
+- Gartic y Gartic Phone avisan el código de sala (`bg-room`) para el botón "▶ Unirse" y completan el código al entrar desde una invitación.
+- Imagen para compartir en redes (`assets/og-image.jpg`), que el index pedía y no existía.
+- Textos residuales: "Banda Phone" → "Gartic Phone", "GorPlayer99" → "Jugador99". Fuentes Orbitron/Rajdhani que quedaban en el inicio y en la página de juego → Outfit / Plus Jakarta Sans. Logo unificado en la página de juego.
+- Caché `?v=14`.
+
+---
+
 ## 🕹️ V6 — Clásicos de los 90 (desde el zip de 90s-games, licencia MIT)
 
 Del repositorio **90s-games** (MIT © 2026 Prateek, 114 juegos de un archivo) se eligieron los que no existían en la plataforma. Los originales eran muy básicos (sin controles táctiles, con bugs), así que se reescribieron desde cero sobre el BG Kit. Licencia y créditos en `docs/LICENCIAS-TERCEROS.md`.
