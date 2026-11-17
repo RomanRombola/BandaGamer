@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Nonograma</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+<style>
+#tools { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 5; }
+#tools .bg-btn { padding: 10px 14px; font-size: 12px; }
+#tools .bg-btn.sel { border-color: #ff3dd0; background: rgba(255,61,208,.2); }
+</style>
+</head>
+<body>
+<div id="bg-stage"><div id="tools"><button class="bg-btn sel" id="m-fill">■ PINTAR</button><button class="bg-btn" id="m-x">✕ MARCAR</button><button class="bg-btn" id="m-undo">↶</button><button class="bg-btn" id="m-new">☰</button></div></div>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  NONOGRAMA (Picross) — BandaGamer
+//  Los números de cada fila/columna dicen cuántas casillas seguidas hay que
+//  pintar. 10×10 esconde un dibujo · 5×5 y 15×15 son aleatorios · récord de tiempo
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const ARTS = [
+  { name: 'Corazón', col: '#ff3d6e', g: ['..........', '.###..###.', '##########', '##########', '##########', '.########.', '..######..', '...####...', '....##....', '..........'] },
+  { name: 'Estrella', col: '#ffd400', g: ['....##....', '....##....', '...####...', '##########', '.########.', '..######..', '..######..', '.###..###.', '.##....##.', '..........'] },
+  { name: 'Sonrisa', col: '#ffcf3a', g: ['..######..', '.########.', '##.####.##', '##.####.##', '##########', '##########', '#.######.#', '##.####.##', '.##....##.', '..######..'] },
+  { name: 'Gato', col: '#ff9a1f', g: ['#........#', '##......##', '###....###', '##########', '#.##..##.#', '##########', '####..####', '#.######.#', '.########.', '..######..'] },
+  { name: 'Invasor', col: '#39ff88', g: ['..........', '..#....#..', '...#..#...', '..######..', '.##.##.##.', '##########', '#.######.#', '#.#....#.#', '..##..##..', '..........'] },
+  { name: 'Fantasma', col: '#c04dff', g: ['...####...', '..######..', '.########.', '.#..##..#.', '.#..##..#.', '##########', '##########', '##########', '#.##..##.#', '..........'] },
+  { name: 'Árbol', col: '#22c55e', g: ['....##....', '...####...', '..######..', '...####...', '..######..', '.########.', '##########', '....##....', '....##....', '...####...'] },
+  { name: 'Hongo', col: '#ff3d5a', g: ['..######..', '.##.##.##.', '####..####', '##.####.##', '##########', '...####...', '...####...', '...#..#...', '...####...', '..........'] },
+];
+BG.init({
+  id: 'nonograma', title: 'NONOGRAMA', icon: '🖼️', accent: '#ff3dd0', accent2: '#2ef2ff', pausable: true,
+  subtitle: 'Pintá las casillas según los números. En 10×10 aparece un dibujo escondido.',
+  hud: [{ id: 'time', label: 'Tiempo', value: '0:00' }, { id: 'size', label: 'Tamaño', color: '#2ef2ff' }, { id: 'best', label: 'Récord', color: '#ffd400', value: '—' }],
+  help: 'Clic: pintar · clic derecho: marcar ✕ (vacía) · arrastrá para varias · cada número es un grupo de casillas seguidas, en orden',
+  helpTouch: 'Tocá para pintar · usá ✕ MARCAR para las vacías · arrastrá para varias',
+  onRestart: () => newPuzzle(N), onMenu: () => showMenu(),
+});
+const S = 600;
+const view = BG.canvas(S, S, { reserveH: 64 });
+const ctx = view.ctx;
+let N = BG.load('n', 10), sol, cells, rowC, colC, art, mode = 'fill', t0, elapsed = 0, timer, over = false, hist = [], drag = null, hoverC = null, winT = 0;
+
+function runs(arr) { const r = []; let c = 0; for (const v of arr) { if (v) c++; else if (c) { r.push(c); c = 0; } } if (c) r.push(c); return r.length ? r : [0]; }
+function newPuzzle(n) {
+  N = n || N; BG.save('n', N); art = null;
+  if (N === 10) { art = U.pick(ARTS); sol = art.g.map(r => [...r].map(ch => ch === '#')); }
+  else { const dens = N === 5 ? .6 : .58; sol = Array.from({ length: N }, () => Array.from({ length: N }, () => Math.random() < dens)); }
+  rowC = sol.map(runs); colC = sol[0].map((_, c) => runs(sol.map(r => r[c])));
+  cells = Array.from({ length: N }, () => Array(N).fill(0));   // 0 vacío · 1 pintado · 2 marcado
+  hist = []; over = false; winT = 0; elapsed = 0;
+  clearInterval(timer); t0 = performance.now(); timer = setInterval(() => { if (!over && !BG.paused) { elapsed = (performance.now() - t0) / 1000; BG.hud.set('time', U.fmtTime(elapsed)); } }, 300);
+  BG.hud.set('size', `${N}×${N}`); const b = BG.getBest('n' + N); BG.hud.set('best', b ? U.fmtTime(b) : '—');
+  BG.start();
+}
+BG.on('pause', () => { BG._pz = performance.now(); }).on('resume', () => { if (BG._pz) t0 += performance.now() - BG._pz; });
+// geometría: espacio para las pistas según la más larga
+function layout() {
+  const maxR = Math.max(...rowC.map(r => r.length)), maxCc = Math.max(...colC.map(c => c.length));
+  const cs = Math.floor((S - 16) / (N + Math.max(maxR, maxCc) * .62));
+  const ox = S - 8 - cs * N, oy = S - 8 - cs * N;
+  return { cs, ox, oy };
+}
+function cellAt(px, py) { const { cs, ox, oy } = layout(); const c = Math.floor((px - ox) / cs), r = Math.floor((py - oy) / cs); return (r >= 0 && c >= 0 && r < N && c < N) ? { r, c } : null; }
+function setCell(r, c, v) { if (cells[r][c] === v) return; hist.push({ r, c, v: cells[r][c] }); cells[r][c] = v; }
+function lineOk(arr, clue) { const r = runs(arr.map(v => v === 1)); return r.length === clue.length && r.every((x, i) => x === clue[i]); }
+function check() {
+  for (let r = 0; r < N; r++) if (!lineOk(cells[r], rowC[r])) return;
+  for (let c = 0; c < N; c++) if (!lineOk(cells.map(x => x[c]), colC[c])) return;
+  over = true; clearInterval(timer); BG.stop();
+  const secs = Math.max(1, Math.round(elapsed));
+  const rr = BG.submitScore(secs, { mode: 'n' + N, order: 'asc', won: true });
+  SFX.play('win'); FX.burst(S / 2, S / 2, { n: 60, color: [art ? art.col : '#ff3dd0', '#fff', '#2ef2ff'], speed: 320, life: 1 });
+  setTimeout(() => BG.ui.gameOver({ win: true, icon: '🖼️', title: art ? `¡ES UN ${art.name.toUpperCase()}!` : '¡RESUELTO!', score: secs, scoreText: U.fmtTime(secs), scoreLabel: 'TIEMPO',
+    isRecord: rr.isRecord || rr.first, recordText: rr.first ? '★ ¡PRIMER RÉCORD! ★' : null, stats: [{ label: 'Récord', value: U.fmtTime(BG.getBest('n' + N) || secs) }, { label: 'Tamaño', value: `${N}×${N}` }],
+    onRetry: () => newPuzzle(N), retryLabel: '↻ OTRO NONOGRAMA', onMenu: showMenu }), 1500);
+}
+function showMenu() {
+  BG.ui.show({ icon: '🖼️', title: 'NONOGRAMA', sub: BG.game.subtitle,
+    buttons: [[5, 'Rápido, para aprender'], [10, 'Con dibujo escondido'], [15, 'Para expertos']].map(([n, d]) => { const b = BG.getBest('n' + n); return { label: `${n}×${n}`, small: `${d} · ${b ? 'Récord ' + U.fmtTime(b) : 'sin récord'}`, primary: n === N, onClick: () => { BG.ui.hide(); newPuzzle(n); } }; }),
+    help: (BG.isTouch ? BG.game.helpTouch : BG.game.help) + '<br>Ejemplo: "3 1" = un grupo de 3, al menos un espacio, y un grupo de 1.' });
+}
+function render() {
+  ctx.fillStyle = '#0d0b1c'; ctx.fillRect(0, 0, S, S);
+  if (!sol) return;
+  const { cs, ox, oy } = layout(), fs = Math.max(10, cs * .48);
+  // resaltado de fila/columna bajo el cursor
+  if (hoverC && !over) { ctx.fillStyle = 'rgba(255,61,208,.08)'; ctx.fillRect(8, oy + hoverC.r * cs, S - 16, cs); ctx.fillRect(ox + hoverC.c * cs, 8, cs, S - 16); }
+  // pistas
+  rowC.forEach((clue, r) => { const ok = lineOk(cells[r], clue); clue.slice().reverse().forEach((v, i) => D.text(ctx, String(v), ox - 8 - i * cs * .62 - cs * .25, oy + r * cs + cs / 2 + 1, { size: fs, color: ok ? '#4a4a6a' : '#e8e8ff', family: 'body' })); });
+  colC.forEach((clue, c) => { const ok = lineOk(cells.map(x => x[c]), clue); clue.slice().reverse().forEach((v, i) => D.text(ctx, String(v), ox + c * cs + cs / 2, oy - 8 - i * cs * .62 - cs * .25, { size: fs, color: ok ? '#4a4a6a' : '#e8e8ff', family: 'body' })); });
+  // grilla
+  const k = over ? Math.min(1, winT) : 0;
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const x = ox + c * cs, y = oy + r * cs, v = cells[r][c];
+    ctx.fillStyle = (r + c) % 2 ? '#1a1830' : '#1e1c36'; ctx.fillRect(x, y, cs, cs);
+    if (v === 1) {
+      const col = over && art ? art.col : '#ff3dd0';
+      ctx.fillStyle = col; ctx.fillRect(x + 2, y + 2, cs - 4, cs - 4);
+      ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(x + 2, y + 2, cs - 4, (cs - 4) * .35);
+    } else if (v === 2 && !over) { ctx.strokeStyle = '#6a6a90'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + cs * .3, y + cs * .3); ctx.lineTo(x + cs * .7, y + cs * .7); ctx.moveTo(x + cs * .7, y + cs * .3); ctx.lineTo(x + cs * .3, y + cs * .7); ctx.stroke(); }
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= N; i++) { ctx.beginPath(); ctx.moveTo(ox + i * cs, oy); ctx.lineTo(ox + i * cs, oy + N * cs); ctx.moveTo(ox, oy + i * cs); ctx.lineTo(ox + N * cs, oy + i * cs); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(255,61,208,.6)'; ctx.lineWidth = 2;
+  for (let i = 0; i <= N; i += 5) { ctx.beginPath(); ctx.moveTo(ox + i * cs, oy); ctx.lineTo(ox + i * cs, oy + N * cs); ctx.moveTo(ox, oy + i * cs); ctx.lineTo(ox + N * cs, oy + i * cs); ctx.stroke(); }
+  if (over && art) { ctx.globalAlpha = k * .9; ctx.fillStyle = '#0d0b1c'; ctx.fillRect(0, 0, ox - 4, S); ctx.fillRect(0, 0, S, oy - 4); ctx.globalAlpha = 1; D.text(ctx, art.name.toUpperCase(), (ox - 4) / 2 + 2, (oy - 4) / 2 + 2, { size: Math.min(22, ox / 6), color: art.col, alpha: k }); }
+  FX.draw(ctx);
+}
+function update(dt) { if (over) winT += dt * .8; }
+view.canvas.addEventListener('contextmenu', e => e.preventDefault());
+view.canvas.addEventListener('pointerdown', e => {
+  if (over || BG.ui.open) return;
+  const p = view.toLocal(e.clientX, e.clientY), cl = cellAt(p.x, p.y); if (!cl) return;
+  const useX = e.button === 2 || mode === 'x', cur = cells[cl.r][cl.c];
+  const target = useX ? (cur === 2 ? 0 : 2) : (cur === 1 ? 0 : 1);
+  drag = { target, axis: null, r: cl.r, c: cl.c };
+  setCell(cl.r, cl.c, target); SFX.play(target === 1 ? 'place' : 'tick');
+  try { view.canvas.setPointerCapture(e.pointerId); } catch (x) {}
+});
+view.canvas.addEventListener('pointermove', e => {
+  const p = view.toLocal(e.clientX, e.clientY), cl = cellAt(p.x, p.y); hoverC = cl;
+  if (!drag || !cl) return;
+  if (!drag.axis && (cl.r !== drag.r || cl.c !== drag.c)) drag.axis = cl.r === drag.r ? 'r' : cl.c === drag.c ? 'c' : 'r';
+  const r = drag.axis === 'r' ? drag.r : cl.r, c = drag.axis === 'c' ? drag.c : cl.c;   // arrastre en línea recta
+  if (cells[r][c] !== drag.target && !(drag.target === 1 && cells[r][c] === 2)) { setCell(r, c, drag.target); SFX.play('tick'); }
+});
+const endDrag = () => { if (drag) { drag = null; check(); } };
+view.canvas.addEventListener('pointerup', endDrag); view.canvas.addEventListener('pointercancel', endDrag);
+view.canvas.addEventListener('pointerleave', () => { hoverC = null; });
+document.getElementById('m-fill').onclick = () => { mode = 'fill'; document.getElementById('m-fill').classList.add('sel'); document.getElementById('m-x').classList.remove('sel'); };
+document.getElementById('m-x').onclick = () => { mode = 'x'; document.getElementById('m-x').classList.add('sel'); document.getElementById('m-fill').classList.remove('sel'); };
+document.getElementById('m-undo').onclick = () => { const h = hist.pop(); if (h && !over) { cells[h.r][h.c] = h.v; SFX.play('back'); } };
+document.getElementById('m-new').onclick = showMenu;
+BG.input.onKey((e, code, down) => { if (down && (e.ctrlKey || e.metaKey) && code === 'KeyZ') document.getElementById('m-undo').click(); if (down && code === 'KeyX') document.getElementById(mode === 'x' ? 'm-fill' : 'm-x').click(); });
+if (BG.thumb) { N = 10; art = ARTS[3]; sol = art.g.map(r => [...r].map(ch => ch === '#')); rowC = sol.map(runs); colC = sol[0].map((_, c) => runs(sol.map(r => r[c]))); cells = sol.map((r, i) => r.map((v, j) => v && (i + j) % 3 ? 1 : (!v && (i * j) % 4 === 1 ? 2 : 0))); document.getElementById('tools').style.display = 'none'; }
+else BG.ready.then(showMenu);
+BG.loop(update, render);
+</script>
+</body>
+</html>

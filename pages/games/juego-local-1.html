@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Snake</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  SNAKE — BandaGamer
+//  Cuerpo continuo con movimiento suave · cola de giros (no se pierden teclas)
+//  Modos: Clásico (paredes), Sin bordes, Laberinto (8 niveles con salida)
+//  Frutas: 🍎 +1 · ⭐ dorada +5 (dura poco) · 🌶️ velocidad ×2 puntos · 👻 atravesarte
+//  ⏳ cámara lenta · combos por comer seguido
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const N = 20, CS = 32, W = N * CS, H = N * CS;
+const MODES = {
+  classic: { name: 'CLÁSICO', desc: 'Las paredes te matan' },
+  wrap: { name: 'SIN BORDES', desc: 'Salís por un lado y entrás por el otro' },
+  maze: { name: 'LABERINTO', desc: '8 niveles: comé lo pedido y entrá al portal' },
+};
+// Laberintos: listas de rectángulos [x, y, w, h] en celdas
+const MAZES = [
+  [],
+  [[5, 5, 10, 1], [5, 14, 10, 1]],
+  [[4, 4, 1, 12], [15, 4, 1, 12], [8, 9, 4, 2]],
+  [[0, 9, 7, 1], [13, 9, 7, 1], [9, 0, 1, 6], [9, 14, 1, 6]],
+  [[3, 3, 5, 1], [3, 3, 1, 5], [12, 3, 5, 1], [16, 3, 1, 5], [3, 16, 5, 1], [3, 12, 1, 5], [12, 16, 5, 1], [16, 12, 1, 5]],
+  [[2, 5, 16, 1], [2, 10, 16, 1], [2, 15, 16, 1], [9, 6, 2, 4]],
+  [[5, 0, 1, 14], [10, 6, 1, 14], [15, 0, 1, 14]],
+  [[3, 3, 14, 1], [3, 3, 1, 6], [16, 3, 1, 6], [3, 16, 14, 1], [3, 11, 1, 6], [16, 11, 1, 6], [8, 8, 4, 4]],
+];
+const FRUITS = {
+  apple: { e: '🍎', pts: 1, grow: 1, col: '#ff3d5a' },
+  gold: { e: '⭐', pts: 5, grow: 2, col: '#ffd400', life: 6 },
+  chili: { e: '🌶️', pts: 2, grow: 1, col: '#ff6a00', life: 8, fx: 'fast', fxT: 6 },
+  ghost: { e: '👻', pts: 2, grow: 1, col: '#c9d4ff', life: 8, fx: 'ghost', fxT: 7 },
+  clock: { e: '⏳', pts: 1, grow: 0, col: '#2ef2ff', life: 8, fx: 'slow', fxT: 6 },
+};
+const SKINS = [
+  { name: 'Neón', a: '#39ff88', b: '#00b3ff' }, { name: 'Fuego', a: '#ffd400', b: '#ff3d5a' },
+  { name: 'Uva', a: '#ff6ad5', b: '#7c3aed' }, { name: 'Hielo', a: '#e0fbff', b: '#2e8bff' }, { name: 'Oro', a: '#fff1a6', b: '#e6a800' },
+];
+
+BG.init({
+  id: 'snake', title: 'SNAKE', icon: '🐍', accent: '#39ff88', accent2: '#00b3ff', music: true,
+  post: { bloom: .5, vignette: .4, thumbFx: true },
+  subtitle: 'Comé, crecé y no te choques. Ahora con frutas especiales y laberintos.',
+  hud: [{ id: 'score', label: 'Puntos' }, { id: 'len', label: 'Largo', color: '#00b3ff' }, { id: 'best', label: 'Récord', color: '#ffd400' }],
+  help: '<kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> o <kbd>WASD</kbd> · <kbd>P</kbd> pausa · podés apretar dos giros seguidos, se guardan en cola',
+  helpTouch: 'Deslizá el dedo para doblar (o usá las flechas).',
+  touch: { dpad: 'full', buttons: [] },
+  onRestart: () => start(mode), onMenu: () => showMenu(),
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+
+let mode = BG.load('mode', 'classic'), skin = BG.load('skin', 0);
+let snake, prev, dir, queue, fruits, walls, tick, acc, alpha, score, combo, comboT, grow, state = 'menu', t = 0, power = {}, level = 0, need = 0, eaten = 0, portal = null, deathT = 0, blink = 0, tongue = 0;
+const key = (x, y) => x + ',' + y;
+
+function buildWalls() {
+  walls = new Set();
+  if (mode === 'maze') for (const [x, y, w, h] of MAZES[level % MAZES.length]) for (let i = 0; i < w; i++) for (let j = 0; j < h; j++) walls.add(key(x + i, y + j));
+}
+function freeCell(margin) {
+  const occ = new Set(snake.map(s => key(s.x, s.y)));
+  for (let k = 0; k < 400; k++) {
+    const x = U.randInt(margin, N - 1 - margin), y = U.randInt(margin, N - 1 - margin), kk = key(x, y);
+    if (!occ.has(kk) && !walls.has(kk) && !fruits.some(f => f.x === x && f.y === y) && !(portal && portal.x === x && portal.y === y)) return { x, y };
+  }
+  return null;
+}
+function spawnFruit(type) { const c = freeCell(mode === 'classic' ? 1 : 0); if (!c) return; const F = FRUITS[type]; fruits.push({ ...c, type, t: 0, life: F.life || 0 }); }
+function start(m) {
+  mode = m || mode; BG.save('mode', mode);
+  if (state !== 'next') level = 0;
+  buildWalls();
+  // arranque en una fila libre (7 casillas sin paredes) lo más cerca del centro
+  let cx = 6, cy = 10;
+  search: for (const dy of [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5]) for (let x = 2; x < N - 8; x++) {
+    let ok = true; for (let i = 0; i < 8; i++) if (walls.has(key(x + i, 10 + dy))) { ok = false; break; }
+    if (ok) { cx = x + 2; cy = 10 + dy; break search; }
+  }
+  snake = [{ x: cx, y: cy }, { x: cx - 1, y: cy }, { x: cx - 2, y: cy }]; prev = snake.map(s => ({ ...s }));
+  dir = { x: 1, y: 0 }; queue = []; fruits = []; power = {}; acc = 0; alpha = 0; grow = 0; combo = 0; comboT = 0; portal = null; eaten = 0;
+  if (state !== 'next') score = 0;
+  need = mode === 'maze' ? 6 + level * 2 : 0;
+  spawnFruit('apple');
+  tick = baseTick();
+  BG.hud.set('score', score); BG.hud.set('len', snake.length); BG.hud.set('best', BG.getBest(mode) || 0);
+  FX.clear(); state = 'play'; BG.start();
+  if (!BG.music.playing) BG.music.play(SONG);
+}
+function baseTick() { return Math.max(.055, .125 - (mode === 'maze' ? level * .006 : Math.min(score, 120) * .0005)); }
+function showMenu() {
+  state = 'menu'; BG.stop(); BG.music.stop();
+  if (!snake) { walls = new Set(); fruits = []; snake = Array.from({ length: 12 }, (_, i) => ({ x: 14 - i, y: 10 })); prev = snake.map(s => ({ ...s })); dir = { x: 1, y: 0 }; alpha = 1; }
+  BG.ui.show({ icon: '🐍', title: 'SNAKE', sub: BG.game.subtitle,
+    buttons: Object.entries(MODES).map(([k, m]) => { const b = BG.getBest(k); return { label: m.name, small: `${m.desc} · ${b ? 'Récord ' + b : 'sin récord'}`, primary: k === mode, onClick: () => { BG.ui.hide(); level = 0; state = 'menu'; start(k); } }; }),
+    html: '<div class="bg-label">Color de la serpiente</div>',
+    help: BG.isTouch ? BG.game.helpTouch : BG.game.help,
+    onShow: card => {
+      const row = document.createElement('div'); row.className = 'bg-seg';
+      SKINS.forEach((s, i) => { const b = document.createElement('button'); b.className = 'bg-btn' + (i === skin ? ' sel' : ''); b.style.minWidth = '54px'; b.style.padding = '8px'; b.title = s.name;
+        b.innerHTML = `<span style="display:inline-block;width:28px;height:12px;border-radius:6px;background:linear-gradient(90deg,${s.a},${s.b})"></span>`;
+        b.onclick = () => { skin = i; BG.save('skin', i); row.querySelectorAll('.bg-btn').forEach((x, j) => x.classList.toggle('sel', j === i)); SFX.play('select'); }; row.appendChild(b); });
+      card.querySelector('.bg-label').after(row);
+    } });
+}
+function turn(nd) {
+  if (state !== 'play') return;
+  const last = queue.length ? queue[queue.length - 1] : dir;
+  if ((nd.x === -last.x && nd.y === -last.y) || (nd.x === last.x && nd.y === last.y)) return;
+  if (queue.length < 3) queue.push(nd);
+}
+const DIRS = { left: { x: -1, y: 0 }, right: { x: 1, y: 0 }, up: { x: 0, y: -1 }, down: { x: 0, y: 1 } };
+Object.entries(DIRS).forEach(([a, d]) => BG.input.on(a, () => turn(d)));
+BG.input.swipe(view.canvas, d => turn(DIRS[d]), 18);
+
+function step() {
+  if (queue.length) dir = queue.shift();
+  prev = snake.map(s => ({ ...s }));
+  let nx = snake[0].x + dir.x, ny = snake[0].y + dir.y;
+  if (mode !== 'classic') { nx = (nx + N) % N; ny = (ny + N) % N; }
+  const hitWall = nx < 0 || ny < 0 || nx >= N || ny >= N || walls.has(key(nx, ny));
+  // la cola se mueve en este paso (salvo que crezca), así que se puede pisar
+  const body = snake.slice(0, grow > 0 ? snake.length : snake.length - 1);
+  const hitSelf = !(power.ghost > 0) && body.some(s => s.x === nx && s.y === ny);
+  if (hitWall || hitSelf) { die(hitWall ? 'pared' : 'cuerpo'); return; }
+  snake.unshift({ x: nx, y: ny });
+  if (grow > 0) { grow--; prev.push({ ...prev[prev.length - 1] }); } else snake.pop();
+  // portal (laberinto)
+  if (portal && nx === portal.x && ny === portal.y) { nextLevel(); return; }
+  // frutas
+  const fi = fruits.findIndex(f => f.x === nx && f.y === ny);
+  if (fi >= 0) eat(fruits.splice(fi, 1)[0]);
+  BG.hud.set('len', snake.length);
+}
+function eat(f) {
+  const F = FRUITS[f.type];
+  combo = comboT > 0 ? combo + 1 : 1; comboT = 2.2;
+  const mult = Math.min(5, 1 + Math.floor((combo - 1) / 3)) * (power.fast > 0 ? 2 : 1);
+  const pts = F.pts * mult;
+  score += pts; grow += F.grow; eaten++;
+  BG.hud.set('score', score, true);
+  const px = f.x * CS + CS / 2, py = f.y * CS + CS / 2;
+  FX.burst(px, py, { n: f.type === 'gold' ? 30 : 14, color: [F.col, '#fff', SKINS[skin].a], speed: 200, life: .5 });
+  FX.ring(px, py, { color: F.col, max: 46 });
+  FX.text(px, py - 14, '+' + pts + (mult > 1 ? ` ×${mult}` : ''), { color: F.col, size: 16 });
+  SFX.tone({ f: 520 * Math.pow(2, Math.min(combo - 1, 12) / 12), dur: .09, type: 'square', vol: .12 });
+  if (F.fx) { power[F.fx] = F.fxT; SFX.play('power'); BG.ui.toast({ fast: '🌶️ ¡A TODA VELOCIDAD! PUNTOS ×2', ghost: '👻 PODÉS ATRAVESARTE', slow: '⏳ CÁMARA LENTA' }[F.fx], F.col); }
+  if (f.type === 'gold') SFX.play('coin');
+  if (combo > 1 && combo % 3 === 0) BG.ui.toast(`COMBO ×${combo}`, '#ffd400');
+  // siguiente fruta común + especiales al azar
+  if (f.type === 'apple' || !fruits.some(x => x.type === 'apple')) spawnFruit('apple');
+  if (Math.random() < .22 && fruits.length < 3) spawnFruit(U.pick(['gold', 'gold', 'chili', 'ghost', 'clock']));
+  if (mode === 'maze' && eaten >= need && !portal) { portal = freeCell(1); SFX.play('levelup'); BG.ui.toast('¡SE ABRIÓ EL PORTAL!', '#c04dff'); }
+  tick = baseTick();
+}
+function nextLevel() {
+  score += 25 * (level + 1); level++; SFX.play('win');
+  BG.ui.toast(`NIVEL ${level + 1}`, '#c04dff');
+  FX.flash('#c04dff', .4);
+  if (level >= MAZES.length) { BG.submitScore(score, { mode, won: true }); }
+  state = 'next'; start('maze');
+}
+function die(why) {
+  state = 'dying'; deathT = 0; BG.stop(); BG.music.stop();
+  SFX.play('hurt'); FX.shake(10, .45); FX.flash('#ff3d5a', .35);
+  const r = BG.submitScore(score, { mode });
+  setTimeout(() => BG.ui.gameOver({
+    icon: '🐍', title: why === 'pared' ? '¡CONTRA LA PARED!' : '¡TE MORDISTE!', score, isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Récord', value: BG.getBest(mode) || score }, { label: 'Largo', value: snake.length }, ...(mode === 'maze' ? [{ label: 'Nivel', value: level + 1 }] : [{ label: 'Modo', value: MODES[mode].name }])],
+    onRetry: () => { level = 0; state = 'menu'; start(mode); }, onMenu: showMenu,
+  }), 1300);
+}
+
+function update(dt) {
+  t += dt; blink -= dt; tongue -= dt;
+  if (blink < -3) blink = .15; if (tongue < -2.3) tongue = .35;
+  if (state === 'dying') { deathT += dt; if (Math.floor(deathT / .04) < snake.length && Math.floor(deathT / .04) !== Math.floor((deathT - dt) / .04)) { const s = snake[Math.floor(deathT / .04)]; if (s) FX.burst(s.x * CS + CS / 2, s.y * CS + CS / 2, { n: 6, color: [SKINS[skin].a, SKINS[skin].b, '#fff'], speed: 160, life: .5 }); } return; }
+  if (state !== 'play') { alpha = 1; return; }
+  for (const k in power) power[k] = Math.max(0, power[k] - dt);
+  if (comboT > 0) comboT -= dt;
+  fruits.forEach(f => f.t += dt);
+  fruits = fruits.filter(f => !f.life || f.t < f.life);
+  if (!fruits.some(f => f.type === 'apple')) spawnFruit('apple');
+  const speedK = (power.fast > 0 ? .62 : 1) * (power.slow > 0 ? 1.6 : 1);
+  acc += dt;
+  const T = tick * speedK;
+  while (acc >= T && state === 'play') { acc -= T; step(); }
+  alpha = Math.min(1, acc / T);
+}
+
+// ── Dibujo ────────────────────────────────────────────────────────────────
+function segPos(i) {
+  const a = prev[i] || prev[prev.length - 1], b = snake[i];
+  if (!a || Math.abs(a.x - b.x) > 1 || Math.abs(a.y - b.y) > 1) return { x: b.x * CS + CS / 2, y: b.y * CS + CS / 2, wrap: !!a };
+  return { x: U.lerp(a.x, b.x, alpha) * CS + CS / 2, y: U.lerp(a.y, b.y, alpha) * CS + CS / 2 };
+}
+function mix(c1, c2, k) {
+  const p = c => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+  const a = p(c1), b = p(c2); return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',')})`;
+}
+function drawSnake() {
+  if (!snake) return;
+  const sk = SKINS[skin], n = snake.length, pts = snake.map((_, i) => segPos(i));
+  const ghost = power.ghost > 0, dyingK = state === 'dying' ? Math.floor(deathT / .04) : -1;
+  ctx.save();
+  if (ghost) ctx.globalAlpha = .55 + Math.sin(t * 12) * .15;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // sombra
+  ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = CS * .78;
+  ctx.beginPath(); pts.forEach((p, i) => { if (i <= dyingK) return; if (i === 0 || p.wrap || pts[i - 1].wrap) ctx.moveTo(p.x + 3, p.y + 5); else ctx.lineTo(p.x + 3, p.y + 5); }); ctx.stroke();
+  // cuerpo (de la cola a la cabeza, afinándose hacia la cola)
+  for (let i = n - 1; i > 0; i--) {
+    if (i <= dyingK) continue;
+    const a = pts[i], b = pts[i - 1];
+    if (a.wrap || b.wrap) continue;
+    const k = i / Math.max(1, n - 1);
+    ctx.strokeStyle = mix(sk.a, sk.b, k); ctx.lineWidth = CS * (.82 - k * .32);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+  // brillo del lomo
+  ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = CS * .16;
+  ctx.beginPath(); pts.forEach((p, i) => { if (i <= dyingK || i > n - 3) return; if (i === 0 || p.wrap || pts[i - 1].wrap) ctx.moveTo(p.x - 3, p.y - 4); else ctx.lineTo(p.x - 3, p.y - 4); }); ctx.stroke();
+  // escamas
+  for (let i = 2; i < n - 1; i += 2) { if (i <= dyingK) continue; const p = pts[i]; ctx.fillStyle = 'rgba(0,0,0,.14)'; ctx.beginPath(); ctx.arc(p.x, p.y, CS * .12, 0, 7); ctx.fill(); }
+  // cabeza
+  if (dyingK < 0) {
+    const h = pts[0], d = dir;
+    ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(Math.atan2(d.y, d.x));
+    ctx.fillStyle = sk.a; ctx.shadowColor = sk.a; ctx.shadowBlur = 16;
+    ctx.beginPath(); ctx.ellipse(2, 0, CS * .52, CS * .46, 0, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
+    if (tongue > 0) { ctx.strokeStyle = '#ff3d6e'; ctx.lineWidth = 2.5; const L = CS * .35 + Math.sin(tongue * 40) * 3; ctx.beginPath(); ctx.moveTo(CS * .5, 0); ctx.lineTo(CS * .5 + L, 0); ctx.lineTo(CS * .5 + L + 5, -4); ctx.moveTo(CS * .5 + L, 0); ctx.lineTo(CS * .5 + L + 5, 4); ctx.stroke(); }
+    for (const sy of [-1, 1]) {
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(CS * .18, sy * CS * .2, CS * .14, blink > 0 ? 1.5 : CS * .14, 0, 0, 7); ctx.fill();
+      if (blink <= 0) { ctx.fillStyle = '#0b0b18'; ctx.beginPath(); ctx.arc(CS * .23, sy * CS * .2, CS * .07, 0, 7); ctx.fill(); }
+    }
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.arc(CS * .46, -4, 1.6, 0, 7); ctx.arc(CS * .46, 4, 1.6, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+function render() {
+  // fondo con tablero sutil
+  const bg = ctx.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#08101c'); bg.addColorStop(1, '#0b0820');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if ((x + y) % 2) { ctx.fillStyle = 'rgba(255,255,255,.022)'; ctx.fillRect(x * CS, y * CS, CS, CS); }
+  const pulse = .5 + Math.sin(t * 2) * .5;
+  ctx.save(); FX.applyShake(ctx);
+  // borde
+  if (mode === 'classic') { ctx.strokeStyle = `rgba(255,61,90,${.45 + pulse * .25})`; ctx.lineWidth = 4; ctx.strokeRect(2, 2, W - 4, H - 4); }
+  else { ctx.strokeStyle = 'rgba(46,242,255,.25)'; ctx.setLineDash([10, 10]); ctx.lineWidth = 2; ctx.strokeRect(2, 2, W - 4, H - 4); ctx.setLineDash([]); }
+  // paredes del laberinto
+  if (walls) for (const k of walls) {
+    const [x, y] = k.split(',').map(Number);
+    const g = ctx.createLinearGradient(x * CS, y * CS, x * CS, y * CS + CS); g.addColorStop(0, '#4b3ab8'); g.addColorStop(1, '#251a66');
+    ctx.fillStyle = g; ctx.fillRect(x * CS + 1, y * CS + 1, CS - 2, CS - 2);
+    ctx.fillStyle = 'rgba(255,255,255,.15)'; ctx.fillRect(x * CS + 3, y * CS + 3, CS - 6, 4);
+  }
+  // portal
+  if (portal) {
+    const px = portal.x * CS + CS / 2, py = portal.y * CS + CS / 2;
+    for (let i = 0; i < 3; i++) { ctx.strokeStyle = `rgba(192,77,255,${.8 - i * .22})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(px, py, CS * .3 + i * 6 + Math.sin(t * 6 + i) * 2, t * 3 + i, t * 3 + i + 4.5); ctx.stroke(); }
+    D.glowCircle(ctx, px, py, CS * .25, '#c04dff', 24);
+  }
+  // frutas
+  for (const f of fruits || []) {
+    const F = FRUITS[f.type], px = f.x * CS + CS / 2, py = f.y * CS + CS / 2, bob = Math.sin(t * 5 + f.x) * 3;
+    const ending = f.life && f.life - f.t < 2 && Math.floor(t * 8) % 2;
+    if (ending) continue;
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(px, py + CS * .38, CS * .28, CS * .1, 0, 0, 7); ctx.fill();
+    D.glowCircle(ctx, px, py + bob, CS * .34, F.col + '55', 18);
+    D.text(ctx, F.e, px, py + bob + 1, { size: CS * .72, family: 'body' });
+    if (f.life) { ctx.strokeStyle = F.col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py + bob, CS * .46, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - f.t / f.life)); ctx.stroke(); }
+  }
+  drawSnake();
+  FX.draw(ctx);
+  ctx.restore();
+  // indicadores
+  if (state === 'play') {
+    let x = 10;
+    for (const [k, e, c] of [['fast', '🌶️', '#ff6a00'], ['ghost', '👻', '#c9d4ff'], ['slow', '⏳', '#2ef2ff']]) if (power[k] > 0) { D.text(ctx, `${e} ${Math.ceil(power[k])}`, x, H - 16, { size: 14, color: c, align: 'left', family: 'body' }); x += 64; }
+    if (mode === 'maze') D.text(ctx, portal ? '¡AL PORTAL!' : `NIVEL ${level + 1} · ${Math.max(0, need - eaten)} frutas para el portal`, W / 2, 16, { size: 12, color: '#d8c9ff' });
+    if (combo > 2 && comboT > 0) D.text(ctx, `COMBO ×${combo}`, W - 12, H - 16, { size: 14, color: '#ffd400', align: 'right' });
+  }
+  FX.drawFlash(ctx, W, H);
+}
+const SONG = { bpm: 132, tracks: [
+  { type: 'square', vol: .22, notes: 'E5 . G5 . B5 . G5 . E5 . D5 . E5 - - . A4 . C5 . E5 . C5 . A4 . G4 . A4 - - . C5 . E5 . G5 . E5 . C5 . B4 . C5 . D5 . E5 . D5 . C5 . B4 . A4 - - - .' },
+  { type: 'triangle', vol: .55, notes: 'E2 . E3 . E2 . E3 . E2 . E3 . E2 . E3 . A2 . A3 . A2 . A3 . A2 . A3 . A2 . A3 . C3 . C4 . C3 . C4 . G2 . G3 . G2 . G3 . A2 . A3 . A2 . A3 . A2 . A3 . A2 . A3 .' },
+  { drum: true, vol: .45, notes: 'K . H . S . H . K . H . S . H H' },
+] };
+if (BG.thumb) {
+  mode = 'maze'; level = 2; walls = new Set(); fruits = []; power = {};
+  buildWalls();
+  snake = [[9, 6], [8, 6], [7, 6], [6, 6], [6, 7], [6, 8], [6, 9], [6, 10], [6, 11], [7, 11], [8, 11], [9, 11], [10, 11], [11, 11], [12, 11], [12, 12], [12, 13], [12, 14]].map(([x, y]) => ({ x, y }));
+  prev = snake.map(s => ({ ...s })); dir = { x: 1, y: 0 }; alpha = 1;
+  fruits = [{ x: 12, y: 6, type: 'apple', t: 0 }, { x: 3, y: 15, type: 'gold', t: 0, life: 0 }, { x: 17, y: 3, type: 'chili', t: 0 }];
+  state = 'thumb'; update = () => {};
+} else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

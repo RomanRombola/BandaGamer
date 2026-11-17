@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Plantilla de juego</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  PLANTILLA DE JUEGO — BandaGamer (BG Kit)
+//  Copiá este archivo como pages/games/juego-local-N.html y reemplazá la lógica.
+//  Ejemplo incluido: "Atrapá estrellas" (mové la nave, agarrá ⭐, esquivá ☄️).
+//  Ver docs/AGREGAR-JUEGOS.md para registrar el juego en el portal.
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 480, H = 720;                       // resolución lógica (el kit la escala a la pantalla)
+
+// 1) Configuración: título, colores, HUD, ayuda, controles táctiles y efectos.
+BG.init({
+  id: 'plantilla',                            // clave única: récords guardados con este nombre
+  title: 'ATRAPÁ ESTRELLAS', icon: '⭐', accent: '#ffd400', accent2: '#2ef2ff', music: true,
+  post: { bloom: .5, vignette: .35, thumbFx: true },     // resplandor + viñeta (se baja solo si el equipo es lento)
+  subtitle: 'Agarrá las estrellas y esquivá los meteoritos.',
+  hud: [{ id: 'score', label: 'Puntos' }, { id: 'lives', label: 'Vidas', color: '#ff3d6e', value: '❤❤❤' }],
+  help: '<kbd>←</kbd><kbd>→</kbd> mover · <kbd>P</kbd> pausa',
+  helpTouch: 'Arrastrá el dedo para mover la nave',
+  touch: { dpad: 'h' },                       // cruceta táctil (se muestra solo en celulares)
+  onRestart: () => start(), onMenu: () => showMenu(),
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+
+// 2) Estado del juego. Inicializá todo acá: render() corre desde el primer frame.
+let ship = { x: W / 2, y: H - 90 }, things = [], score = 0, lives = 3, spawnT = 0, state = 'menu', t = 0, pointerX = null;
+
+function start() {
+  ship = { x: W / 2, y: H - 90 }; things = []; score = 0; lives = 3; spawnT = 0;
+  BG.hud.setAll({ score: 0, lives: '❤❤❤' }); FX.clear();
+  state = 'play'; BG.start(); BG.music.play(SONG);           // BG.start() habilita la pausa automática
+}
+function showMenu() {
+  state = 'menu'; BG.stop(); BG.music.stop();
+  BG.ui.menu({ buttons: [{ label: '▶ JUGAR', primary: true, onClick: start }] });
+}
+function over() {
+  state = 'over'; BG.stop(); BG.music.stop(); SFX.play('lose');
+  const r = BG.submitScore(score);            // guarda el récord y avisa al portal (XP + ranking)
+  BG.ui.gameOver({ score, isRecord: r.isRecord || r.first, stats: [{ label: 'Récord', value: U.fmt(BG.getBest() || score) }], onRetry: start, onMenu: showMenu });
+}
+
+// 3) Lógica: paso fijo de 60 Hz (dt = 1/60). No hace falta manejar la pausa: el kit la maneja.
+function update(dt) {
+  t += dt;
+  if (state !== 'play') return;
+  const ax = BG.input.axisX();                // -1, 0 o 1 (teclado o cruceta)
+  if (ax) { pointerX = null; ship.x += ax * 420 * dt; }
+  else if (pointerX != null) ship.x = U.lerp(ship.x, pointerX, Math.min(1, dt * 14));
+  ship.x = U.clamp(ship.x, 24, W - 24);
+  spawnT -= dt;
+  if (spawnT <= 0) { spawnT = U.rand(.35, .8); things.push({ x: U.rand(24, W - 24), y: -20, vy: U.rand(160, 260) + score * .5, bad: U.chance(.3) }); }
+  for (const o of things) {
+    o.y += o.vy * dt;
+    if (!o.done && Math.hypot(o.x - ship.x, o.y - ship.y) < 30) {
+      o.done = true;
+      if (o.bad) { lives--; BG.hud.set('lives', lives > 0 ? '❤'.repeat(lives) : '—'); SFX.play('hurt'); FX.shake(8, .3); FX.flash('#ff3d6e', .3); if (lives <= 0) return over(); }
+      else { score += 10; BG.hud.set('score', score, true); SFX.play('coin'); FX.burst(o.x, o.y, { n: 12, color: ['#ffd400', '#fff'] }); FX.text(o.x, o.y - 14, '+10'); }
+    }
+  }
+  things = things.filter(o => !o.done && o.y < H + 30);
+}
+
+// 4) Dibujo: se llama en cada frame (también en el menú y en pausa).
+function render() {
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0b0820'); g.addColorStop(1, '#1a0f3a');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.save(); FX.applyShake(ctx);
+  for (const o of things) D.text(ctx, o.bad ? '☄️' : '⭐', o.x, o.y, { size: 30, family: 'body' });
+  D.text(ctx, '🚀', ship.x, ship.y, { size: 40, family: 'body' });
+  FX.draw(ctx);                               // partículas, textos flotantes, anillos
+  ctx.restore();
+  FX.drawFlash(ctx, W, H);
+}
+
+// 5) Mouse / dedo
+view.canvas.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) pointerX = view.toLocal(e.clientX, e.clientY).x; });
+view.canvas.addEventListener('pointerdown', e => { pointerX = view.toLocal(e.clientX, e.clientY).x; });
+
+// 6) Música chiptune (notas: C4..B6, "." = silencio, "-" = sostener; batería K=bombo S=redoblante H=hi-hat)
+const SONG = { bpm: 120, tracks: [
+  { type: 'square', vol: .18, notes: 'C5 . E5 . G5 . E5 . F5 . A5 . G5 . . .' },
+  { type: 'triangle', vol: .5, notes: 'C3 . C3 . A2 . A2 . F2 . F2 . G2 . G2 .' },
+  { drum: true, vol: .5, notes: 'K . H . S . H . K . H K S . H .' },
+] };
+
+// 7) Arranque. Con ?thumb=1 se dibuja una escena fija para la portada del catálogo.
+if (BG.thumb) { state = 'thumb'; things = [{ x: 120, y: 200 }, { x: 300, y: 380, bad: true }, { x: 380, y: 160 }]; update = () => {}; }
+else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pong</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  PONG NEÓN — BandaGamer
+//  vs CPU (3 dificultades) o 2 jugadores en la misma compu/celular · ángulo según
+//  dónde pega la pelota + efecto con el movimiento de la paleta · modo Arcade con
+//  power-ups (paleta grande, multipelota, rayo, escudo) · primero en llegar a 7
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 800, H = 450, PW = 14, PH0 = 86, BR = 8, WIN = 7;
+const DIFFS = { facil: { name: 'FÁCIL', speed: 300, react: .16, err: 60, mult: 1 }, normal: { name: 'NORMAL', speed: 420, react: .09, err: 30, mult: 2 }, dificil: { name: 'DIFÍCIL', speed: 560, react: .045, err: 10, mult: 3 } };
+const POWERS = [
+  { id: 'grow', icon: '⇕', color: '#39ff88', name: 'PALETA GRANDE' },
+  { id: 'multi', icon: '✷', color: '#ffd400', name: 'MULTIPELOTA' },
+  { id: 'fast', icon: '⚡', color: '#ff3d6e', name: 'RAYO' },
+  { id: 'shield', icon: '🛡', color: '#2ef2ff', name: 'ESCUDO' },
+];
+
+BG.init({
+  post: { bloom: .7, vignette: .4, scan: .06, thumbFx: true },
+  id: 'pong', title: 'PONG NEÓN', icon: '🏓', accent: '#2ef2ff', accent2: '#ff3dd0',
+  subtitle: 'El clásico de 1972 con esteroides. Primero en hacer 7 puntos gana.',
+  hud: [{ id: 'p1', label: 'Vos', color: '#2ef2ff' }, { id: 'p2', label: 'Rival', color: '#ff3dd0' }, { id: 'rally', label: 'Peloteo', color: '#ffd400' }],
+  help: 'Jugador 1: <kbd>W</kbd><kbd>S</kbd> (o <kbd>↑</kbd><kbd>↓</kbd> contra la CPU) · Jugador 2: <kbd>↑</kbd><kbd>↓</kbd> · <kbd>P</kbd> pausa',
+  helpTouch: 'Arrastrá el dedo en tu mitad de la pantalla para mover la paleta.',
+  onRestart: () => start(cfg), onMenu: () => showMenu(),
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+
+let cfg = BG.load('cfg', { mode: 'cpu', diff: 'normal', arcade: true });
+let p1, p2, balls, s1, s2, state = 'menu', serveT = 0, server = 1, rally = 0, maxRally = 0, power = null, powerT = 0, t = 0, trail = [];
+let touchTarget = { 1: null, 2: null }, wallHits = [];
+
+function paddle(x, side) { return { x, y: H / 2, h: PH0, vy: 0, side, grow: 0, shield: 0, fast: 0, aiT: 0, aiY: H / 2 }; }
+function newBall(dir) { return { x: W / 2, y: H / 2, vx: 0, vy: 0, sp: 0, spin: 0, dir, alive: true }; }
+function serve(dir) {
+  balls = [newBall(dir)]; serveT = 1.1; rally = 0; BG.hud.set('rally', 0);
+}
+function launch(b) {
+  const a = U.rand(-.5, .5);
+  b.sp = 380; b.vx = Math.cos(a) * b.sp * b.dir; b.vy = Math.sin(a) * b.sp;
+}
+function start(c) {
+  cfg = c || cfg; BG.save('cfg', cfg);
+  p1 = paddle(34, 1); p2 = paddle(W - 34, 2);
+  s1 = s2 = 0; maxRally = 0; power = null; powerT = 4; trail = [];
+  BG.hud.setAll({ p1: 0, p2: 0, rally: 0 });
+  document.querySelector('[data-hud="p2"] span').textContent = cfg.mode === 'cpu' ? 'CPU' : 'Jugador 2';
+  document.querySelector('[data-hud="p1"] span').textContent = cfg.mode === 'cpu' ? 'Vos' : 'Jugador 1';
+  FX.clear(); state = 'play'; serve(U.chance(.5) ? 1 : -1); BG.start();
+  SFX.play('go');
+}
+function showMenu() {
+  state = 'menu'; BG.stop();
+  const sel = (k, v) => cfg[k] === v;
+  BG.ui.show({
+    icon: '🏓', title: 'PONG NEÓN', sub: BG.game.subtitle,
+    html: `<div class="bg-label">Modo</div><div class="bg-seg" id="m-mode">
+        <button class="bg-btn ${sel('mode', 'cpu') ? 'sel' : ''}" data-k="mode" data-v="cpu">🤖 VS CPU</button>
+        <button class="bg-btn ${sel('mode', '2p') ? 'sel' : ''}" data-k="mode" data-v="2p">👥 2 JUGADORES</button></div>
+      <div class="bg-label">Dificultad de la CPU</div><div class="bg-seg" id="m-diff">
+        ${Object.entries(DIFFS).map(([k, d]) => `<button class="bg-btn ${sel('diff', k) ? 'sel' : ''}" data-k="diff" data-v="${k}">${d.name}</button>`).join('')}</div>
+      <div class="bg-label">Reglas</div><div class="bg-seg">
+        <button class="bg-btn ${cfg.arcade ? '' : 'sel'}" data-k="arcade" data-v="0">CLÁSICO</button>
+        <button class="bg-btn ${cfg.arcade ? 'sel' : ''}" data-k="arcade" data-v="1">ARCADE ✷</button></div>`,
+    buttons: [{ label: '▶ JUGAR', primary: true, onClick: () => start(cfg) }],
+    stats: BG.getBest() ? [{ label: 'Tu récord', value: U.fmt(BG.getBest()) }] : null,
+    help: BG.isTouch ? BG.game.helpTouch : BG.game.help,
+    onShow: card => card.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', () => {
+      const k = b.dataset.k; cfg[k] = k === 'arcade' ? b.dataset.v === '1' : b.dataset.v;
+      b.parentElement.querySelectorAll('.bg-btn').forEach(x => x.classList.toggle('sel', x === b)); SFX.play('tick');
+    })),
+  });
+}
+
+// ── IA ────────────────────────────────────────────────────────────────────
+function aiMove(p, dt) {
+  const d = DIFFS[cfg.diff];
+  p.aiT -= dt;
+  if (p.aiT <= 0) {
+    p.aiT = d.react;
+    // buscar la pelota más peligrosa (la que viene hacia la CPU y está más cerca)
+    const incoming = balls.filter(b => b.alive && b.vx > 0).sort((a, b) => (W - a.x) / a.vx - (W - b.x) / b.vx)[0];
+    if (incoming) {
+      // predecir dónde llega, con rebotes en el techo/piso
+      let y = incoming.y + incoming.vy * ((p.x - incoming.x) / incoming.vx);
+      const span = H - 2 * BR; y -= BR;
+      y = ((y % (2 * span)) + 2 * span) % (2 * span); if (y > span) y = 2 * span - y; y += BR;
+      p.aiY = y + U.rand(-d.err, d.err) + (incoming.x < W * .45 ? (H / 2 - y) * .5 : 0);
+    } else p.aiY = H / 2 + Math.sin(t) * 30;
+  }
+  const dy = p.aiY - p.y;
+  p.vy = U.clamp(dy * 8, -d.speed, d.speed);
+}
+
+// ── Actualización ─────────────────────────────────────────────────────────
+function movePaddle(p, dir, dt, touchY) {
+  const maxV = 620 * (p.fast > 0 ? 1.35 : 1);
+  if (touchY != null) p.vy = U.clamp((touchY - p.y) * 14, -maxV * 1.4, maxV * 1.4);
+  else if (dir !== null) p.vy = U.lerp(p.vy, dir * maxV, Math.min(1, dt * 18));
+  p.y = U.clamp(p.y + p.vy * dt, p.h / 2 + 4, H - p.h / 2 - 4);
+  p.h = U.lerp(p.h, PH0 * (p.grow > 0 ? 1.6 : 1), Math.min(1, dt * 8));
+  p.grow = Math.max(0, p.grow - dt); p.shield = Math.max(0, p.shield - dt); p.fast = Math.max(0, p.fast - dt); p.flash = Math.max(0, (p.flash || 0) - dt * 4);
+}
+function update(dt) {
+  t += dt;
+  if (state !== 'play') { demo(dt); return; }
+  const I = BG.input;
+  // Jugador 1: W/S (y flechas si es contra la CPU)
+  const up1 = I.isDown('KeyW') || (cfg.mode === 'cpu' && (I.isDown('ArrowUp') || I.virt.up));
+  const dn1 = I.isDown('KeyS') || (cfg.mode === 'cpu' && (I.isDown('ArrowDown') || I.virt.down));
+  movePaddle(p1, up1 ? -1 : dn1 ? 1 : 0, dt, touchTarget[1]);
+  if (cfg.mode === 'cpu') { aiMove(p2, dt); movePaddle(p2, null, dt, null); }
+  else movePaddle(p2, I.isDown('ArrowUp') ? -1 : I.isDown('ArrowDown') ? 1 : 0, dt, touchTarget[2]);
+
+  if (serveT > 0) { serveT -= dt; if (serveT <= 0) balls.forEach(launch); }
+  for (const b of balls) if (b.alive && serveT <= 0) stepBall(b, dt);
+  balls = balls.filter(b => b.alive);
+  if (!balls.length && state === 'play') serve(server);
+
+  // power-ups (modo arcade)
+  if (cfg.arcade) {
+    if (!power) { powerT -= dt; if (powerT <= 0) power = { ...U.pick(POWERS), x: W / 2 + U.rand(-120, 120), y: U.rand(70, H - 70), t: 0 }; }
+    else {
+      power.t += dt;
+      for (const b of balls) if (Math.hypot(b.x - power.x, b.y - power.y) < 26) { grantPower(b.vx > 0 ? p1 : p2, power); power = null; powerT = U.rand(6, 10); break; }
+      if (power && power.t > 9) { power = null; powerT = 3; }
+    }
+  }
+  wallHits.forEach(w => w.t += dt); wallHits = wallHits.filter(w => w.t < .5);
+  if (t % 0.03 < dt) for (const b of balls) trail.push({ x: b.x, y: b.y, a: 1, c: b.vx > 0 ? '#2ef2ff' : '#ff3dd0' });
+  trail.forEach(p => p.a -= dt * 3); trail = trail.filter(p => p.a > 0);
+}
+function stepBall(b, dt) {
+  b.vy += b.spin * dt; b.spin *= Math.pow(.25, dt);
+  b.x += b.vx * dt; b.y += b.vy * dt;
+  if (b.y < BR) { b.y = BR; b.vy = Math.abs(b.vy); SFX.play('bounce'); FX.burst(b.x, b.y, { n: 6, color: ['#fff', '#b8a0ff'], speed: 110, life: .3, size: 2 }); wallHits.push({ x: b.x, y: 0, t: 0 }); }
+  if (b.y > H - BR) { b.y = H - BR; b.vy = -Math.abs(b.vy); SFX.play('bounce'); FX.burst(b.x, b.y, { n: 6, color: ['#fff', '#b8a0ff'], speed: 110, life: .3, size: 2 }); wallHits.push({ x: b.x, y: H, t: 0 }); }
+  for (const p of [p1, p2]) {
+    const front = p.side === 1 ? p.x + PW / 2 : p.x - PW / 2;
+    const toward = p.side === 1 ? b.vx < 0 : b.vx > 0;
+    if (!toward) continue;
+    const crossing = p.side === 1 ? (b.x - BR <= front && b.x - BR >= front - 24) : (b.x + BR >= front && b.x + BR <= front + 24);
+    if (crossing && Math.abs(b.y - p.y) <= p.h / 2 + BR) hit(b, p);
+  }
+  // escudo
+  if (b.x < 6 && p1.shield > 0) { b.x = 6; b.vx = Math.abs(b.vx); p1.shield = 0; SFX.play('power'); FX.ring(6, b.y, { color: '#2ef2ff', max: 60 }); }
+  if (b.x > W - 6 && p2.shield > 0) { b.x = W - 6; b.vx = -Math.abs(b.vx); p2.shield = 0; SFX.play('power'); FX.ring(W - 6, b.y, { color: '#2ef2ff', max: 60 }); }
+  if (b.x < -20) goal(b, 2); else if (b.x > W + 20) goal(b, 1);
+}
+function hit(b, p) {
+  const rel = U.clamp((b.y - p.y) / (p.h / 2), -1, 1);
+  const ang = rel * 1.05;                         // hasta ~60°
+  b.sp = Math.min(b.sp * 1.06 + 12, 1150) * (p.fast > 0 ? 1.25 : 1);
+  const dir = p.side === 1 ? 1 : -1;
+  b.vx = Math.cos(ang) * b.sp * dir; b.vy = Math.sin(ang) * b.sp;
+  b.spin = -p.vy * .9;                             // efecto según cómo movés la paleta
+  b.x = p.side === 1 ? p.x + PW / 2 + BR + 1 : p.x - PW / 2 - BR - 1;
+  rally++; maxRally = Math.max(maxRally, rally); BG.hud.set('rally', rally, true); p.flash = 1;
+  FX.ring(b.x, b.y, { color: p.side === 1 ? '#2ef2ff' : '#ff3dd0', max: 46 + Math.min(40, b.sp / 25), width: 3 });
+  SFX.tone({ f: 300 + Math.min(rally, 20) * 25, dur: .07, type: 'square', vol: .14 });
+  FX.burst(b.x, b.y, { n: 10, color: [p.side === 1 ? '#2ef2ff' : '#ff3dd0', '#fff'], speed: 200, angle: dir > 0 ? 0 : Math.PI, spread: 1.1, life: .35 });
+  if (b.sp > 800) FX.shake(2, .1);
+  if (rally && rally % 10 === 0) BG.ui.toast(`¡PELOTEO DE ${rally}!`, '#ffd400');
+}
+function grantPower(p, pw) {
+  SFX.play('power'); FX.ring(pw.x, pw.y, { color: pw.color, max: 70 });
+  BG.ui.toast((p.side === 1 ? (cfg.mode === 'cpu' ? 'VOS: ' : 'J1: ') : (cfg.mode === 'cpu' ? 'CPU: ' : 'J2: ')) + pw.name, pw.color);
+  if (pw.id === 'grow') p.grow = 9;
+  if (pw.id === 'fast') p.fast = 8;
+  if (pw.id === 'shield') p.shield = 12;
+  if (pw.id === 'multi') {
+    const src = balls[0]; if (!src) return;
+    for (let k = 0; k < 2; k++) { const nb = { ...newBall(src.dir), x: src.x, y: src.y, sp: src.sp }; const a = U.rand(-.7, .7); const d = Math.sign(src.vx) || 1; nb.vx = Math.cos(a) * src.sp * d; nb.vy = Math.sin(a) * src.sp; balls.push(nb); }
+  }
+}
+function goal(b, who) {
+  b.alive = false;
+  if (balls.filter(x => x.alive).length) return;   // con multipelota, el punto va cuando cae la última
+  if (who === 1) s1++; else s2++;
+  server = who === 1 ? -1 : 1;
+  BG.hud.set('p1', s1, who === 1); BG.hud.set('p2', s2, who === 2);
+  FX.shake(7, .35); FX.flash(who === 1 ? '#2ef2ff' : '#ff3dd0', .25);
+  FX.burst(who === 1 ? W - 10 : 10, b.y, { n: 30, color: [who === 1 ? '#2ef2ff' : '#ff3dd0', '#fff'], speed: 320, life: .7, angle: who === 1 ? Math.PI : 0, spread: 1.2 });
+  SFX.play(who === 1 || cfg.mode === '2p' ? 'coin' : 'hurt');
+  if (s1 >= WIN || s2 >= WIN) end();
+}
+function end() {
+  state = 'over'; BG.stop();
+  const youWin = s1 > s2;
+  let r = null;
+  if (cfg.mode === 'cpu') {
+    const d = DIFFS[cfg.diff];
+    const score = youWin ? 1000 * d.mult + (WIN - s2) * 100 * d.mult + maxRally * 10 : s1 * 50 * d.mult + maxRally * 5;
+    r = BG.submitScore(score, { won: youWin });
+    SFX.play(youWin ? 'win' : 'lose');
+    setTimeout(() => BG.ui.gameOver({
+      win: youWin, title: youWin ? '¡LE GANASTE A LA CPU!' : 'GANÓ LA CPU', icon: youWin ? '🏆' : '🤖',
+      score, isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+      stats: [{ label: 'Resultado', value: `${s1} - ${s2}` }, { label: 'Dificultad', value: d.name }, { label: 'Peloteo máx.', value: maxRally }],
+      onRetry: () => start(cfg), onMenu: showMenu,
+    }), 700);
+  } else {
+    SFX.play('win');
+    setTimeout(() => BG.ui.gameOver({
+      win: true, title: youWin ? '¡GANÓ EL JUGADOR 1!' : '¡GANÓ EL JUGADOR 2!', icon: '🏆',
+      stats: [{ label: 'Resultado', value: `${s1} - ${s2}` }, { label: 'Peloteo máx.', value: maxRally }],
+      onRetry: () => start(cfg), onMenu: showMenu,
+    }), 700);
+  }
+}
+// Demo de fondo en el menú: dos CPU jugando
+let demoB = { x: W / 2, y: H / 2, vx: 300, vy: 140 };
+function demo(dt) {
+  if (!p1) { p1 = paddle(34, 1); p2 = paddle(W - 34, 2); }
+  demoB.x += demoB.vx * dt; demoB.y += demoB.vy * dt;
+  if (demoB.y < BR || demoB.y > H - BR) demoB.vy *= -1;
+  if (demoB.x < 50 || demoB.x > W - 50) demoB.vx *= -1;
+  p1.y = U.lerp(p1.y, demoB.y, dt * 5); p2.y = U.lerp(p2.y, demoB.y, dt * 5);
+  balls = [{ ...demoB, alive: true }];
+}
+
+// ── Dibujo ────────────────────────────────────────────────────────────────
+function render() {
+  const fever = state === 'play' ? Math.min(1, rally / 14) : 0;
+  const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#07051a'); bg.addColorStop(.5, `rgb(${14 + fever * 30},${8},${34 + fever * 20})`); bg.addColorStop(1, '#07051a');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  // piso con grilla en perspectiva
+  ctx.save(); ctx.globalAlpha = .5;
+  for (let i = -8; i <= 8; i++) {
+    ctx.strokeStyle = i < 0 ? 'rgba(46,242,255,.10)' : i > 0 ? 'rgba(255,61,208,.10)' : 'rgba(255,255,255,.12)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(W / 2 + i * 26, H / 2); ctx.lineTo(W / 2 + i * 120, H); ctx.moveTo(W / 2 + i * 26, H / 2); ctx.lineTo(W / 2 + i * 120, 0); ctx.stroke();
+  }
+  for (let k = 1; k <= 6; k++) { const o = (k / 6) ** 1.8 * H / 2; ctx.strokeStyle = 'rgba(160,120,255,.08)'; ctx.beginPath(); ctx.moveTo(0, H / 2 + o); ctx.lineTo(W, H / 2 + o); ctx.moveTo(0, H / 2 - o); ctx.lineTo(W, H / 2 - o); ctx.stroke(); }
+  ctx.restore();
+  const glow = ctx.createRadialGradient(W / 2, H / 2, 10, W / 2, H / 2, W * .55);
+  glow.addColorStop(0, `rgba(${90 + fever * 120},50,200,${.18 + fever * .12})`); glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+  ctx.save(); FX.applyShake(ctx);
+  // bordes de neón (mitad cian / mitad magenta)
+  const edge = ctx.createLinearGradient(0, 0, W, 0); edge.addColorStop(0, '#2ef2ff'); edge.addColorStop(.5, '#ffffff'); edge.addColorStop(1, '#ff3dd0');
+  ctx.save(); ctx.shadowColor = '#a070ff'; ctx.shadowBlur = 12 + fever * 14; ctx.fillStyle = edge;
+  ctx.fillRect(0, 0, W, 4); ctx.fillRect(0, H - 4, W, 4); ctx.restore();
+  for (const w of wallHits) { const k = 1 - w.t / .5; ctx.fillStyle = `rgba(255,255,255,${k * .8})`; ctx.fillRect(w.x - 60 * (1 - k) - 10, w.y === 0 ? 0 : H - 6, 20 + 120 * (1 - k), 6); }
+  // arcos de gol que se encienden cuando la pelota se acerca
+  for (const side of [1, 2]) {
+    const near = Math.max(0, ...((balls || []).map(b => side === 1 ? 1 - b.x / (W * .3) : 1 - (W - b.x) / (W * .3))));
+    const col = side === 1 ? '46,242,255' : '255,61,208', x = side === 1 ? 0 : W - 30;
+    const gg = ctx.createLinearGradient(x, 0, x + 30, 0); gg.addColorStop(side === 1 ? 0 : 1, `rgba(${col},${.12 + near * .35})`); gg.addColorStop(side === 1 ? 1 : 0, `rgba(${col},0)`);
+    ctx.fillStyle = gg; ctx.fillRect(x, 4, 30, H - 8);
+  }
+  // red central que late
+  ctx.save(); ctx.shadowColor = '#fff'; ctx.shadowBlur = 8;
+  for (let y = 14; y < H - 10; y += 26) { const a = .18 + .14 * Math.sin(t * 4 - y * .03) + fever * .2; ctx.fillStyle = `rgba(255,255,255,${a})`; ctx.fillRect(W / 2 - 2, y, 4, 14); }
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(W / 2, H / 2, 60, 0, 7); ctx.stroke();
+  // marcador gigante de fondo
+  if (state !== 'menu') {
+    D.text(ctx, String(s1), W / 2 - 90, 74, { size: 72, color: 'rgba(46,242,255,.2)', glow: 'rgba(46,242,255,.4)' });
+    D.text(ctx, String(s2), W / 2 + 90, 74, { size: 72, color: 'rgba(255,61,208,.2)', glow: 'rgba(255,61,208,.4)' });
+    if (fever > .7) D.text(ctx, '🔥 FIEBRE DE PELOTEO 🔥', W / 2, H - 24, { size: 13, color: '#ffd400', alpha: .5 + Math.sin(t * 8) * .3 });
+  }
+  // power-up
+  if (power) {
+    const pul = 1 + Math.sin(power.t * 6) * .1;
+    ctx.save(); ctx.translate(power.x, power.y); ctx.scale(pul, pul);
+    ctx.shadowColor = power.color; ctx.shadowBlur = 20; ctx.strokeStyle = power.color; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, 18, 0, 7); ctx.stroke(); ctx.restore();
+    D.text(ctx, power.icon, power.x, power.y + 1, { size: 16, color: power.color, family: 'body' });
+  }
+  // estela
+  for (const p of trail) { ctx.globalAlpha = p.a * .5; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, BR * p.a, 0, 7); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  // paletas
+  for (const p of [p1, p2]) {
+    if (!p) continue;
+    const col = p.fast > 0 ? '#ff3d6e' : p.side === 1 ? '#2ef2ff' : '#ff3dd0', f = p.flash || 0;
+    const sq = 1 + f * .25, pw = PW * sq, ph = p.h / (1 + f * .08);
+    ctx.save(); ctx.globalAlpha = .25; ctx.fillStyle = col; D.rr(ctx, p.x - pw / 2, p.y - ph / 2 - p.vy * .03, pw, ph, 7); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = 22 + f * 30;
+    const pg = ctx.createLinearGradient(p.x - pw / 2, 0, p.x + pw / 2, 0); pg.addColorStop(0, col); pg.addColorStop(.5, f > .2 ? '#ffffff' : col); pg.addColorStop(1, col);
+    ctx.fillStyle = pg; D.rr(ctx, p.x - pw / 2, p.y - ph / 2, pw, ph, 7); ctx.fill(); ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,.6)'; D.rr(ctx, p.x - 2, p.y - p.h / 2 + 8, 4, p.h - 16, 2); ctx.fill();
+    if (p.shield > 0) { ctx.strokeStyle = `rgba(46,242,255,${.4 + Math.sin(t * 8) * .3})`; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(p.side === 1 ? 4 : W - 4, 10); ctx.lineTo(p.side === 1 ? 4 : W - 4, H - 10); ctx.stroke(); }
+  }
+  // pelotas
+  for (const b of balls || []) {
+    const sp = Math.hypot(b.vx, b.vy), col = state === 'menu' ? '#ffffff' : (sp > 750 ? '#ffd400' : '#ffffff');
+    const st = Math.min(.9, sp / 1400);
+    ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx)); ctx.scale(1 + st, 1 - st * .35);
+    ctx.shadowColor = sp > 750 ? '#ffb000' : '#bfe8ff'; ctx.shadowBlur = 24; ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(0, 0, BR, 0, 7); ctx.fill(); ctx.restore();
+  }
+  if (state === 'play' && serveT > 0) D.text(ctx, serveT > .55 ? '¡LISTOS!' : '¡YA!', W / 2, H / 2 + 100, { size: 22, color: '#fff', glow: '#ff3dd0', alpha: Math.min(1, serveT * 2) });
+  FX.draw(ctx);
+  ctx.restore();
+  FX.drawFlash(ctx, W, H);
+}
+
+// ── Táctil: cada jugador arrastra en su mitad ─────────────────────────────
+const touches = new Map();
+view.canvas.addEventListener('pointerdown', e => { const p = view.toLocal(e.clientX, e.clientY); const side = cfg.mode === '2p' && p.x > W / 2 ? 2 : 1; touches.set(e.pointerId, side); touchTarget[side] = p.y; });
+view.canvas.addEventListener('pointermove', e => { if (!touches.has(e.pointerId)) return; touchTarget[touches.get(e.pointerId)] = view.toLocal(e.clientX, e.clientY).y; });
+const endT = e => { const s = touches.get(e.pointerId); touches.delete(e.pointerId); if (s && ![...touches.values()].includes(s)) touchTarget[s] = null; };
+view.canvas.addEventListener('pointerup', endT); view.canvas.addEventListener('pointercancel', endT);
+
+// ── Arranque ──────────────────────────────────────────────────────────────
+if (BG.thumb) {
+  p1 = paddle(34, 1); p2 = paddle(W - 34, 2); p1.y = 260; p2.y = 160; s1 = 4; s2 = 3; state = 'play'; serveT = 0;
+  balls = [{ x: 470, y: 210, vx: 500, vy: -200, alive: true }];
+  for (let i = 0; i < 18; i++) trail.push({ x: 470 - i * 14, y: 210 + i * 5.6, a: 1 - i / 18, c: '#2ef2ff' });
+  power = { ...POWERS[1], x: 300, y: 120, t: 0 };
+  BG.stop(); update = () => {};
+} else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

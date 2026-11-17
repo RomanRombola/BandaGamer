@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>War - Carta Alta</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+<style>
+#ctl { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 5; }
+#ctl .bg-btn { padding: 12px 18px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="bg-stage"><div id="ctl"></div></div>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  CARTAS — BandaGamer
+//  GUERRA: la carta más alta se lleva las dos; si empatan… ¡GUERRA!
+//  MAYOR O MENOR: adiviná si la próxima carta es mayor o menor. Cuanto más
+//  difícil la apuesta, más puntos. Un error y se termina.
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 760, H = 520, CW = 110, CH = 154;
+const SUITS = [{ s: '♠', c: '#1b1b2e' }, { s: '♥', c: '#e11d48' }, { s: '♦', c: '#e11d48' }, { s: '♣', c: '#1b1b2e' }];
+const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+BG.init({
+  id: 'cartas', title: 'CARTAS', icon: '🃏', accent: '#ffd400', accent2: '#e11d48', pausable: false,
+  subtitle: 'Guerra clásica contra la CPU o Mayor o Menor para hacer la racha más larga.',
+  hud: [{ id: 'a', label: 'Vos', color: '#2ef2ff' }, { id: 'b', label: 'CPU', color: '#ff3d6e' }, { id: 'c', label: 'Ronda', color: '#ffd400' }],
+  help: '<kbd>Espacio</kbd> dar vuelta · Mayor o menor: <kbd>↑</kbd> mayor · <kbd>↓</kbd> menor',
+});
+const view = BG.canvas(W, H, { reserveH: 70 });
+const ctx = view.ctx;
+const ctl = document.getElementById('ctl');
+
+const deck = () => U.shuffle(SUITS.flatMap((s, si) => RANKS.map((r, ri) => ({ r: ri, si }))));
+let mode = 'menu', A = [], B = [], table = [], round = 0, auto = false, autoT = 0, busy = false, msg = '', msgT = 0, cards = [], hl = { deck: [], cur: null, next: null, score: 0, streak: 0, phase: 'guess' };
+
+// ── Cartas animadas en pantalla ───────────────────────────────────────────
+function card(c, x, y, faceUp, opts = {}) { const o = { c, x, y, tx: x, ty: y, face: faceUp ? 1 : 0, tf: faceUp ? 1 : 0, rot: opts.rot || 0, scale: 1, glow: null }; cards.push(o); return o; }
+function moveTo(o, x, y, face) { o.tx = x; o.ty = y; if (face != null) o.tf = face; }
+function drawCard(o) {
+  const flip = Math.abs(Math.cos(o.face * Math.PI / 2 + (1 - o.face) * Math.PI / 2 * 0)) ;
+  const showFace = o.face > .5;
+  const sx = Math.abs(o.face * 2 - 1);   // 1 → 0 → 1 durante el volteo
+  ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot); ctx.scale(Math.max(.02, sx) * o.scale, o.scale);
+  if (o.glow) { ctx.shadowColor = o.glow; ctx.shadowBlur = 28; }
+  else { ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 4; }
+  D.rr(ctx, -CW / 2, -CH / 2, CW, CH, 10); ctx.fillStyle = showFace ? '#fbfbff' : '#3b1d6e'; ctx.fill();
+  ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+  if (showFace && o.c) {
+    const s = SUITS[o.c.si], r = RANKS[o.c.r];
+    ctx.fillStyle = s.c;
+    D.text(ctx, r, -CW / 2 + 16, -CH / 2 + 18, { size: 18, color: s.c, family: 'body' });
+    D.text(ctx, s.s, -CW / 2 + 16, -CH / 2 + 38, { size: 16, color: s.c, family: 'body' });
+    ctx.save(); ctx.rotate(Math.PI); D.text(ctx, r, -CW / 2 + 16, -CH / 2 + 18, { size: 18, color: s.c, family: 'body' }); D.text(ctx, s.s, -CW / 2 + 16, -CH / 2 + 38, { size: 16, color: s.c, family: 'body' }); ctx.restore();
+    if (o.c.r >= 9 && o.c.r <= 11) {   // figuras
+      ctx.strokeStyle = s.c; ctx.lineWidth = 2; D.rr(ctx, -CW / 2 + 22, -CH / 2 + 26, CW - 44, CH - 52, 6); ctx.stroke();
+      D.text(ctx, ['👑', '👸', '🤴'][o.c.r - 9], 0, -8, { size: 40, family: 'body' });
+      D.text(ctx, r, 0, 34, { size: 22, color: s.c });
+    } else D.text(ctx, s.s, 0, 2, { size: o.c.r === 12 ? 64 : 46, color: s.c, family: 'body' });
+  } else if (!showFace) {
+    ctx.strokeStyle = 'rgba(255,212,0,.6)'; ctx.lineWidth = 2; D.rr(ctx, -CW / 2 + 8, -CH / 2 + 8, CW - 16, CH - 16, 7); ctx.stroke();
+    ctx.save(); D.rr(ctx, -CW / 2 + 12, -CH / 2 + 12, CW - 24, CH - 24, 5); ctx.clip();
+    ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 1.5;
+    for (let k = -CH; k < CH; k += 12) { ctx.beginPath(); ctx.moveTo(-CW / 2, k); ctx.lineTo(CW / 2, k + CW); ctx.moveTo(CW / 2, k); ctx.lineTo(-CW / 2, k + CW); ctx.stroke(); }
+    ctx.restore();
+    D.text(ctx, '🎮', 0, 2, { size: 26, family: 'body' });
+  }
+  ctx.restore();
+  void flip;
+}
+function pile(x, y, n, label, col) {
+  for (let i = Math.min(n, 6) - 1; i >= 0; i--) { const o = { c: null, x: x - i * 1.5, y: y - i * 1.5, face: 0, rot: 0, scale: 1 }; drawCard(o); }
+  D.text(ctx, `${label} · ${n}`, x, y + CH / 2 + 18, { size: 12, color: col });
+}
+
+// ── GUERRA ────────────────────────────────────────────────────────────────
+const MAXR = 60;
+function startWar() {
+  mode = 'war'; const d = deck(); A = d.slice(0, 26); B = d.slice(26); table = []; cards = []; round = 0; auto = false; busy = false;
+  BG.hud.setAll({ a: 26, b: 26, c: `0/${MAXR}` }); document.querySelector('[data-hud="c"] span').textContent = 'Ronda';
+  ctl.innerHTML = '<button class="bg-btn primary" id="b-flip">🂠 DAR VUELTA</button><button class="bg-btn" id="b-auto">⏩ AUTO</button>';
+  document.getElementById('b-flip').onclick = flipWar; document.getElementById('b-auto').onclick = () => { auto = !auto; document.getElementById('b-auto').classList.toggle('sel', auto); };
+  BG.start(); say('¡Dale vuelta a tu carta!');
+}
+function say(m) { msg = m; msgT = 2.4; }
+function flipWar(war) {
+  if (busy || mode !== 'war') return;
+  if (!A.length || !B.length) return endWar();
+  busy = true; round += war === true ? 0 : 1;
+  if (war !== true) cards = [];
+  const ca = A.shift(), cb = B.shift();
+  table.push(ca, cb);
+  const off = cards.length * 6;
+  const oa = card(ca, 120, 400, false), ob = card(cb, W - 120, 120, false);
+  moveTo(oa, W / 2 - 80 - off, H / 2, 1); moveTo(ob, W / 2 + 80 + off, H / 2, 1);
+  SFX.play('flip');
+  setTimeout(() => {
+    if (ca.r === cb.r) {
+      say('¡GUERRA!'); SFX.play('explode'); FX.shake(6, .3); FX.flash('#e11d48', .25);
+      // 3 boca abajo + 1 boca arriba (o lo que quede)
+      const nA = Math.min(3, Math.max(0, A.length - 1)), nB = Math.min(3, Math.max(0, B.length - 1));
+      for (let i = 0; i < nA; i++) { const c = A.shift(); table.push(c); const o = card(c, 120, 400, false); moveTo(o, W / 2 - 150 - off - i * 14, H / 2 + 50, 0); }
+      for (let i = 0; i < nB; i++) { const c = B.shift(); table.push(c); const o = card(c, W - 120, 120, false); moveTo(o, W / 2 + 150 + off + i * 14, H / 2 - 50, 0); }
+      hudWar();
+      if (!A.length || !B.length) { setTimeout(() => { busy = false; endWar(); }, 600); return; }
+      setTimeout(() => { busy = false; flipWar(true); }, 900);
+      return;
+    }
+    const youWin = ca.r > cb.r;
+    (youWin ? A : B).push(...U.shuffle(table));
+    const n = table.length; table = [];
+    oa.glow = youWin ? '#39ff88' : null; ob.glow = youWin ? null : '#ff3d6e';
+    say(youWin ? `¡Ganaste ${n} cartas!` : `La CPU se lleva ${n}`); SFX.play(youWin ? 'coin' : 'error');
+    setTimeout(() => { cards.forEach(o => moveTo(o, youWin ? 120 : W - 120, youWin ? 400 : 120, 0)); }, 550);
+    setTimeout(() => { cards = []; busy = false; hudWar(); if (!A.length || !B.length || round >= MAXR) endWar(); }, 1000);
+  }, 450);
+}
+function hudWar() { BG.hud.setAll({ a: A.length, b: B.length, c: `${round}/${MAXR}` }); }
+function endWar() {
+  mode = 'over'; BG.stop(); auto = false; ctl.innerHTML = '';
+  const won = A.length > B.length;
+  let r = null; if (won) { let w = 0; try { w = (+localStorage.getItem('bg_war_wins') || 0) + 1; localStorage.setItem('bg_war_wins', w); } catch (e) { w = 1; } r = BG.submitScore(w, { mode: 'guerra', won: true }); }
+  SFX.play(won ? 'win' : 'lose');
+  BG.ui.gameOver({ win: won, icon: won ? '🏆' : '🃏', title: won ? '¡GANASTE LA GUERRA!' : A.length === B.length ? 'EMPATE' : 'GANÓ LA CPU', sub: `Vos ${A.length} cartas · CPU ${B.length}`,
+    isRecord: r && (r.isRecord || r.first), recordText: r ? `🏆 Victorias totales: ${BG.getBest('guerra')}` : null, onRetry: startWar, onMenu: showMenu });
+}
+
+// ── MAYOR O MENOR ─────────────────────────────────────────────────────────
+function startHL() {
+  mode = 'hl'; cards = []; hl = { deck: deck(), cur: null, next: null, score: 0, streak: 0, phase: 'guess' };
+  hl.cur = hl.deck.pop(); const o = card(hl.cur, W / 2 - 90, -120, false); moveTo(o, W / 2 - 90, H / 2, 1); hl.curO = o;
+  BG.hud.setAll({ a: 0, b: 0, c: 51 });
+  document.querySelector('[data-hud="a"] span').textContent = 'Puntos'; document.querySelector('[data-hud="b"] span').textContent = 'Racha'; document.querySelector('[data-hud="c"] span').textContent = 'Mazo';
+  ctl.innerHTML = '<button class="bg-btn primary" id="b-hi">▲ MAYOR</button><button class="bg-btn primary" id="b-lo" style="background:linear-gradient(135deg,#e11d48,#7c3aed)">▼ MENOR</button>';
+  document.getElementById('b-hi').onclick = () => guess(1); document.getElementById('b-lo').onclick = () => guess(-1);
+  BG.start(); say('¿La próxima es mayor o menor?'); updOdds();
+}
+function odds(dir) { const n = hl.deck.length; if (!n) return 0; const k = hl.deck.filter(c => dir > 0 ? c.r > hl.cur.r : c.r < hl.cur.r).length; return k / n; }
+function updOdds() {
+  const hi = odds(1), lo = odds(-1);
+  const bh = document.getElementById('b-hi'), bl = document.getElementById('b-lo'); if (!bh) return;
+  bh.innerHTML = `▲ MAYOR <small>${Math.round(hi * 100)}% · +${pts(hi)}</small>`; bl.innerHTML = `▼ MENOR <small>${Math.round(lo * 100)}% · +${pts(lo)}</small>`;
+  bh.disabled = hi === 0; bl.disabled = lo === 0;
+}
+const pts = p => p <= 0 ? 0 : Math.max(1, Math.round(10 / p));
+function guess(dir) {
+  if (mode !== 'hl' || hl.phase !== 'guess' || BG.ui.open) return;
+  const p = odds(dir); if (p === 0) return;
+  hl.phase = 'reveal';
+  const nx = hl.deck.pop(); const o = card(nx, W / 2 + 90, -120, false); moveTo(o, W / 2 + 90, H / 2, 1);
+  SFX.play('flip');
+  setTimeout(() => {
+    const ok = nx.r !== hl.cur.r && (dir > 0 ? nx.r > hl.cur.r : nx.r < hl.cur.r);
+    if (ok) {
+      const g = pts(p) * (1 + Math.floor(hl.streak / 5) * .5) | 0; hl.score += g; hl.streak++;
+      o.glow = '#39ff88'; SFX.play('coin'); FX.text(W / 2 + 90, H / 2 - 100, '+' + g, { color: '#39ff88', size: 22 }); if (hl.streak % 5 === 0) { SFX.play('levelup'); say(`¡Racha de ${hl.streak}! Multiplicador ×${1 + Math.floor(hl.streak / 5) * .5}`); }
+      BG.hud.set('a', hl.score, true); BG.hud.set('b', hl.streak); BG.hud.set('c', hl.deck.length);
+      setTimeout(() => {
+        moveTo(hl.curO, -150, H / 2, 1); moveTo(o, W / 2 - 90, H / 2, 1); o.glow = null;
+        setTimeout(() => { cards = cards.filter(x => x !== hl.curO); hl.cur = nx; hl.curO = o; hl.phase = 'guess';
+          if (!hl.deck.length) { hl.deck = deck().filter(c => !(c.r === nx.r && c.si === nx.si)); say('¡Mazo nuevo!'); }
+          updOdds(); }, 350);
+      }, 600);
+    } else {
+      o.glow = '#ff3d6e'; SFX.play(nx.r === hl.cur.r ? 'error' : 'lose'); FX.shake(6, .3);
+      say(nx.r === hl.cur.r ? '¡Iguales! Se pierde' : '¡Fallaste!');
+      setTimeout(endHL, 900);
+    }
+  }, 450);
+}
+function endHL() {
+  mode = 'over'; BG.stop(); ctl.innerHTML = '';
+  const r = hl.score > 0 ? BG.submitScore(hl.score, { mode: 'mayormenor' }) : null;
+  BG.ui.gameOver({ icon: '🃏', title: 'FIN DE LA RACHA', score: hl.score, isRecord: r && (r.isRecord || r.first), recordText: r && r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Aciertos', value: hl.streak }, { label: 'Récord', value: U.fmt(BG.getBest('mayormenor') || hl.score) }], onRetry: startHL, onMenu: showMenu });
+}
+function showMenu() {
+  mode = 'menu'; BG.stop(); ctl.innerHTML = ''; cards = [];
+  BG.ui.show({ icon: '🃏', title: 'CARTAS', sub: BG.game.subtitle,
+    buttons: [
+      { label: '▲▼ MAYOR O MENOR', small: 'Arriesgá y sumá puntos · récord ' + U.fmt(BG.getBest('mayormenor') || 0), primary: true, onClick: () => { BG.ui.hide(); startHL(); } },
+      { label: '⚔ GUERRA VS CPU', small: 'La carta más alta gana · ' + MAXR + ' rondas · victorias: ' + (BG.getBest('guerra') || 0), onClick: () => { BG.ui.hide(); startWar(); } },
+    ], help: BG.game.help });
+}
+
+// ── Bucle ─────────────────────────────────────────────────────────────────
+function update(dt) {
+  for (const o of cards) { o.x = U.lerp(o.x, o.tx, Math.min(1, dt * 10)); o.y = U.lerp(o.y, o.ty, Math.min(1, dt * 10)); o.face = U.lerp(o.face, o.tf, Math.min(1, dt * 9)); if (Math.abs(o.face - o.tf) < .01) o.face = o.tf; }
+  if (msgT > 0) msgT -= dt;
+  if (mode === 'war' && auto && !busy) { autoT -= dt; if (autoT <= 0) { autoT = .25; flipWar(); } }
+}
+function render() {
+  const g = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, W * .7); g.addColorStop(0, '#0f6b3a'); g.addColorStop(1, '#063019');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,212,0,.25)'; ctx.lineWidth = 3; D.rr(ctx, 14, 14, W - 28, H - 28, 30); ctx.stroke();
+  ctx.save(); FX.applyShake(ctx);
+  if (mode === 'war' || (mode === 'over' && A.length + B.length)) { pile(120, 400, A.length, 'VOS', '#2ef2ff'); pile(W - 120, 120, B.length, 'CPU', '#ff3d6e'); }
+  if (mode === 'hl' || mode === 'over' && hl.cur) { pile(W - 110, H / 2, hl.deck.length, 'MAZO', '#ffd400'); }
+  for (const o of cards) drawCard(o);
+  if (msgT > 0) D.text(ctx, msg, W / 2, 50, { size: 20, color: '#fff', glow: '#ffd400', alpha: Math.min(1, msgT * 2) });
+  if (mode === 'menu') { [[-2, -.2], [0, 0], [2, .2]].forEach(([k, r], i) => drawCard({ c: { r: 12 - i, si: i }, x: W / 2 + k * 60, y: H / 2, face: 1, rot: r, scale: 1 })); }
+  FX.draw(ctx);
+  ctx.restore();
+}
+BG.input.on('action', () => { if (mode === 'war') flipWar(); });
+BG.input.on('up', () => guess(1)); BG.input.on('down', () => guess(-1));
+if (BG.thumb) { mode = 'menu'; update = () => {}; } else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

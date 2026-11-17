@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Trivia</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+<style>
+#wrap { width: min(720px, 100%); padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+#meta { display: flex; justify-content: space-between; align-items: center; font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 1.5px; color: #8b8ba3; }
+#cat { color: #ffd400; }
+#timer { height: 8px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; }
+#timer i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #39ff88, #ffd400); transition: width .1s linear; }
+#timer i.low { background: linear-gradient(90deg, #ff3d6e, #ff9a1f); }
+#q { background: rgba(18,18,40,.9); border: 1px solid rgba(255,255,255,.1); border-radius: 18px; padding: 24px 20px; font-size: clamp(19px, 3.6vw, 25px); font-weight: 700; line-height: 1.3; text-align: center; min-height: 120px; display: flex; align-items: center; justify-content: center; animation: qin .3s ease; }
+@keyframes qin { from { opacity: 0; transform: translateY(10px); } }
+#opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 520px) { #opts { grid-template-columns: 1fr; } }
+.op { position: relative; padding: 16px 14px 16px 48px; border-radius: 14px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05); color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700; text-align: left; cursor: pointer; transition: transform .1s, background .15s, border-color .15s; }
+.op:hover { border-color: #ffd400; background: rgba(255,212,0,.08); }
+.op:active { transform: scale(.98); }
+.op b { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border-radius: 7px; background: rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-size: 11px; }
+.op.ok { background: linear-gradient(135deg, #16a34a, #15803d); border-color: #39ff88; animation: okp .4s; }
+.op.no { background: linear-gradient(135deg, #be123c, #9f1239); border-color: #ff3d6e; animation: shake .4s; }
+.op.gone { opacity: .15; pointer-events: none; }
+.op:disabled { cursor: default; }
+@keyframes okp { 50% { transform: scale(1.04); } }
+@keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+#life { display: flex; gap: 8px; justify-content: center; }
+#life .bg-btn { padding: 8px 12px; font-size: 11px; }
+#life .bg-btn:disabled { opacity: .3; }
+</style>
+</head>
+<body>
+<div id="bg-stage">
+  <div id="wrap">
+    <div id="meta"><span id="cat">—</span><span id="qn">1/10</span></div>
+    <div id="timer"><i id="ti"></i></div>
+    <div id="q">¿Listo?</div>
+    <div id="opts"></div>
+    <div id="life"><button class="bg-btn" id="l50">✂ 50/50</button><button class="bg-btn" id="lt">⏱ +10 s</button><button class="bg-btn" id="ls">⏭ SALTAR</button></div>
+  </div>
+</div>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  TRIVIA — BandaGamer
+//  ~130 preguntas en 7 categorías · 10 por partida · 15 s cada una
+//  Puntos por velocidad y racha · comodines 50/50, +10 s y saltar
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, sfx: SFX } = BG;
+const BANK = {
+  'GEOGRAFÍA': `¿Cuál es la capital de Australia?|Canberra|Sídney|Melbourne|Perth
+¿Cuál es el río más largo de Sudamérica?|Amazonas|Paraná|Orinoco|Río de la Plata
+¿En qué continente está Egipto?|África|Asia|Europa|Oceanía
+¿Cuál es el país más grande del mundo por superficie?|Rusia|Canadá|China|Estados Unidos
+¿Cuál es la montaña más alta de América?|Aconcagua|Everest|Kilimanjaro|Mont Blanc
+¿Cuál es la capital de Canadá?|Ottawa|Toronto|Montreal|Vancouver
+¿Qué océano baña las costas de Argentina?|Atlántico|Pacífico|Índico|Ártico
+¿Cuál es el desierto no polar más árido del mundo?|Atacama|Sahara|Gobi|Kalahari
+¿Cuál es la capital de Japón?|Tokio|Kioto|Osaka|Seúl
+¿Qué país tiene forma de bota?|Italia|Grecia|Portugal|Croacia
+¿Entre qué dos países están las Cataratas del Iguazú?|Argentina y Brasil|Argentina y Paraguay|Brasil y Paraguay|Uruguay y Brasil
+¿Cuál es la capital de Perú?|Lima|Cusco|Quito|La Paz
+¿Cuál es el océano más grande?|Pacífico|Atlántico|Índico|Ártico
+¿Qué país de Sudamérica tiene más habitantes?|Brasil|Argentina|Colombia|Perú
+¿Cuál es la capital de Uruguay?|Montevideo|Punta del Este|Colonia|Salto
+¿Qué cordillera recorre el oeste de Sudamérica?|Los Andes|Los Alpes|Los Pirineos|El Himalaya
+¿En qué país está la Torre Eiffel?|Francia|Bélgica|Italia|Suiza
+¿Cuál es la capital de Brasil?|Brasilia|Río de Janeiro|San Pablo|Salvador
+¿Qué lago comparten Perú y Bolivia?|Titicaca|Nahuel Huapi|Maracaibo|Poopó
+¿En qué provincia está el glaciar Perito Moreno?|Santa Cruz|Chubut|Tierra del Fuego|Neuquén`,
+  'CIENCIA': `¿Cuál es el planeta más grande del sistema solar?|Júpiter|Saturno|Neptuno|Tierra
+¿Qué gas necesitamos respirar para vivir?|Oxígeno|Nitrógeno|Helio|Hidrógeno
+¿Cuál es el símbolo químico del oro?|Au|Ag|Or|Go
+¿Cuántos huesos tiene aproximadamente un adulto?|206|150|300|412
+¿Qué planeta es conocido como el planeta rojo?|Marte|Venus|Mercurio|Júpiter
+¿A qué temperatura hierve el agua a nivel del mar?|100 °C|90 °C|80 °C|120 °C
+¿Cuál es el órgano más grande del cuerpo humano?|La piel|El hígado|El cerebro|El intestino
+¿Quién propuso la teoría de la relatividad?|Albert Einstein|Isaac Newton|Galileo Galilei|Nikola Tesla
+¿Cuántas patas tiene una araña?|8|6|10|12
+¿Qué tipo de animal es la ballena?|Mamífero|Pez|Reptil|Anfibio
+¿Cuál es el planeta más cercano al Sol?|Mercurio|Venus|Marte|Tierra
+¿Qué parte de la planta hace principalmente la fotosíntesis?|Las hojas|Las raíces|El tallo|Las flores
+¿Cuál es la fórmula química del agua?|H2O|CO2|O2|NaCl
+¿Cuántos planetas tiene el sistema solar?|8|9|7|10
+¿Qué vitamina produce el cuerpo con la luz del sol?|Vitamina D|Vitamina C|Vitamina A|Vitamina B12
+¿Qué metal es líquido a temperatura ambiente?|Mercurio|Plomo|Hierro|Aluminio
+¿Qué instrumento mide la temperatura?|Termómetro|Barómetro|Higrómetro|Sismógrafo
+¿Cuál es aproximadamente la velocidad de la luz?|300.000 km/s|30.000 km/s|3.000 km/s|1.000.000 km/s
+¿Qué órgano bombea la sangre?|El corazón|Los pulmones|Los riñones|El hígado
+¿Cuál es el animal terrestre más rápido?|Guepardo|León|Caballo|Gacela`,
+  'HISTORIA': `¿En qué año llegó Colón a América?|1492|1500|1810|1453
+¿En qué año fue la Revolución de Mayo?|1810|1816|1806|1853
+¿En qué año se declaró la independencia argentina?|1816|1810|1820|1853
+¿Quién cruzó los Andes para liberar Chile y Perú?|José de San Martín|Manuel Belgrano|Simón Bolívar|Domingo Sarmiento
+¿Quién creó la bandera argentina?|Manuel Belgrano|José de San Martín|Domingo Sarmiento|Mariano Moreno
+¿En qué año llegó el ser humano a la Luna?|1969|1959|1979|1972
+¿Qué civilización construyó Machu Picchu?|Inca|Azteca|Maya|Romana
+¿Quién fue el primer emperador romano?|Augusto|Julio César|Nerón|Calígula
+¿En qué año cayó el Muro de Berlín?|1989|1991|1985|1979
+¿Qué civilización construyó las pirámides de Giza?|Egipcia|Romana|Griega|Persa
+¿Quién pintó la Mona Lisa?|Leonardo da Vinci|Miguel Ángel|Rafael|Pablo Picasso
+¿En qué año terminó la Segunda Guerra Mundial?|1945|1939|1918|1950
+¿Qué barco se hundió en 1912 tras chocar con un iceberg?|Titanic|Lusitania|Britannic|Queen Mary
+¿Quién escribió "Don Quijote de la Mancha"?|Miguel de Cervantes|Lope de Vega|Francisco de Quevedo|Garcilaso de la Vega
+¿A quién se llamó "el Libertador" en el norte de Sudamérica?|Simón Bolívar|José de San Martín|Bernardo O'Higgins|José Artigas
+¿En qué ciudad se declaró la independencia argentina?|San Miguel de Tucumán|Buenos Aires|Córdoba|Rosario
+¿Qué inventó Johannes Gutenberg?|La imprenta de tipos móviles|El teléfono|La brújula|El reloj de péndulo`,
+  'DEPORTES': `¿Cuántos jugadores tiene un equipo de fútbol en la cancha?|11|10|9|12
+¿Cuántos Mundiales de fútbol ganó Argentina hasta 2022?|3|2|4|1
+¿En qué país se jugó el Mundial 2022?|Qatar|Rusia|Brasil|Emiratos Árabes
+¿Cuántos puntos vale un triple en básquet?|3|2|4|1
+¿Cada cuántos años se hacen los Juegos Olímpicos de verano?|4|2|3|5
+¿Qué país ganó más Copas del Mundo de fútbol?|Brasil|Alemania|Italia|Argentina
+¿En qué deporte se usa un volante (o pluma)?|Bádminton|Tenis|Golf|Squash
+¿Qué deporte jugaba Manu Ginóbili?|Básquet|Fútbol|Tenis|Rugby
+¿Cómo se llama la selección argentina de rugby?|Los Pumas|Las Leonas|Los Leones|Los Tigres
+¿Cómo se llama la selección argentina femenina de hockey?|Las Leonas|Las Pumas|Las Panteras|Las Águilas
+¿En qué deporte se hace un "ace"?|Tenis|Fútbol|Natación|Boxeo
+¿Cuánto dura un partido de fútbol sin tiempo agregado?|90 minutos|80 minutos|100 minutos|60 minutos
+¿Qué argentino ganó el US Open de tenis en 2009?|Juan Martín del Potro|Guillermo Vilas|David Nalbandian|Gastón Gaudio
+¿De qué país es originario el judo?|Japón|China|Corea|Tailandia
+¿Cuántos jugadores hay por equipo en cancha en el vóley?|6|5|7|11`,
+  'CINE Y MÚSICA': `¿Cómo se llama el muñeco de nieve de "Frozen"?|Olaf|Sven|Kristoff|Hans
+¿Qué superhéroe es Bruce Wayne?|Batman|Superman|Iron Man|Spider-Man
+¿Qué superhéroe es Peter Parker?|Spider-Man|Batman|Flash|Hulk
+¿Cómo se llama el joven mago de la saga de J. K. Rowling?|Harry Potter|Frodo|Merlín|Gandalf
+¿Qué instrumento tiene normalmente 88 teclas?|Piano|Acordeón|Arpa|Xilófono
+¿Cuántas cuerdas tiene una guitarra clásica?|6|4|5|7
+¿Qué banda grabó "Bohemian Rhapsody"?|Queen|The Beatles|The Rolling Stones|AC/DC
+¿De qué ciudad eran los Beatles?|Liverpool|Londres|Manchester|Birmingham
+¿En qué película un pez payaso busca a su hijo?|Buscando a Nemo|La Sirenita|El Espantatiburones|Moana
+¿Cómo se llama el vaquero de "Toy Story"?|Woody|Buzz|Rex|Jessie
+¿A qué músico argentino le decían "el Flaco"?|Luis Alberto Spinetta|Charly García|Gustavo Cerati|Fito Páez
+¿Qué banda lideraba Gustavo Cerati?|Soda Stereo|Los Redondos|Sumo|Virus
+¿Cómo se llama el ogro verde de DreamWorks?|Shrek|Hulk|Grinch|Fiona
+¿Qué saga tiene a Luke Skywalker y Darth Vader?|Star Wars|Star Trek|Dune|Avatar`,
+  'VIDEOJUEGOS': `¿Cómo se llama el plomero más famoso de Nintendo?|Mario|Luigi|Wario|Toad
+¿De qué color es Sonic?|Azul|Rojo|Verde|Amarillo
+¿En qué juego se construye con bloques en un mundo abierto?|Minecraft|Fortnite|Among Us|FIFA
+¿Cómo se llama la princesa de la saga de Link?|Zelda|Peach|Daisy|Samus
+¿Qué juego tiene impostores y tripulantes?|Among Us|Fall Guys|Valorant|Overwatch
+¿Qué pieza del Tetris es una línea de cuatro?|I|O|T|S
+¿En qué año salió el primer Pac-Man?|1980|1975|1985|1990
+¿Qué empresa creó PlayStation?|Sony|Nintendo|Microsoft|Sega
+¿Qué empresa creó Xbox?|Microsoft|Sony|Nintendo|Apple
+¿Cuál es el Pokémon eléctrico y amarillo número 25?|Pikachu|Raichu|Jolteon|Electabuzz
+¿En qué ciudad ficticia transcurre GTA V?|Los Santos|Liberty City|Vice City|San Fierro
+¿Qué fantasma de Pac-Man es rojo?|Blinky|Pinky|Inky|Clyde`,
+  'CULTURA GENERAL': `¿Qué se festeja el 9 de julio en Argentina?|Día de la Independencia|Revolución de Mayo|Día de la Bandera|Día del Trabajador
+¿Cuál es la flor nacional argentina?|Ceibo|Jacarandá|Rosa|Girasol
+¿Qué bebida se toma con bombilla?|Mate|Café|Té|Chocolate
+¿Quién escribió "El Aleph"?|Jorge Luis Borges|Julio Cortázar|Ernesto Sábato|Adolfo Bioy Casares
+¿Quién escribió "Rayuela"?|Julio Cortázar|Jorge Luis Borges|Ernesto Sábato|Gabriel García Márquez
+¿Qué dulce típico argentino se hace con leche y azúcar?|Dulce de leche|Membrillo|Dulce de batata|Mazapán
+¿Cuántos días tiene un año bisiesto?|366|365|364|360
+¿Cuál es el idioma con más hablantes nativos del mundo?|Chino mandarín|Inglés|Español|Hindi
+¿Cuántos lados tiene un hexágono?|6|5|7|8
+¿Cuánto es 7 × 8?|56|54|64|48
+¿Qué número es la "L" en números romanos?|50|100|500|10
+¿Cuál es la raíz cuadrada de 144?|12|14|11|16
+¿Cuántos grados tiene un ángulo recto?|90|180|45|360
+¿Qué día es Navidad?|25 de diciembre|24 de diciembre|1 de enero|6 de enero
+¿Cuántos minutos tiene un día?|1440|1240|1000|2400
+¿Qué color se obtiene mezclando azul y amarillo?|Verde|Violeta|Naranja|Marrón`,
+};
+const Q = Object.fromEntries(Object.entries(BANK).map(([k, v]) => [k, v.trim().split('\n').map(l => { const [q, a, ...w] = l.split('|'); return { q, a, w, k }; })]));
+const TIME = 15, PER = 10;
+
+BG.init({
+  id: 'trivia', title: 'TRIVIA', icon: '❓', accent: '#ffd400', accent2: '#ff3d6e', scroll: true, pausable: false, muteKey: false,
+  subtitle: '10 preguntas, 15 segundos cada una. Cuanto más rápido contestás, más puntos.',
+  hud: [{ id: 'score', label: 'Puntos' }, { id: 'streak', label: 'Racha', color: '#39ff88' }, { id: 'ok', label: 'Correctas', color: '#2ef2ff' }],
+  help: 'Teclas <kbd>1</kbd>-<kbd>4</kbd> (o <kbd>A</kbd>-<kbd>D</kbd>) para responder.',
+});
+let cat = BG.load('cat', 'MEZCLA'), list, idx, score, streak, maxStreak, correct, tLeft, timer, locked, lifes, seen = new Set(BG.load('seen', []));
+const $ = id => document.getElementById(id);
+
+function pickQuestions() {
+  const pool = cat === 'MEZCLA' ? Object.values(Q).flat() : Q[cat];
+  let fresh = pool.filter(x => !seen.has(x.q));
+  if (fresh.length < PER) { pool.forEach(x => seen.delete(x.q)); fresh = pool.slice(); }
+  return U.shuffle(fresh.slice()).slice(0, PER);
+}
+function start() {
+  list = pickQuestions(); idx = 0; score = 0; streak = 0; maxStreak = 0; correct = 0; lifes = { f: true, t: true, s: true };
+  BG.hud.setAll({ score: 0, streak: 0, ok: 0 }); BG.start(); show();
+}
+function show() {
+  const it = list[idx]; locked = false; tLeft = TIME;
+  $('cat').textContent = it.k; $('qn').textContent = `${idx + 1}/${PER}`;
+  const q = $('q'); q.textContent = it.q; q.style.animation = 'none'; void q.offsetWidth; q.style.animation = '';
+  const opts = U.shuffle([it.a, ...it.w]);
+  $('opts').innerHTML = opts.map((o, i) => `<button class="op" data-v="${U.esc(o)}"><b>${'ABCD'[i]}</b>${U.esc(o)}</button>`).join('');
+  $('opts').querySelectorAll('.op').forEach(b => b.onclick = () => answer(b));
+  ['l50', 'lt', 'ls'].forEach((id, k) => $(id).disabled = !lifes['fts'[k]]);
+  clearInterval(timer); timer = setInterval(tick, 100); paintTimer();
+}
+function paintTimer() { const i = $('ti'); i.style.width = (tLeft / TIME * 100) + '%'; i.classList.toggle('low', tLeft < 5); }
+function tick() {
+  tLeft = Math.max(0, tLeft - .1); paintTimer();
+  if (tLeft <= 5 && Math.abs(tLeft - Math.round(tLeft)) < .05) SFX.play('tick');
+  if (tLeft <= 0) answer(null);
+}
+function answer(btn) {
+  if (locked) return; locked = true; clearInterval(timer);
+  const it = list[idx]; seen.add(it.q); BG.save('seen', [...seen].slice(-200));
+  const btns = [...$('opts').querySelectorAll('.op')];
+  btns.forEach(b => { b.disabled = true; if (b.dataset.v === it.a) b.classList.add('ok'); });
+  if (btn && btn.dataset.v === it.a) {
+    streak++; correct++; maxStreak = Math.max(maxStreak, streak);
+    const pts = Math.round((100 + tLeft * 10) * Math.min(2, 1 + (streak - 1) * .15));
+    score += pts; SFX.play('coin'); if (streak >= 3) SFX.play('combo', streak);
+    BG.ui.toast(`+${pts}${streak >= 3 ? `  · RACHA ×${streak}` : ''}`, '#39ff88');
+  } else {
+    if (btn) btn.classList.add('no'); streak = 0; SFX.play('error');
+    BG.ui.toast(btn ? 'Incorrecta' : '¡Tiempo!', '#ff3d6e');
+  }
+  BG.hud.set('score', score, true); BG.hud.set('streak', streak); BG.hud.set('ok', correct);
+  setTimeout(next, 1500);
+}
+function next() { idx++; if (idx >= PER) end(); else show(); }
+function end() {
+  BG.stop();
+  const r = score > 0 ? BG.submitScore(score, { won: correct >= 6 }) : { isRecord: false };
+  SFX.play(correct >= 6 ? 'win' : 'lose');
+  const msg = correct === 10 ? '¡PERFECTO! 🤯' : correct >= 8 ? '¡Sos un genio!' : correct >= 6 ? '¡Muy bien!' : correct >= 4 ? 'Nada mal' : 'A seguir aprendiendo';
+  BG.ui.gameOver({ win: correct >= 6, icon: correct >= 8 ? '🧠' : '❓', title: `${correct}/10`, sub: msg, score, isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Racha máx.', value: maxStreak }, { label: 'Récord', value: U.fmt(BG.getBest() || score) }, { label: 'Categoría', value: cat }], onRetry: start, onMenu: showMenu });
+}
+function showMenu() {
+  const cats = ['MEZCLA', ...Object.keys(Q)];
+  BG.ui.show({ icon: '❓', title: 'TRIVIA', sub: BG.game.subtitle,
+    html: `<div class="bg-label">Categoría</div><div class="bg-seg" style="flex-wrap:wrap">${cats.map(c => `<button class="bg-btn ${c === cat ? 'sel' : ''}" data-cat="${c}" style="min-width:120px;font-size:11px;padding:9px">${c}</button>`).join('')}</div>`,
+    buttons: [{ label: '▶ JUGAR', primary: true, onClick: () => { BG.ui.hide(); start(); } }],
+    stats: BG.getBest() ? [{ label: 'Tu récord', value: U.fmt(BG.getBest()) }] : null, help: BG.game.help,
+    onShow: c => c.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { cat = b.dataset.cat; BG.save('cat', cat); c.querySelectorAll('[data-cat]').forEach(x => x.classList.toggle('sel', x === b)); SFX.play('tick'); }) });
+}
+$('l50').onclick = () => { if (locked || !lifes.f) return; lifes.f = false; $('l50').disabled = true; const it = list[idx]; U.shuffle([...$('opts').querySelectorAll('.op')].filter(b => b.dataset.v !== it.a)).slice(0, 2).forEach(b => b.classList.add('gone')); SFX.play('swap'); };
+$('lt').onclick = () => { if (locked || !lifes.t) return; lifes.t = false; $('lt').disabled = true; tLeft = Math.min(TIME + 10, tLeft + 10); SFX.play('power'); };
+$('ls').onclick = () => {
+  if (locked || !lifes.s) return; lifes.s = false; $('ls').disabled = true; clearInterval(timer);
+  const pool = (cat === 'MEZCLA' ? Object.values(Q).flat() : Q[cat]).filter(x => !list.includes(x));
+  if (pool.length) list[idx] = U.pick(pool); SFX.play('whoosh'); show();
+};
+BG.input.onKey((e, code, down) => { if (!down || e.repeat || BG.ui.open) return; const m = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, KeyA: 0, KeyB: 1, KeyC: 2, KeyD: 3, Numpad1: 0, Numpad2: 1, Numpad3: 2, Numpad4: 3 }[code]; if (m != null) { const b = $('opts').querySelectorAll('.op')[m]; if (b && !b.classList.contains('gone')) answer(b); } });
+
+if (BG.thumb) { list = pickQuestions(); idx = 3; lifes = { f: true, t: false, s: true }; show(); clearInterval(timer); tLeft = 9; paintTimer(); $('opts').querySelectorAll('.op')[0].classList.add('ok'); }
+else BG.ready.then(showMenu);
+</script>
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Galaga</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  GALAGA — BandaGamer
+//  Entradas en curva por grupos · formación que se balancea y "respira"
+//  Picadas con loop que disparan · jefes de 2 golpes (sueltan NAVE DOBLE)
+//  Etapa de desafío cada 4 · velocidad creciente · vida extra a 20k y 70k
+//  Modo INVASORES (fusión con Space Invaders de 90s-games, MIT © 2026 Prateek):
+//  la formación marcha y acelera a medida que caen, escudos que se desgastan,
+//  platillo misterioso y un solo disparo a la vez, como en el clásico.
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 480, H = 640, PY = 590;
+const TYPES = {
+  boss: { hp: 2, pts: [150, 400], col: '#39ff88', col2: '#c04dff' },
+  butterfly: { hp: 1, pts: [80, 160], col: '#ff3d6e' },
+  bee: { hp: 1, pts: [50, 100], col: '#2ef2ff' },
+};
+
+BG.init({
+  id: 'galaga', title: 'GALAGA', icon: '👾', accent: '#ff3d6e', accent2: '#ffd400', music: true, post: { bloom: .65, vignette: .45, scan: .06, thumbFx: true },
+  subtitle: 'Defendé la galaxia de las oleadas de insectos espaciales.',
+  hud: [{ id: 'score', label: 'Puntos' }, { id: 'stage', label: 'Etapa', color: '#ffd400' }, { id: 'lives', label: 'Naves', color: '#2ef2ff', value: '▲▲' }],
+  help: '<kbd>←</kbd><kbd>→</kbd> mover · <kbd>Espacio</kbd> disparar · <kbd>P</kbd> pausa',
+  helpTouch: 'Arrastrá en la pantalla para mover · se dispara solo mientras tocás.',
+  touch: { dpad: 'h', buttons: [{ action: 'action', label: '●' }] },
+  onRestart: () => start(mode), onMenu: () => showMenu(),
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+const stars = Array.from({ length: 110 }, () => ({ x: U.rand(W), y: U.rand(H), z: U.rand(.3, 1), c: U.pick(['#fff', '#ffd400', '#2ef2ff', '#ff3d6e', '#c04dff']) }));
+
+let mode = 'galaga', inv = null;
+let player, shots, eShots, enemies, score, lives, stage, state = 'menu', t = 0, sway = 0, breathe = 0, diveT = 0, stageT = 0, challenge = false, hits = 0, nextLives, banner = null, touchX = null, touchFire = false;
+
+// Curvas de entrada (Catmull-Rom); el último punto se reemplaza por el lugar en la formación
+const PATHS = {
+  A: [[240, -30], [240, 110], [160, 250], [70, 230], [90, 140], [160, 130]],
+  C: [[-30, 520], [110, 440], [230, 330], [160, 220], [90, 180], [160, 140]],
+};
+const mirror = p => p.map(([x, y]) => [W - x, y]);
+const PATHSET = { A: PATHS.A, B: mirror(PATHS.A), C: PATHS.C, D: mirror(PATHS.C) };
+function crPoint(pts, u) {
+  const n = pts.length - 1, seg = Math.min(n - 1, Math.floor(u * n)), lt = u * n - seg;
+  const p0 = pts[Math.max(0, seg - 1)], p1 = pts[seg], p2 = pts[seg + 1], p3 = pts[Math.min(n, seg + 2)];
+  const t2 = lt * lt, t3 = t2 * lt;
+  const f = (a, b, c, d) => .5 * ((2 * b) + (-a + c) * lt + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+  return [f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1])];
+}
+function pathLen(pts) { let L = 0, pr = crPoint(pts, 0); for (let i = 1; i <= 40; i++) { const p = crPoint(pts, i / 40); L += Math.hypot(p[0] - pr[0], p[1] - pr[1]); pr = p; } return L; }
+
+function slotPos(e) {
+  const spread = 1 + Math.sin(breathe) * .08;
+  return [W / 2 + sway + (e.col - 4.5) * 38 * spread, 70 + e.row * 36 * (1 + Math.sin(breathe) * .04)];
+}
+function buildStage() {
+  enemies = []; hits = 0;
+  challenge = stage % 4 === 3;
+  const layout = [];
+  for (let c = 3; c <= 6; c++) layout.push({ type: 'boss', row: 0, col: c });
+  for (let r = 1; r <= 2; r++) for (let c = 1; c <= 8; c++) layout.push({ type: 'butterfly', row: r, col: c });
+  for (let r = 3; r <= 4; r++) for (let c = 0; c <= 9; c++) layout.push({ type: 'bee', row: r, col: c });
+  // 5 grupos de 8 con su curva de entrada
+  const groups = [0, 8, 16, 24, 32].map(i => layout.slice(i, i + 8));
+  const used = new Set(); let gi = 0;
+  const order = ['A', 'C', 'D', 'B', 'A'];
+  for (const g of groups) {
+    let k = 0;
+    for (const L of g) {
+      const key = L.row + ',' + L.col; if (used.has(key)) continue; used.add(key);
+      const pathKey = gi === 0 ? (k % 2 ? 'B' : 'A') : order[gi];
+      enemies.push({ ...L, hp: TYPES[L.type].hp, state: 'wait', delay: gi * 2.6 + k * .14 + .8, path: PATHSET[pathKey], u: 0, x: -99, y: -99, a: 0, shotCD: U.rand(.5, 2) });
+      k++;
+    }
+    gi++;
+  }
+  layout.forEach(L => { const key = L.row + ',' + L.col; if (!used.has(key)) enemies.push({ ...L, hp: TYPES[L.type].hp, state: 'wait', delay: 13 + Math.random(), path: PATHSET.A, u: 0, x: -99, y: -99, a: 0, shotCD: 1 }); });
+  enemies.forEach(e => e.len = pathLen(e.path));
+  stageT = 0; diveT = 4;
+  banner = { txt: challenge ? 'ETAPA DE DESAFÍO' : `ETAPA ${stage}`, t: 2.4 };
+  BG.hud.set('stage', stage, true);
+  SFX.play(challenge ? 'levelup' : 'power');
+}
+function newPlayer() { return { x: W / 2, alive: true, inv: 2, dual: false, cool: 0 }; }
+function start(m) {
+  mode = m || mode;
+  player = newPlayer(); shots = []; eShots = []; score = 0; lives = 3; stage = 1; nextLives = [20000, 70000]; drops = [];
+  BG.hud.set('score', 0); updLives(); FX.clear();
+  if (mode === 'inv') { enemies = []; buildInv(); } else { inv = null; buildStage(); }
+  state = 'play'; BG.start();
+}
+function updLives() { BG.hud.set('lives', lives > 0 ? '▲'.repeat(Math.min(lives, 6)) : '—'); }
+function showMenu() {
+  state = 'menu'; BG.stop();
+  if (!enemies) { stage = 1; buildStage(); enemies.forEach(e => { e.state = 'form'; }); banner = null; }
+  const best = k => { const b = BG.getBest(k); return b != null ? 'récord ' + U.fmt(b) : ''; };
+  BG.ui.menu({ stats: null, buttons: [
+    { label: '▶ GALAGA', small: best('default') || 'picadas, jefes y nave doble', primary: mode !== 'inv', onClick: () => start('galaga') },
+    { label: '👾 INVASORES', small: best('inv') || 'el clásico: formación que marcha y escudos', primary: mode === 'inv', onClick: () => start('inv') }] });
+}
+function addScore(n) {
+  score += n; BG.hud.set('score', score, true);
+  if (nextLives.length && score >= nextLives[0]) { nextLives.shift(); lives++; updLives(); SFX.play('levelup'); BG.ui.toast('¡NAVE EXTRA!', '#2ef2ff'); }
+}
+function fire() {
+  const max = mode === 'inv' ? 1 : player.dual ? 4 : 2;
+  if (shots.length >= max || player.cool > 0) return;
+  player.cool = .12;
+  const xs = player.dual ? [player.x - 13, player.x + 13] : [player.x];
+  xs.forEach(x => shots.push({ x, y: PY - 16 }));
+  SFX.play('laser');
+}
+function startDive(e, escort) {
+  e.state = 'dive'; e.phase = 0; e.cx = e.x; e.cy = e.y; e.dir = e.x < W / 2 ? -1 : 1; e.loopA = 0;
+  e.targetX = player.x; e.shots = challenge ? 0 : (e.type === 'boss' ? 2 : U.randInt(1, 2));
+  if (escort) e.escort = true;
+  SFX.tone({ f: 900, f2: 300, dur: .5, type: 'sine', vol: .06 });
+}
+function killPlayer() {
+  if (!player.alive || player.inv > 0) return;
+  if (player.dual) { player.dual = false; player.inv = 1.2; FX.burst(player.x + 13, PY, { n: 24, color: ['#fff', '#ff3d6e'], speed: 200 }); SFX.play('hurt'); return; }
+  player.alive = false; lives--; updLives();
+  FX.burst(player.x, PY, { n: 40, color: ['#fff', '#ff3d6e', '#ffd400', '#2ef2ff'], speed: 260, life: 1 });
+  FX.shake(8, .4); FX.flash('#ff3d6e', .3); SFX.play('explode');
+  setTimeout(() => { if (lives <= 0) over(); else { player = newPlayer(); } }, 1700);
+}
+function over() {
+  if (state === 'over') return;
+  state = 'over'; BG.stop();
+  const md = mode === 'inv' ? 'inv' : 'default', r = BG.submitScore(score, { mode: md });
+  SFX.play('lose');
+  BG.ui.gameOver({ icon: '👾', title: inv && inv.invaded ? '¡INVADIERON LA TIERRA!' : 'GAME OVER', score, isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Récord', value: U.fmt(BG.getBest(md) || score) }, { label: mode === 'inv' ? 'Oleada' : 'Etapa', value: stage }], onRetry: () => start(mode), onMenu: showMenu });
+}
+function hitEnemy(e) {
+  e.hp--;
+  if (e.hp > 0) { SFX.play('hit'); FX.burst(e.x, e.y, { n: 8, color: ['#c04dff', '#fff'], speed: 120, life: .3 }); return; }
+  const tp = TYPES[e.type];
+  const pts = challenge ? 100 : tp.pts[e.state === 'form' ? 0 : 1];
+  addScore(pts); hits++;
+  if (e.state !== 'form' || e.type === 'boss') FX.text(e.x, e.y, '+' + pts, { color: tp.col, size: 13 });
+  FX.burst(e.x, e.y, { n: 18, color: [tp.col, '#fff', '#ffd400'], speed: 180, life: .5 });
+  SFX.play(e.type === 'boss' ? 'explode' : 'hit');
+  if (e.type === 'boss' && !challenge && !player.dual && U.chance(.4)) drops.push({ x: e.x, y: e.y });
+  e.state = 'dead';
+}
+let drops = [];
+
+function update(dt) {
+  t += dt;
+  for (const s of stars) { s.y += (30 + s.z * 90) * dt; if (s.y > H) { s.y = 0; s.x = U.rand(W); } }
+  sway = Math.sin(t * .8) * 28; breathe += dt * 2.2;
+  if (state !== 'play') { if (enemies && mode !== 'inv') enemies.forEach(e => { if (e.state === 'form') [e.x, e.y] = slotPos(e); }); return; }
+  stageT += dt;
+  if (banner) { banner.t -= dt; if (banner.t <= 0) banner = null; }
+  const I = BG.input;
+  // jugador
+  if (player.alive) {
+    if (touchX != null) player.x = U.lerp(player.x, touchX, Math.min(1, dt * 14));
+    else player.x += I.axisX() * 300 * dt;
+    player.x = U.clamp(player.x, 22, W - 22);
+    player.cool -= dt; player.inv = Math.max(0, player.inv - dt);
+    if (I.isDown('action') || touchFire) fire();
+  }
+  for (const s of shots) s.y -= 640 * dt;
+  shots = shots.filter(s => s.y > -10);
+  const espd = 210 + stage * 10;
+  for (const s of eShots) { s.x += s.vx * dt; s.y += s.vy * dt; }
+  eShots = eShots.filter(s => s.y < H + 10);
+  if (mode === 'inv') return updateInv(dt);
+  // enemigos
+  const alive = enemies.filter(e => e.state !== 'dead');
+  for (const e of alive) {
+    if (e.state === 'wait') { e.delay -= dt; if (e.delay <= 0) e.state = 'enter'; else continue; }
+    if (e.state === 'enter') {
+      e.u += (260 + stage * 8) * dt / e.len;
+      const [sx, sy] = slotPos(e);
+      let p;
+      if (challenge) { p = crPoint(e.path, Math.min(e.u, 1)); if (e.u >= 1) { e.state = 'leave'; e.vy = -260; } }
+      else if (e.u < 1) p = crPoint(e.path, e.u);
+      else { e.state = 'join'; e.jt = 0; e.jx = e.x; e.jy = e.y; p = [e.x, e.y]; }
+      if (p) { e.a = Math.atan2(p[1] - e.y, p[0] - e.x); e.x = p[0]; e.y = p[1]; }
+      // disparos durante la entrada
+      if (!challenge && stage > 1) { e.shotCD -= dt; if (e.shotCD <= 0 && e.y > 100 && e.y < 420) { e.shotCD = U.rand(2, 4); enemyShot(e, espd); } }
+      void sx; void sy;
+    } else if (e.state === 'join') {
+      e.jt = Math.min(1, e.jt + dt * 2.2);
+      const [sx, sy] = slotPos(e), k = U.ease.inOutQuad(e.jt);
+      const nx = U.lerp(e.jx, sx, k), ny = U.lerp(e.jy, sy, k);
+      e.a = Math.atan2(ny - e.y, nx - e.x); e.x = nx; e.y = ny;
+      if (e.jt >= 1) { e.state = 'form'; e.a = Math.PI / 2; }
+    } else if (e.state === 'form') {
+      [e.x, e.y] = slotPos(e); e.a = U.lerp(e.a, Math.PI / 2, dt * 6);
+    } else if (e.state === 'dive') {
+      if (e.phase === 0) {      // loop hacia arriba
+        e.loopA += dt * 4;
+        const r = 38;
+        e.x = e.cx + e.dir * (r - Math.cos(e.loopA) * r); e.y = e.cy - Math.sin(e.loopA) * r;
+        e.a = e.loopA * -e.dir + (e.dir > 0 ? Math.PI : 0) - Math.PI / 2;
+        if (e.loopA >= Math.PI * 1.15) { e.phase = 1; e.vx = 0; }
+      } else {                    // picada hacia el jugador, ondulando
+        const sp = 190 + stage * 10;
+        e.y += sp * dt;
+        const desired = e.targetX + Math.sin(e.y / 55) * 70;
+        e.vx = U.lerp(e.vx, (desired - e.x) * 2.2, dt * 3);
+        e.x += e.vx * dt;
+        e.a = Math.atan2(sp, e.vx);
+        if (e.shots > 0 && e.y > 200 && e.y < 460 && U.chance(dt * 1.6)) { e.shots--; enemyShot(e, espd); }
+        if (e.y > H + 30) { e.state = 'return'; e.y = -30; e.x = U.rand(60, W - 60); }
+      }
+      if (player.alive && Math.abs(e.x - player.x) < 18 && Math.abs(e.y - PY) < 16) { killPlayer(); hitEnemy(e); e.hp = 0; e.state = 'dead'; }
+    } else if (e.state === 'return') {
+      const [sx, sy] = slotPos(e);
+      const dx = sx - e.x, dy = sy - e.y, d = Math.hypot(dx, dy), sp = 220 * dt;
+      if (d < sp) { e.state = 'form'; } else { e.x += dx / d * sp; e.y += dy / d * sp; e.a = Math.atan2(dy, dx); }
+    } else if (e.state === 'leave') {
+      e.y += e.vy * dt; e.x += Math.cos(t * 3 + e.col) * 60 * dt;
+      if (e.y < -40) e.state = 'gone';
+    }
+    // colisión con mis disparos
+    if (e.state !== 'wait' && e.state !== 'gone' && e.state !== 'dead') {
+      const si = shots.findIndex(s => Math.abs(s.x - e.x) < 15 && Math.abs(s.y - e.y) < 14);
+      if (si >= 0) { shots.splice(si, 1); hitEnemy(e); }
+    }
+  }
+  // picadas periódicas
+  if (!challenge && player.alive) {
+    diveT -= dt;
+    const inForm = enemies.filter(e => e.state === 'form');
+    const entering = enemies.some(e => e.state === 'enter' || e.state === 'wait' || e.state === 'join');
+    if (diveT <= 0 && inForm.length && !entering) {
+      diveT = Math.max(.8, 3 - stage * .15) * U.rand(.7, 1.3);
+      const pick = U.pick(inForm);
+      startDive(pick);
+      if (pick.type === 'boss') inForm.filter(e => e.row === 1 && Math.abs(e.col - pick.col) <= 1 && e !== pick).slice(0, 2).forEach(e => startDive(e, true));
+      else if (stage > 2 && U.chance(.4)) { const other = U.pick(inForm.filter(e => e !== pick)); if (other) startDive(other); }
+    }
+  }
+  // disparos enemigos ↔ jugador
+  if (player.alive) for (let i = eShots.length - 1; i >= 0; i--) {
+    const s = eShots[i];
+    const hitMain = Math.abs(s.x - player.x) < 10 && Math.abs(s.y - PY) < 12;
+    const hitDual = player.dual && Math.abs(s.x - (player.x + 13)) < 9 && Math.abs(s.y - PY) < 12;
+    if (hitMain || hitDual) { eShots.splice(i, 1); killPlayer(); break; }
+  }
+  // cápsulas de nave doble
+  for (const d of drops) d.y += 120 * dt;
+  drops = drops.filter(d => {
+    if (player.alive && Math.abs(d.x - player.x) < 22 && Math.abs(d.y - PY) < 20) { player.dual = true; SFX.play('power'); BG.ui.toast('¡NAVE DOBLE!', '#39ff88'); return false; }
+    return d.y < H + 20;
+  });
+  // fin de etapa
+  if (enemies.every(e => e.state === 'dead' || e.state === 'gone')) {
+    if (challenge) {
+      const bonus = hits === 40 ? 10000 : hits * 100;
+      addScore(bonus);
+      banner = { txt: hits === 40 ? '¡PERFECTO! +10.000' : `${hits} ACIERTOS · +${U.fmt(bonus)}`, t: 2.5 };
+      if (hits === 40) SFX.play('win');
+    }
+    stage++; buildStage();
+  }
+}
+function enemyShot(e, sp) {
+  const a = Math.atan2(PY - e.y, player.x - e.x);
+  const k = U.clamp(Math.cos(a), -.35, .35);
+  eShots.push({ x: e.x, y: e.y + 8, vx: k * sp, vy: sp });
+}
+
+
+// ── Modo INVASORES ────────────────────────────────────────────────────────
+const ART = {
+  squid: [['...XX...', '..XXXX..', '.XXXXXX.', 'XX.XX.XX', 'XXXXXXXX', '.X.XX.X.', 'X......X', '.X....X.'],
+          ['...XX...', '..XXXX..', '.XXXXXX.', 'XX.XX.XX', 'XXXXXXXX', '..X..X..', '.X.XX.X.', 'X.X..X.X']],
+  crab: [['..X.....X..', '...X...X...', '..XXXXXXX..', '.XX.XXX.XX.', 'XXXXXXXXXXX', 'X.XXXXXXX.X', 'X.X.....X.X', '...XX.XX...'],
+         ['..X.....X..', 'X..X...X..X', 'X.XXXXXXX.X', 'XXX.XXX.XXX', 'XXXXXXXXXXX', '.XXXXXXXXX.', '..X.....X..', '.X.......X.']],
+  octo: [['....XXXX....', '.XXXXXXXXXX.', 'XXXXXXXXXXXX', 'XXX..XX..XXX', 'XXXXXXXXXXXX', '...XX..XX...', '..XX.XX.XX..', 'XX........XX'],
+         ['....XXXX....', '.XXXXXXXXXX.', 'XXXXXXXXXXXX', 'XXX..XX..XXX', 'XXXXXXXXXXXX', '..XXX..XXX..', '.XX..XX..XX.', '..XX....XX..']],
+  ufo: [['.....XXXXXX.....', '...XXXXXXXXXX...', '..XXXXXXXXXXXX..', '.XX.XX.XX.XX.XX.', 'XXXXXXXXXXXXXXXX', '..XXX..XX..XXX..', '...X........X...']],
+};
+const INV_COL = { squid: '#ff3dd0', crab: '#2ef2ff', octo: '#b8ff3e', ufo: '#ff3d3d' };
+const INV_PTS = { squid: 30, crab: 20, octo: 10 };
+const SPR_INV = {};
+for (const k in ART) SPR_INV[k] = ART[k].map(rows => { const c = document.createElement('canvas'), px = 3; c.width = rows[0].length * px + 8; c.height = rows.length * px + 8; const g = c.getContext('2d'); g.shadowColor = INV_COL[k]; g.shadowBlur = 6; g.fillStyle = INV_COL[k]; rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === 'X') g.fillRect(4 + x * px, 4 + y * px, px, px); })); return c; });
+const BUNKER = ['..XXXXXXXXX..', '.XXXXXXXXXXX.', 'XXXXXXXXXXXXX', 'XXXXXXXXXXXXX', 'XXXXXXXXXXXXX', 'XXXX.....XXXX', 'XXX.......XXX', 'XXX.......XXX'];
+const BC = 4, BY = PY - 78;
+function buildInv() {
+  const startY = 96 + Math.min(stage - 1, 5) * 16;
+  const aliens = [];
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 11; c++) aliens.push({ k: r === 0 ? 'squid' : r < 3 ? 'crab' : 'octo', r, c, x: 52 + c * 34, y: startY + r * 30, alive: true });
+  const bunkers = stage === 1 || !inv ? [0, 1, 2, 3].map(i => ({ x: 52 + i * 112, cells: BUNKER.map(row => [...row].map(ch => ch === 'X')) })) : inv.bunkers;
+  inv = { aliens, dir: 1, stepT: 0, frame: 0, beat: 0, ufo: null, ufoT: U.rand(14, 22), bunkers, invaded: false, shotT: 1.2 };
+  banner = { txt: `OLEADA ${stage}`, t: 2 }; BG.hud.set('stage', stage, true); SFX.play('power');
+}
+function bunkerHit(x, y, r) {
+  for (const b of inv.bunkers) {
+    const cx = Math.floor((x - b.x) / BC), cy = Math.floor((y - BY) / BC);
+    if (cy < 0 || cy >= BUNKER.length || cx < 0 || cx >= BUNKER[0].length || !b.cells[cy][cx]) continue;
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const row = b.cells[cy + dy]; if (row && row[cx + dx] !== undefined && (Math.abs(dx) + Math.abs(dy) <= r || Math.random() < .35)) row[cx + dx] = false; }
+    FX.burst(x, y, { n: 5, color: ['#39ff88', '#fff'], speed: 70, life: .25, size: 2 });
+    return true;
+  }
+  return false;
+}
+function updateInv(dt) {
+  const alive = inv.aliens.filter(a => a.alive);
+  if (!alive.length) { stage++; addScore(500); buildInv(); return; }
+  // la formación marcha: cuantos menos quedan, más rápido
+  inv.stepT -= dt;
+  if (inv.stepT <= 0) {
+    inv.stepT = .02 + .5 * (alive.length / 55) / (1 + (stage - 1) * .12);
+    const minX = Math.min(...alive.map(a => a.x)), maxX = Math.max(...alive.map(a => a.x));
+    if ((inv.dir > 0 && maxX + 8 > W - 22) || (inv.dir < 0 && minX - 8 < 22)) { inv.dir *= -1; alive.forEach(a => a.y += 16); }
+    else alive.forEach(a => a.x += inv.dir * 8);
+    inv.frame ^= 1;
+    SFX.tone({ f: [98, 87, 78, 73][inv.beat++ % 4], dur: .09, type: 'square', vol: .12 });
+    for (const a of alive) bunkerHit(a.x, a.y + 10, 1);
+    if (Math.max(...alive.map(a => a.y)) + 12 >= PY - 14) { inv.invaded = true; lives = 0; updLives(); FX.flash('#ff3d6e', .6); SFX.play('explode'); player.alive = false; return over(); }
+  }
+  // disparos de los invasores (desde el de más abajo de cada columna)
+  inv.shotT -= dt;
+  const maxShots = Math.min(6, 2 + Math.floor(stage / 2));
+  if (inv.shotT <= 0 && eShots.length < maxShots && player.alive) {
+    inv.shotT = U.rand(.35, 1.1) / (1 + stage * .1);
+    const bottoms = {}; for (const a of alive) if (!bottoms[a.c] || a.y > bottoms[a.c].y) bottoms[a.c] = a;
+    const list = Object.values(bottoms), near = list.filter(a => Math.abs(a.x - player.x) < 60);
+    const sh = U.pick(near.length && Math.random() < .6 ? near : list);
+    eShots.push({ x: sh.x, y: sh.y + 12, vx: 0, vy: 230 + stage * 12, zig: Math.random() < .4 });
+  }
+  for (const sh of eShots) if (sh.zig) sh.x += Math.sin(sh.y * .08) * 1.2;
+  // platillo misterioso
+  inv.ufoT -= dt;
+  if (!inv.ufo && inv.ufoT <= 0) { const d = Math.random() < .5 ? 1 : -1; inv.ufo = { x: d > 0 ? -30 : W + 30, y: 52, d }; }
+  if (inv.ufo) { const u = inv.ufo; u.x += u.d * 110 * dt; if (Math.floor(t * 8) % 2) SFX.tone({ f: 600 + Math.sin(t * 20) * 200, dur: .05, type: 'sine', vol: .03 }); if (u.x < -40 || u.x > W + 40) { inv.ufo = null; inv.ufoT = U.rand(16, 26); } }
+  // mis disparos
+  for (let i = shots.length - 1; i >= 0; i--) {
+    const s = shots[i];
+    if (bunkerHit(s.x, s.y, 1)) { shots.splice(i, 1); continue; }
+    if (inv.ufo && Math.abs(s.x - inv.ufo.x) < 24 && Math.abs(s.y - inv.ufo.y) < 12) {
+      const pts = U.pick([50, 100, 150, 300]); addScore(pts); FX.text(inv.ufo.x, inv.ufo.y, '+' + pts, { color: '#ff3d3d', size: 16 }); FX.burst(inv.ufo.x, inv.ufo.y, { n: 30, color: ['#ff3d3d', '#fff', '#ffd400'], speed: 220, life: .6 }); SFX.play('explode');
+      inv.ufo = null; inv.ufoT = U.rand(16, 26); shots.splice(i, 1); continue;
+    }
+    const a = alive.find(a => a.alive && Math.abs(a.x - s.x) < 17 && Math.abs(a.y - s.y) < 12);
+    if (a) { a.alive = false; shots.splice(i, 1); addScore(INV_PTS[a.k]); FX.burst(a.x, a.y, { n: 16, color: [INV_COL[a.k], '#fff'], speed: 170, life: .45 }); SFX.play('hit'); continue; }
+    // mi disparo choca con uno de ellos
+    const ei = eShots.findIndex(e => Math.abs(e.x - s.x) < 6 && Math.abs(e.y - s.y) < 10);
+    if (ei >= 0) { eShots.splice(ei, 1); shots.splice(i, 1); FX.burst(s.x, s.y, { n: 6, color: ['#fff'], speed: 90, life: .2, size: 2 }); }
+  }
+  // sus disparos: escudos y jugador
+  for (let i = eShots.length - 1; i >= 0; i--) {
+    const sh = eShots[i];
+    if (bunkerHit(sh.x, sh.y, 2)) { eShots.splice(i, 1); continue; }
+    if (player.alive && Math.abs(sh.x - player.x) < 11 && Math.abs(sh.y - PY) < 12) { eShots.splice(i, 1); killPlayer(); break; }
+  }
+}
+function renderInv() {
+  ctx.fillStyle = '#39ff88'; ctx.globalAlpha = .7; ctx.fillRect(10, PY + 22, W - 20, 2); ctx.globalAlpha = 1;
+  ctx.save(); ctx.shadowColor = '#39ff88'; ctx.shadowBlur = 8; ctx.fillStyle = '#39ff88';
+  for (const b of inv.bunkers) b.cells.forEach((row, y) => row.forEach((on, x) => { if (on) ctx.fillRect(b.x + x * BC, BY + y * BC, BC, BC); }));
+  ctx.restore();
+  for (const a of inv.aliens) if (a.alive) { const img = SPR_INV[a.k][inv.frame]; ctx.drawImage(img, a.x - img.width / 2, a.y - img.height / 2); }
+  if (inv.ufo) { const img = SPR_INV.ufo[0]; ctx.drawImage(img, inv.ufo.x - img.width / 2, inv.ufo.y - img.height / 2); }
+  for (const s of eShots) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.shadowColor = '#ff3dd0'; ctx.shadowBlur = 8; ctx.beginPath(); if (s.zig) { for (let k = 0; k < 4; k++) ctx.lineTo(s.x + (k % 2 ? 3 : -3), s.y - 12 + k * 4); } else { ctx.moveTo(s.x, s.y - 10); ctx.lineTo(s.x, s.y + 2); } ctx.stroke(); ctx.shadowBlur = 0; }
+}
+
+// ── Dibujo ────────────────────────────────────────────────────────────────
+function drawEnemy(e) {
+  const tp = TYPES[e.type];
+  const col = e.type === 'boss' && e.hp === 1 ? tp.col2 : tp.col;
+  const flap = Math.sin(t * 10 + e.col) * .35;
+  ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.a - Math.PI / 2);
+  ctx.shadowColor = col; ctx.shadowBlur = 12;
+  if (e.type === 'bee') {
+    ctx.fillStyle = '#ffd400'; ctx.beginPath(); ctx.ellipse(0, 0, 6, 9, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(-9, -2, 7, 4, -.6 - flap, 0, 7); ctx.ellipse(9, -2, 7, 4, .6 + flap, 0, 7); ctx.fill();
+    ctx.fillStyle = '#1a1a2e'; ctx.fillRect(-6, -1, 12, 2.4); ctx.fillRect(-5, 3, 10, 2);
+  } else if (e.type === 'butterfly') {
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(-13, -10 - flap * 8); ctx.lineTo(-11, 6); ctx.closePath(); ctx.moveTo(0, -4); ctx.lineTo(13, -10 - flap * 8); ctx.lineTo(11, 6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2ef2ff'; ctx.beginPath(); ctx.ellipse(0, 0, 4, 10, 0, 0, 7); ctx.fill();
+  } else {
+    ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(-11, 0, 9, 6, -.4 - flap * .6, 0, 7); ctx.ellipse(11, 0, 9, 6, .4 + flap * .6, 0, 7); ctx.fill();
+    ctx.fillStyle = e.hp === 2 ? '#ffd400' : '#ff9a1f'; ctx.beginPath(); ctx.ellipse(0, 0, 7, 12, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#ff3d6e'; ctx.fillRect(-4, -9, 3, 3); ctx.fillRect(1, -9, 3, 3);
+  }
+  ctx.restore();
+}
+function drawShip(x, y, a = 1) {
+  ctx.save(); ctx.translate(x, y); ctx.globalAlpha = a;
+  ctx.shadowColor = '#2ef2ff'; ctx.shadowBlur = 14;
+  ctx.fillStyle = '#e8f4ff'; ctx.beginPath(); ctx.moveTo(0, -16); ctx.lineTo(5, -4); ctx.lineTo(14, 8); ctx.lineTo(5, 6); ctx.lineTo(0, 12); ctx.lineTo(-5, 6); ctx.lineTo(-14, 8); ctx.lineTo(-5, -4); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ff3d6e'; ctx.fillRect(-14, 4, 3, 6); ctx.fillRect(11, 4, 3, 6);
+  ctx.fillStyle = '#2ef2ff'; ctx.beginPath(); ctx.ellipse(0, -3, 2.5, 5, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = `rgba(255,${150 + Math.random() * 100},0,.9)`; ctx.beginPath(); ctx.moveTo(-3, 12); ctx.lineTo(0, 18 + Math.random() * 6); ctx.lineTo(3, 12); ctx.fill();
+  ctx.restore();
+}
+function render() {
+  ctx.fillStyle = '#03030c'; ctx.fillRect(0, 0, W, H);
+  for (const s of stars) { ctx.globalAlpha = s.z * (Math.sin(t * 3 + s.x) * .3 + .7); ctx.fillStyle = s.c; ctx.fillRect(s.x, s.y, 1.6, 1.6 + s.z * 2); }
+  ctx.globalAlpha = 1;
+  ctx.save(); FX.applyShake(ctx);
+  if (mode === 'inv' && inv) renderInv();
+  else if (enemies) for (const e of enemies) if (e.state !== 'dead' && e.state !== 'wait' && e.state !== 'gone') drawEnemy(e);
+  for (const s of shots || []) { ctx.fillStyle = '#ffffff'; ctx.shadowColor = '#2ef2ff'; ctx.shadowBlur = 10; ctx.fillRect(s.x - 1.5, s.y - 8, 3, 14); }
+  ctx.shadowBlur = 0;
+  if (mode !== 'inv') for (const s of eShots || []) D.glowCircle(ctx, s.x, s.y, 3.2, '#ff3d6e', 12);
+  for (const d of drops) { D.glowCircle(ctx, d.x, d.y, 10, 'rgba(57,255,136,.3)', 16); drawShip(d.x, d.y, .9); }
+  if (player && player.alive && !(player.inv > 0 && Math.floor(player.inv * 10) % 2)) { drawShip(player.x, PY); if (player.dual) drawShip(player.x + 26, PY); }
+  FX.draw(ctx);
+  ctx.restore();
+  if (banner) D.text(ctx, banner.txt, W / 2, H / 2, { size: 22, color: '#fff', glow: challenge && mode !== 'inv' ? '#ffd400' : '#ff3d6e', blur: 18, alpha: Math.min(1, banner.t * 2) });
+  // vidas restantes
+  for (let i = 0; i < Math.min((lives || 0) - 1, 5); i++) { ctx.save(); ctx.translate(16 + i * 20, H - 14); ctx.scale(.55, .55); drawShip(0, 0); ctx.restore(); }
+  FX.drawFlash(ctx, W, H);
+}
+
+// ── Táctil: arrastrar para mover, dispara mientras tocás ──────────────────
+view.canvas.addEventListener('pointerdown', e => { touchX = view.toLocal(e.clientX, e.clientY).x; touchFire = true; });
+view.canvas.addEventListener('pointermove', e => { if (touchX != null) touchX = view.toLocal(e.clientX, e.clientY).x; });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => view.canvas.addEventListener(ev, () => { touchX = null; touchFire = false; }));
+
+// ── Arranque ──────────────────────────────────────────────────────────────
+if (BG.thumb) {
+  stage = 1; buildStage(); enemies.forEach(e => { e.state = 'form'; [e.x, e.y] = slotPos(e); e.a = Math.PI / 2; });
+  enemies[24].state = 'dive'; enemies[24].phase = 1; enemies[24].x = 300; enemies[24].y = 380; enemies[24].a = 1.2;
+  enemies[5].state = 'dead'; enemies[13].state = 'dead';
+  player = newPlayer(); player.inv = 0; player.dual = true; player.x = 200; shots = [{ x: 187, y: 420 }, { x: 213, y: 420 }, { x: 187, y: 300 }];
+  eShots = [{ x: 300, y: 450, vx: 0, vy: 0 }]; banner = null; update = () => {};
+} else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

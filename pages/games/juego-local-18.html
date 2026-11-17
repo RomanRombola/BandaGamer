@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Simon Says</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+</head>
+<body>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  SIMON — BandaGamer
+//  Clásico (la secuencia crece) · Inverso (repetila al revés) · Caos (cada ronda
+//  es una secuencia nueva) · se acelera con los niveles · récord por modo
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 560, H = 600, CX = W / 2, CY = 300, R1 = 95, R2 = 245;
+const PADS = [
+  { color: '#22e06b', dim: '#0f5a2c', f: 329.63, key: 'ArrowUp', alt: ['KeyQ', 'Digit1'], name: 'VERDE' },
+  { color: '#ff3d5a', dim: '#5c1522', f: 277.18, key: 'ArrowRight', alt: ['KeyW', 'Digit2'], name: 'ROJO' },
+  { color: '#2e8bff', dim: '#12345e', f: 220.00, key: 'ArrowDown', alt: ['KeyS', 'Digit3'], name: 'AZUL' },
+  { color: '#ffd400', dim: '#5e4f05', f: 164.81, key: 'ArrowLeft', alt: ['KeyA', 'Digit4'], name: 'AMARILLO' },
+];
+const MODES = { classic: { name: 'CLÁSICO', desc: 'La secuencia crece de a una nota' }, reverse: { name: 'INVERSO', desc: 'Repetí la secuencia al revés' }, chaos: { name: 'CAOS', desc: 'Cada ronda es una secuencia nueva' } };
+
+BG.init({
+  post: { bloom: .45, vignette: .35, thumbFx: true },
+  id: 'simon', title: 'SIMON', icon: '🔴', accent: '#22e06b', accent2: '#2e8bff', pausable: false,
+  subtitle: 'Mirá la secuencia de luces y sonidos, y repetila. ¿Hasta dónde llega tu memoria?',
+  hud: [{ id: 'level', label: 'Nivel' }, { id: 'best', label: 'Récord', color: '#ffd400' }, { id: 'mode', label: 'Modo', color: '#2e8bff', value: 'CLÁSICO' }],
+  help: 'Clic en los colores o <kbd>↑</kbd> verde <kbd>→</kbd> rojo <kbd>↓</kbd> azul <kbd>←</kbd> amarillo',
+});
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+
+let mode = BG.load('mode', 'classic'), seq = [], pos = 0, state = 'menu', lit = -1, litT = 0, level = 0, t = 0, showQueue = [], showT = 0, msg = '', msgT = 0, pressedPad = -1;
+
+function tone(i, dur = .32) { SFX.tone({ f: PADS[i].f, dur, type: 'triangle', vol: .32 }); SFX.tone({ f: PADS[i].f * 2, dur: dur * .8, type: 'sine', vol: .08 }); }
+function flash(i, dur) { lit = i; litT = dur; tone(i, dur); FX.ring(CX + Math.cos(padAngle(i)) * 170, CY + Math.sin(padAngle(i)) * 170, { color: PADS[i].color, max: 70, life: .4 }); }
+const padAngle = i => -Math.PI * .75 + i * Math.PI / 2;   // centro de cada cuadrante
+
+function start(m) {
+  mode = m || mode; BG.save('mode', mode);
+  seq = []; level = 0; BG.hud.set('mode', MODES[mode].name); BG.hud.set('best', BG.getBest(mode) || 0);
+  BG.start(); nextRound();
+}
+function nextRound() {
+  level++; BG.hud.set('level', level, true);
+  if (mode === 'chaos') seq = Array.from({ length: level }, () => U.randInt(0, 3));
+  else seq.push(U.randInt(0, 3));
+  pos = 0; state = 'show';
+  const speed = Math.max(.18, .55 - level * .022);
+  showQueue = seq.map(i => ({ i, d: speed })); showT = .7;
+  msg = level === 1 ? '¡MIRÁ!' : ''; msgT = 1;
+}
+function expected() { return mode === 'reverse' ? seq[seq.length - 1 - pos] : seq[pos]; }
+function pressPad(i) {
+  if (state !== 'input') { if (state === 'show') return; return; }
+  pressedPad = i;
+  if (i !== expected()) { fail(i); return; }
+  flash(i, .22);
+  pos++;
+  if (pos >= seq.length) {
+    state = 'wait';
+    FX.burst(CX, CY, { n: 24, color: PADS.map(p => p.color), speed: 220, life: .6 });
+    if (level % 5 === 0) { BG.ui.toast(`¡NIVEL ${level}!`, '#ffd400'); SFX.play('levelup'); }
+    setTimeout(nextRound, 750);
+  }
+}
+function fail(i) {
+  state = 'over'; BG.stop();
+  SFX.tone({ f: 90, dur: .7, type: 'sawtooth', vol: .25 }); FX.shake(8, .4); FX.flash('#ff3d5a', .35);
+  lit = expected(); litT = 1.2;
+  const score = level - 1;
+  const r = score > 0 ? BG.submitScore(score, { mode }) : { isRecord: false };
+  setTimeout(() => BG.ui.gameOver({
+    icon: '🧠', title: '¡ERROR!', sub: `Tocaste ${PADS[i].name} y era ${PADS[expected()].name}.`, score, scoreLabel: 'NIVELES COMPLETADOS',
+    isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Récord', value: BG.getBest(mode) || 0 }, { label: 'Modo', value: MODES[mode].name }],
+    onRetry: () => start(mode), onMenu: showMenu,
+  }), 1300);
+}
+function showMenu() {
+  state = 'menu'; BG.stop();
+  BG.ui.show({
+    icon: '🔴', title: 'SIMON', sub: BG.game.subtitle,
+    buttons: Object.entries(MODES).map(([k, m]) => ({ label: m.name, small: `${m.desc} · Récord: ${BG.getBest(k) || 0}`, primary: k === mode, onClick: () => { BG.ui.hide(); setTimeout(() => start(k), 200); } })),
+    help: BG.game.help,
+  });
+}
+
+function update(dt) {
+  t += dt;
+  if (litT > 0) { litT -= dt; if (litT <= 0) lit = -1; }
+  if (msgT > 0) msgT -= dt;
+  if (state === 'show') {
+    showT -= dt;
+    if (showT <= 0) {
+      if (showQueue.length) { const n = showQueue.shift(); flash(n.i, n.d); showT = n.d + .12; }
+      else { state = 'input'; msg = mode === 'reverse' ? '¡AL REVÉS!' : '¡TU TURNO!'; msgT = .9; }
+    }
+  }
+}
+function padPath(i, grow = 0) {
+  const a0 = -Math.PI + i * Math.PI / 2 + .06, a1 = a0 + Math.PI / 2 - .12;
+  ctx.beginPath(); ctx.arc(CX, CY, R2 + grow, a0, a1); ctx.arc(CX, CY, R1, a1, a0, true); ctx.closePath();
+}
+function render() {
+  ctx.fillStyle = '#07070f'; ctx.fillRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(CX, CY, 50, CX, CY, 330); g.addColorStop(0, 'rgba(60,60,120,.25)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.save(); FX.applyShake(ctx);
+  ctx.fillStyle = '#111122'; ctx.beginPath(); ctx.arc(CX, CY, R2 + 18, 0, 7); ctx.fill();
+  for (let i = 0; i < 4; i++) {
+    const on = lit === i, p = PADS[i];
+    padPath(i, on ? 6 : 0);
+    if (on) { ctx.save(); ctx.shadowColor = p.color; ctx.shadowBlur = 50; ctx.fillStyle = p.color; ctx.fill(); ctx.restore(); }
+    else {
+      const gr = ctx.createRadialGradient(CX, CY, R1, CX, CY, R2); gr.addColorStop(0, p.dim); gr.addColorStop(1, shade(p.color, -.45));
+      ctx.fillStyle = gr; ctx.fill();
+    }
+    ctx.strokeStyle = on ? '#fff' : 'rgba(255,255,255,.08)'; ctx.lineWidth = 2; ctx.stroke();
+  }
+  // centro
+  ctx.fillStyle = '#0b0b18'; ctx.beginPath(); ctx.arc(CX, CY, R1 - 12, 0, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 3; ctx.stroke();
+  D.text(ctx, state === 'menu' ? 'SIMON' : String(level), CX, CY - 8, { size: state === 'menu' ? 22 : 40, color: '#fff' });
+  D.text(ctx, state === 'input' ? `${pos}/${seq.length}` : state === 'show' ? 'MIRÁ' : '', CX, CY + 30, { size: 12, color: '#8b8ba3' });
+  if (msgT > 0 && msg) D.text(ctx, msg, CX, 40, { size: 22, color: '#fff', glow: '#2e8bff', alpha: Math.min(1, msgT * 2) });
+  if (state === 'input') { const bar = W * .6; ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fillRect(CX - bar / 2, H - 30, bar, 6); ctx.fillStyle = '#22e06b'; ctx.fillRect(CX - bar / 2, H - 30, bar * pos / seq.length, 6); }
+  FX.draw(ctx);
+  ctx.restore();
+  FX.drawFlash(ctx, W, H);
+}
+function shade(hex, a) { const n = parseInt(hex.slice(1), 16); const f = v => Math.round(v * (1 + a)); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; }
+
+view.canvas.addEventListener('pointerdown', e => {
+  const p = view.toLocal(e.clientX, e.clientY), d = Math.hypot(p.x - CX, p.y - CY);
+  if (d < R1 || d > R2 + 10) return;
+  let a = Math.atan2(p.y - CY, p.x - CX); if (a < -Math.PI) a += Math.PI * 2;
+  const i = Math.floor((a + Math.PI) / (Math.PI / 2)) % 4;
+  pressPad(i);
+});
+BG.input.onKey((e, code, down) => { if (!down || e.repeat || BG.ui.open) return; PADS.forEach((p, i) => { if (code === p.key || p.alt.includes(code)) pressPad(i); }); });
+
+if (BG.thumb) { state = 'input'; level = 12; seq = Array(12).fill(0); pos = 7; lit = 1; litT = 99; update = () => {}; }
+else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
+</script>
+</body>
+</html>

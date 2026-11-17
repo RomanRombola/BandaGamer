@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Wordle ES</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+<style>
+#wrap { display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 100%; width: 100%; max-width: 520px; padding: 10px 8px; gap: 10px; }
+#modebar { display: flex; gap: 6px; }
+#modebar .bg-btn { padding: 7px 12px; font-size: 11px; }
+#grid { display: grid; grid-template-rows: repeat(6, 1fr); gap: 6px; flex: 0 1 auto; }
+.row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.row.shake { animation: shake .45s; }
+@keyframes shake { 10%, 90% { transform: translateX(-2px); } 20%, 80% { transform: translateX(4px); } 30%, 50%, 70% { transform: translateX(-7px); } 40%, 60% { transform: translateX(7px); } }
+.tile { width: var(--ts); height: var(--ts); border: 2px solid rgba(255,255,255,.16); border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: calc(var(--ts) * .5); text-transform: uppercase; color: #fff; background: rgba(255,255,255,.02); transition: border-color .1s; }
+.tile.filled { border-color: rgba(255,255,255,.45); animation: pop .1s; }
+@keyframes pop { 50% { transform: scale(1.1); } }
+.tile.flip { animation: flip .5s ease forwards; }
+@keyframes flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+.tile.ok, .key.ok { background: linear-gradient(135deg, #22c55e, #15803d); border-color: #22c55e; box-shadow: 0 0 14px rgba(34,197,94,.45); }
+.tile.near, .key.near { background: linear-gradient(135deg, #f5b400, #c78a00); border-color: #f5b400; box-shadow: 0 0 14px rgba(245,180,0,.35); }
+.tile.no, .key.no { background: #2a2a3e; border-color: #2a2a3e; color: #8b8ba3; }
+.tile.win { animation: bounce .5s ease; }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-20px); } 60% { transform: translateY(4px); } }
+#kb { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.krow { display: flex; gap: 5px; justify-content: center; }
+.key { flex: 1; max-width: 46px; height: 54px; border-radius: 8px; border: none; background: #3a3a58; color: #fff; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 17px; cursor: pointer; text-transform: uppercase; transition: background .2s, transform .08s; }
+.key:active { transform: scale(.94); }
+.key.wide { max-width: 72px; flex: 1.5; font-size: 12px; }
+#msg { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: #fff; color: #111; font-weight: 700; padding: 9px 16px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 30; font-size: 15px; }
+#msg.on { opacity: 1; }
+.dist { text-align: left; margin: 6px 0 12px; }
+.dist div { display: flex; align-items: center; gap: 6px; margin: 3px 0; font-weight: 700; font-size: 13px; }
+.dist span.bar { background: #3a3a58; color: #fff; padding: 2px 8px; border-radius: 4px; min-width: 22px; text-align: right; }
+.dist span.bar.hl { background: #22c55e; }
+</style>
+</head>
+<body>
+<div id="bg-stage">
+  <div id="wrap">
+    <div id="modebar">
+      <button class="bg-btn" id="m-daily">📅 DEL DÍA</button>
+      <button class="bg-btn" id="m-free">♾ LIBRE</button>
+      <button class="bg-btn" id="m-stats">📊</button>
+    </div>
+    <div id="grid"></div>
+    <div id="kb"></div>
+  </div>
+  <div id="msg"></div>
+</div>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  WORDLE ES — BandaGamer
+//  Palabra del día (la misma para todos) + modo libre ilimitado · Ñ incluida
+//  Las tildes no importan · estadísticas, rachas y distribución · compartir
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, sfx: SFX } = BG;
+const RAW = `abajo abeja abril abrir abuso acaso acero acido actor actos adios agudo aguja ahora aires ajeno alado alamo album aldea alero algas alias aliso almas altar altos alzar amado amiga amigo ancho ancla andar angel anima animo antes anual anexo apodo apoyo arbol arcos ardor arena armas aroma arpon arroz asado asilo aspas astro atlas atomo atras atril atroz audaz avena avion aviso axila ayuda ayuno azote
+bache bahia bajar balas balde bambu banco banda bando banjo barco baron barra barro basta baton bayas bazar beber bello berro besar besos bicho bingo blusa bocas boina bolsa bolso bollo bomba bombo borde botar botas botin bravo brasa brazo breve brisa broma brote bruja bruto bucle bueno bufon buque burla burro busca buzon
+caber cabra cacao cacho caido cajas caldo calle calma calor calvo camas campo canal canas canoa canto caoba capaz capas carga cargo carne carpa carro carta casas casco caspa catre cauce causa cazar cebra cedro ceder cejas celda celos cenar censo cerca cerco cerdo cerro cesta chapa chico chile china chino choza cielo cifra cinco cinta circo cisne citas civil claro clase clave clavo clima cloro cobra cobre cocer coche cocos codos cofre cojin colas colmo color comer comic coral corte coser costa crema creer criar crudo cruce cubos cuero cueva culpa curar curso curva
+dados dagas damas danza dardo datil datos deber debil decir dedos dejar delta denso deuda dicha dieta digno dique disco divan doble docil dolor donde dorso dosis drama ducha dudar duelo dueño dulce dunas duque duros
+ebano echar edema elfos elite elote enano enero entre envio epoca equis error espia estar etapa etica euros exito extra
+facil faena falda falla falso falta fango farol fatal fauna favor fecha feliz feria feroz fibra ficha fideo fiera fiero fijar filas filme final finca firma flaca flaco flojo flora flota fluir fobia focas focos fondo forma foros fosil fresa frase freno fruta fuego fuera fugaz fumar furia fusil
+gafas gajos galan gallo ganar ganas ganso garra garza gases gasto gatos gemir genio gente gesto girar globo gnomo golfo golpe gordo gorra gorro gotas gozar grado grano grasa grave grifo gripe grito grumo grupo guapa guapo guiar guion guiso gusto
+habil hacer hacha hadas harto hasta hecho helar heroe hielo higos hilos himno hogar hojas honda hondo honor horas horno hotel hueco hueso huevo humor hurto
+icono ideal idolo igual ileso impar india indio islas
+jabon jalea jamas jamon jarra jaula jefes jerga joven joyas juego jueza jugar julio junio junto jurar justo
+karma kayak kilos koala
+labio lacio lados lamer lanza lapiz largo larva laser latas latex lavar lazos leche lecho legal lejos lemur lenta lento leona letal letra libra libre libro licor lider ligar lijar limon linea lindo lince lirio lista litro llama llano llave lleno lobos local locos logro lomas lomos lonja loros lucha lucir lugar lujos lunar lunes
+macho madre mafia magia mango mania manos manta marca marco marea mareo mares marzo masas matar mayor media medio melon menor menos menta mente mesas metal metro miedo miope mirar mismo mitad mixto modas modos molde moler momia monja monje monos monte moral morir mosca motor mover mucho mudar muela mujer mulas multa mundo mural museo musgo muslo
+nacer nacho nadar nadie naipe nandu nariz natal naves negar negro nevar nicho nieto nieve ninja niños nivel noble noche nodos norma norte notas novia novio nubes nucas nudos nuera nueve nuevo nunca
+obeso obras ocaso odiar oeste ojala oliva olivo ollas ondas opaco opera optar orden oreja osado ostra otoño ovalo oveja oxido
+pacto padre pagar pajas palco palma palos palta pampa panal panda panel papas papel parar pared pasar pasta pasto patas patin patio patos pausa pavos pecas peces pecho pedal pedir pegar peine pelar pelea pelos penal peras perla perno perro pesas pesca peste piano picar picos pieza pilar pinos pinta pinza pipas pique pisar pista pizza placa plano plata plato playa plaza plazo pleno plomo pluma pobre pocos podar poder poema poeta polar polen pollo polvo poner poros posar poste potro prado presa prima primo prisa prosa pudor pugna pulga pulpa pulpo pulso punta punto
+quena queso quien
+rabia radio rampa ranas rango rasgo ratas raton rayos razon regla reina reloj remar remos renos renta resto retar reyes rezar ricos riego rifle rigor rimas riñon risas ritmo rival rizos robar roble robot rocas rocio rodar rodeo rojos rollo rombo ronda ropas rosal rosas rubio rueda rugby ruido rumba rumbo rural
+sabana saber sabio sable sacar sacos salir salsa salto salud santo sapos sauce secar secta selva sello señal señor serie serio sexto sidra siglo signo silla simio sitio sobre socio sodio solar solos sonar soñar sopas sordo suave sucio sudor suela suelo sueño suero sumar surco susto
+tabla tacon tacos tacto talco talla talon tango tapas tapir tapon tarde tarea tarro tarta taxis tazas techo tecla tejer tejon telon temas temer temor tenaz tener tenis tenor terco terso texto tiara tibia tibio tieso tigre tinta tinte tirar tiras titan tocar todos toldo tomar tonto topar torax toros torre torta toser total traer trago traje trama trapo trato trazo tribu trigo trono tropa trozo truco tubos tucan tumba tunel turbo turno
+union untar urnas usado usted usual
+vacas vacio vagon vagos vaina valer valle valor vapor varas vasos velas veloz vello venas venir venta verbo verde verso viaje vicio video viejo vigas vigor villa vinos viñas viola virus visor vista viuda vivir volar voraz votar vuelo
+yates yegua yemas yerba yerno yogur
+zafar zanja zarpa zarza zonas zorro zurdo`;
+// Palabras extra que se aceptan como intento (no salen como solución)
+const EXTRA = `abran abres abria actua acude agita aguas alamo alzan amaba amada amabe amaré ambos anden andes anota apaga apoya arden armar asoma ataca atado atajo avisa ayer bajos bajan banca baila bebia bebio besan bolas brota buena busco cabeza cada calla cambia canta carga casar cayo cegar cerrar ciclo clara cobro coger comen comia comio corre corro costo crece creia crece cuida cuyo daban dabas damos daria debia deben dicen dices dijo dimos diria dobla doler dones duele dura ellas ellos entra envia era eres esta estan estos falla fallo flota forma fotos fumas gana gasta grita habia hablo haces hacia hagan haria hayas hemos hojas hubo huele iba ibas iguales jugo lanzo lavan lejos leian leyes llega llena lleva llora luces luego mandar manda marca mente mesa miran mismo mitos moria mueve muere nadie nadan nadie negro noche nueve nunca obras ocupa oigan otros paga para pasa pegan pensar perdi pidio piden pinta poca podia pone pongo puede puedo queda quise quita radar rayas reina reir reto ruta sabia sabes sacas salen sale salio sigue siete somos subir suben sueña tanto tarda tenga tengo tiene toman toque torna trae tuvo usaba usan vaya vemos venia vengo veras vidas viene viste vivia vives volvi vuela`;
+const norm = w => w.toLowerCase().replace(/ñ/g, '#').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/#/g, 'ñ');
+const SOL = [...new Set(RAW.split(/\s+/).map(norm).filter(w => /^[a-zñ]{5}$/.test(w)))];
+const VALID = new Set([...SOL, ...EXTRA.split(/\s+/).map(norm).filter(w => /^[a-zñ]{5}$/.test(w))]);
+
+BG.init({
+  id: 'wordle', title: 'WORDLE ES', icon: '🟩', accent: '#22c55e', accent2: '#f5b400', scroll: true, pausable: false, muteKey: false,
+  subtitle: 'Adiviná la palabra de 5 letras en 6 intentos. Verde: letra en su lugar · Amarillo: está en otro lugar.',
+  hud: [{ id: 'streak', label: 'Racha', color: '#22c55e' }, { id: 'best', label: 'Mejor racha', color: '#f5b400' }, { id: 'mode', label: 'Modo', color: '#2ef2ff', value: 'DÍA' }],
+  help: 'Escribí con el teclado y apretá <kbd>Enter</kbd>. Las tildes no cuentan. La Ñ es una letra más.',
+});
+
+const ROWS = 6, LEN = 5;
+let mode = 'daily', answer, guesses, cur, done, keyState, stats = BG.load('stats', { played: 0, wins: 0, streak: 0, best: 0, dist: [0, 0, 0, 0, 0, 0], lastDaily: null }), strict = BG.load('strict', true);
+const gridEl = document.getElementById('grid'), kbEl = document.getElementById('kb'), msgEl = document.getElementById('msg');
+
+function dayIndex() { const d = new Date(); return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(2024, 0, 1)) / 864e5); }
+function dailyWord() { const r = U.rng(U.hash('bandagamer-wordle') + dayIndex()); return SOL[Math.floor(r() * SOL.length)]; }
+
+function buildGrid() {
+  gridEl.innerHTML = '';
+  for (let r = 0; r < ROWS; r++) {
+    const row = document.createElement('div'); row.className = 'row';
+    for (let c = 0; c < LEN; c++) row.appendChild(Object.assign(document.createElement('div'), { className: 'tile' }));
+    gridEl.appendChild(row);
+  }
+  sizeTiles();
+}
+function sizeTiles() {
+  const st = BG.stage.getBoundingClientRect();
+  const ts = Math.max(36, Math.min(62, Math.floor((st.height - 270) / 6.6), Math.floor((st.width - 60) / 5.6)));
+  gridEl.style.setProperty('--ts', ts + 'px');
+}
+function buildKb() {
+  const rows = ['qwertyuiop', 'asdfghjklñ', '↵zxcvbnm⌫'];
+  kbEl.innerHTML = '';
+  rows.forEach(r => {
+    const row = document.createElement('div'); row.className = 'krow';
+    [...r].forEach(ch => {
+      const b = document.createElement('button'); b.className = 'key' + (ch === '↵' || ch === '⌫' ? ' wide' : '');
+      b.textContent = ch === '↵' ? 'ENVIAR' : ch; b.dataset.k = ch;
+      b.addEventListener('click', () => press(ch));
+      row.appendChild(b);
+    });
+    kbEl.appendChild(row);
+  });
+}
+function tileAt(r, c) { return gridEl.children[r].children[c]; }
+function toast(t, ms = 1600) { msgEl.textContent = t; msgEl.classList.add('on'); clearTimeout(toast.id); toast.id = setTimeout(() => msgEl.classList.remove('on'), ms); }
+
+function newGame(m) {
+  mode = m || mode;
+  guesses = []; cur = ''; done = false; keyState = {};
+  answer = mode === 'daily' ? dailyWord() : U.pick(SOL);
+  buildGrid(); buildKb();
+  document.getElementById('m-daily').classList.toggle('sel', mode === 'daily');
+  document.getElementById('m-free').classList.toggle('sel', mode === 'free');
+  BG.hud.set('mode', mode === 'daily' ? 'DÍA' : 'LIBRE');
+  // retomar la partida del día si ya se empezó
+  if (mode === 'daily') {
+    const s = BG.load('daily', null);
+    if (s && s.day === dayIndex()) { s.guesses.forEach(g => { guesses.push(g); paintRow(guesses.length - 1, g, false); }); done = s.done; if (done) setTimeout(() => showEnd(s.won, true), 400); }
+  }
+  hud();
+}
+function hud() { BG.hud.set('streak', stats.streak); BG.hud.set('best', stats.best); }
+
+function press(k) {
+  if (done || BG.ui.open) return;
+  if (k === '↵' || k === 'Enter') return submit();
+  if (k === '⌫' || k === 'Backspace') { if (cur.length) { cur = cur.slice(0, -1); paintCur(); SFX.play('tick'); } return; }
+  k = norm(k);
+  if (/^[a-zñ]$/.test(k) && cur.length < LEN) { cur += k; paintCur(); SFX.play('click'); }
+}
+function paintCur() {
+  const r = guesses.length; if (r >= ROWS) return;
+  for (let c = 0; c < LEN; c++) { const t = tileAt(r, c); t.textContent = cur[c] || ''; t.classList.toggle('filled', !!cur[c]); }
+}
+function score(g) {
+  const res = Array(LEN).fill('no'), left = {};
+  for (let i = 0; i < LEN; i++) { if (g[i] === answer[i]) res[i] = 'ok'; else left[answer[i]] = (left[answer[i]] || 0) + 1; }
+  for (let i = 0; i < LEN; i++) if (res[i] !== 'ok' && left[g[i]]) { res[i] = 'near'; left[g[i]]--; }
+  return res;
+}
+function paintRow(r, g, animate) {
+  const res = score(g);
+  for (let c = 0; c < LEN; c++) {
+    const t = tileAt(r, c); t.textContent = g[c];
+    const apply = () => { t.classList.add(res[c]); const k = kbEl.querySelector(`[data-k="${g[c]}"]`); const rank = { no: 0, near: 1, ok: 2 }; if (k && (keyState[g[c]] == null || rank[res[c]] > rank[keyState[g[c]]])) { keyState[g[c]] = res[c]; k.classList.remove('no', 'near', 'ok'); k.classList.add(res[c]); } };
+    if (animate) { setTimeout(() => { t.classList.add('flip'); SFX.play('flip'); setTimeout(apply, 250); }, c * 260); }
+    else apply();
+  }
+  return res;
+}
+function submit() {
+  const r = guesses.length;
+  if (cur.length < LEN) { shake(r); toast('Faltan letras'); return; }
+  if (strict && !VALID.has(cur)) { shake(r); toast('No está en el diccionario'); SFX.play('error'); return; }
+  const g = cur; guesses.push(g); cur = '';
+  const res = paintRow(r, g, true);
+  const won = res.every(x => x === 'ok');
+  if (won || guesses.length === ROWS) done = true;
+  saveDaily(won);
+  setTimeout(() => {
+    if (won) { for (let c = 0; c < LEN; c++) setTimeout(() => tileAt(r, c).classList.add('win'), c * 90); SFX.play('win'); finish(true); }
+    else if (done) { SFX.play('lose'); toast(answer.toUpperCase(), 3500); finish(false); }
+  }, LEN * 260 + 250);
+}
+function shake(r) { const row = gridEl.children[r]; row.classList.remove('shake'); void row.offsetWidth; row.classList.add('shake'); }
+function saveDaily(won) { if (mode === 'daily') BG.save('daily', { day: dayIndex(), guesses, done, won }); }
+function finish(won) {
+  if (mode === 'daily' && stats.lastDaily === dayIndex()) { setTimeout(() => showEnd(won, true), 900); return; }
+  if (mode === 'daily') stats.lastDaily = dayIndex();
+  stats.played++;
+  if (won) { stats.wins++; stats.streak++; stats.best = Math.max(stats.best, stats.streak); stats.dist[guesses.length - 1]++; }
+  else stats.streak = 0;
+  BG.save('stats', stats); hud();
+  // puntaje para el portal: racha actual (el ranking guarda la mejor)
+  if (won) BG.submitScore(stats.streak, { won: true });
+  setTimeout(() => showEnd(won, false), 1200);
+}
+const PRAISE = ['¡GENIAL!', '¡MAGNÍFICO!', '¡IMPRESIONANTE!', '¡MUY BIEN!', '¡BIEN!', '¡POR POCO!'];
+function shareText() {
+  const rows = guesses.map(g => score(g).map(x => x === 'ok' ? '🟩' : x === 'near' ? '🟨' : '⬛').join('')).join('\n');
+  const won = guesses.length && score(guesses[guesses.length - 1]).every(x => x === 'ok');
+  return `BandaGamer Wordle ${mode === 'daily' ? '#' + dayIndex() : '(libre)'} ${won ? guesses.length : 'X'}/6\n${rows}`;
+}
+function statsHtml(hl) {
+  const max = Math.max(1, ...stats.dist);
+  return `<div class="dist">${stats.dist.map((n, i) => `<div><span>${i + 1}</span><span class="bar ${hl === i ? 'hl' : ''}" style="width:${8 + n / max * 82}%">${n}</span></div>`).join('')}</div>`;
+}
+function showEnd(won, repeat) {
+  BG.ui.show({
+    icon: won ? '🟩' : '🟥', title: won ? PRAISE[guesses.length - 1] : 'ERA: ' + answer.toUpperCase(), tone: won ? 'good' : 'bad',
+    sub: mode === 'daily' ? (repeat ? 'Ya jugaste la palabra de hoy. ¡Volvé mañana o jugá en modo libre!' : 'Mañana hay palabra nueva.') : '',
+    stats: [{ label: 'Jugadas', value: stats.played }, { label: '% Ganadas', value: stats.played ? Math.round(stats.wins / stats.played * 100) : 0 }, { label: 'Racha', value: stats.streak }, { label: 'Mejor', value: stats.best }],
+    html: statsHtml(won ? guesses.length - 1 : -1),
+    buttons: [
+      { label: '📋 COMPARTIR', primary: true, onClick: async () => { try { await navigator.clipboard.writeText(shareText()); toast('¡Copiado! Pegalo en el chat'); } catch (e) { toast('No se pudo copiar'); } } },
+      { label: '♾ JUGAR MODO LIBRE', onClick: () => { BG.ui.hide(); newGame('free'); } },
+      { label: 'CERRAR', onClick: () => BG.ui.hide() },
+    ],
+    onBack: () => BG.ui.hide(),
+  });
+}
+function showStats() {
+  BG.ui.show({
+    icon: '📊', title: 'ESTADÍSTICAS',
+    stats: [{ label: 'Jugadas', value: stats.played }, { label: '% Ganadas', value: stats.played ? Math.round(stats.wins / stats.played * 100) : 0 }, { label: 'Racha', value: stats.streak }, { label: 'Mejor', value: stats.best }],
+    html: '<div class="bg-label">Intentos para ganar</div>' + statsHtml(-1) + `<div class="bg-label">Diccionario</div>`,
+    buttons: [
+      { label: strict ? '✔ DICCIONARIO ESTRICTO' : '✖ ACEPTAR CUALQUIER PALABRA', small: 'Tocá para cambiar', onClick: b => { strict = !strict; BG.save('strict', strict); b.innerHTML = (strict ? '✔ DICCIONARIO ESTRICTO' : '✖ ACEPTAR CUALQUIER PALABRA') + '<small>Tocá para cambiar</small>'; } },
+      { label: 'CERRAR', primary: true, onClick: () => BG.ui.hide() },
+    ],
+    help: BG.game.help, onBack: () => BG.ui.hide(),
+  });
+}
+
+BG.input.onKey((e, code, down) => {
+  if (!down || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (BG.ui.open) return;
+  if (e.key === 'Enter') press('Enter'); else if (e.key === 'Backspace') press('Backspace'); else if (e.key && e.key.length === 1) press(e.key);
+});
+document.getElementById('m-daily').onclick = () => { SFX.play('select'); newGame('daily'); };
+document.getElementById('m-free').onclick = () => { SFX.play('select'); newGame('free'); };
+document.getElementById('m-stats').onclick = () => { SFX.play('select'); showStats(); };
+new ResizeObserver(sizeTiles).observe(BG.stage);
+
+if (BG.thumb) {
+  mode = 'free'; answer = 'perla'; guesses = []; cur = ''; done = true; keyState = {}; buildGrid(); buildKb();
+  ['avion', 'pelos', 'perro', 'perla'].forEach((g, i) => { guesses.push(g); paintRow(i, g, false); });
+  document.getElementById('modebar').style.visibility = 'hidden';
+} else {
+  newGame('daily');
+  if (!BG.load('seenHelp', false)) { BG.save('seenHelp', true); setTimeout(() => BG.ui.show({ icon: '🟩', title: 'WORDLE ES', sub: BG.game.subtitle, help: BG.game.help, buttons: [{ label: '¡A JUGAR!', primary: true, onClick: () => BG.ui.hide() }] }), 300); }
+}
+</script>
+</body>
+</html>

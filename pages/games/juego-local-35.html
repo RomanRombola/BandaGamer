@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sudoku</title>
+<link rel="stylesheet" href="kit/bg-kit.css">
+<style>
+#wrap { display: flex; gap: 18px; align-items: center; justify-content: center; padding: 10px; }
+#wrap.col { flex-direction: column; gap: 10px; }
+#wrap.col #pad { grid-template-columns: repeat(9, 1fr); gap: 4px; }
+#wrap.col #pad button { width: calc(var(--cs) * .98); min-width: 0; height: 48px; font-size: 18px; }
+#board { display: grid; grid-template-columns: repeat(9, var(--cs)); grid-template-rows: repeat(9, var(--cs)); background: #0d0d22; border-radius: 12px; padding: 4px; box-shadow: 0 0 0 2px rgba(124,92,255,.5), 0 16px 50px rgba(0,0,0,.6); user-select: none; }
+.cell { position: relative; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-size: calc(var(--cs) * .48); font-weight: 700; color: #9fd0ff; cursor: pointer;
+  border-right: 1px solid rgba(255,255,255,.08); border-bottom: 1px solid rgba(255,255,255,.08); transition: background .08s; }
+.cell.given { color: #f2f2ff; font-weight: 900; }
+.cell.c2, .cell.c5 { border-right: 2px solid rgba(124,92,255,.65); }
+.cell.r2, .cell.r5 { border-bottom: 2px solid rgba(124,92,255,.65); }
+.cell.c8 { border-right: none; } .cell.r8 { border-bottom: none; }
+.cell.peer { background: rgba(124,92,255,.10); }
+.cell.same { background: rgba(124,92,255,.28); }
+.cell.sel { background: rgba(124,92,255,.45); box-shadow: inset 0 0 0 2px #b9a6ff; }
+.cell.err { color: #ff4d6d; animation: errpulse .35s; }
+@keyframes errpulse { 50% { transform: scale(1.2); } }
+.cell.flash { animation: flashc .6s ease; }
+@keyframes flashc { 40% { background: rgba(57,255,136,.4); } }
+.notes { position: absolute; inset: 2px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: calc(var(--cs) * .24); color: #8b8bb3; }
+.notes span { display: flex; align-items: center; justify-content: center; }
+.notes span.hl { color: #fff; background: rgba(124,92,255,.5); border-radius: 3px; }
+#side { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+#pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+#pad button { width: calc(var(--cs) * 1.25); height: calc(var(--cs) * 1.25); min-width: 46px; min-height: 46px; border-radius: 12px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: #fff; font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 700; cursor: pointer; position: relative; }
+#pad button:hover { border-color: #7c5cff; }
+#pad button small { position: absolute; right: 5px; bottom: 3px; font-size: 9px; color: #8b8ba3; font-family: 'Rajdhani', sans-serif; }
+#pad button.done { opacity: .25; }
+#tools { display: flex; gap: 8px; }
+#tools .bg-btn { padding: 9px 10px; font-size: 11px; }
+#tools .bg-btn.on { border-color: #7c5cff; background: rgba(124,92,255,.3); }
+</style>
+</head>
+<body>
+<div id="bg-stage">
+  <div id="wrap">
+    <div id="board"></div>
+    <div id="side">
+      <div id="tools">
+        <button class="bg-btn" id="t-undo">↶ DESHACER</button>
+        <button class="bg-btn" id="t-erase">⌫ BORRAR</button>
+        <button class="bg-btn" id="t-notes">✎ NOTAS</button>
+        <button class="bg-btn" id="t-hint">💡 PISTA</button>
+      </div>
+      <div id="pad"></div>
+      <button class="bg-btn" id="t-menu" style="padding:8px 14px;font-size:11px">☰ NUEVA PARTIDA</button>
+    </div>
+  </div>
+</div>
+<script src="kit/bg-kit.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  SUDOKU — BandaGamer
+//  Generador propio con SOLUCIÓN ÚNICA garantizada · 4 dificultades con récord
+//  de tiempo · notas (lápiz) · pistas · deshacer · resaltado inteligente
+//  La partida se guarda sola · teclado o pantalla táctil
+// ═══════════════════════════════════════════════════════════════════════════
+const { util: U, sfx: SFX } = BG;
+const LV = { facil: { name: 'FÁCIL', clues: 40, hints: 5 }, medio: { name: 'MEDIO', clues: 33, hints: 3 }, dificil: { name: 'DIFÍCIL', clues: 28, hints: 3 }, experto: { name: 'EXPERTO', clues: 24, hints: 2 } };
+BG.init({
+  id: 'sudoku', title: 'SUDOKU', icon: '🔢', accent: '#7c5cff', accent2: '#2ef2ff', scroll: true, pausable: true, muteKey: false,
+  subtitle: 'Completá la grilla: cada fila, columna y caja de 3×3 tiene los números del 1 al 9.',
+  hud: [{ id: 'time', label: 'Tiempo', value: '0:00' }, { id: 'err', label: 'Errores', color: '#ff4d6d', value: '0/3' }, { id: 'lv', label: 'Nivel', color: '#2ef2ff', value: '—' }],
+  help: '<kbd>1</kbd>-<kbd>9</kbd> escribir · <kbd>←↑↓→</kbd> moverse · <kbd>N</kbd> notas · <kbd>Supr</kbd> borrar · <kbd>Ctrl+Z</kbd> deshacer · <kbd>H</kbd> pista',
+  onRestart: () => newGame(lv), onMenu: () => showMenu(),
+});
+const boardEl = document.getElementById('board'), padEl = document.getElementById('pad');
+
+// ── Motor: solver con bitmasks ────────────────────────────────────────────
+const BOX = i => ((i / 27) | 0) * 3 + (((i % 9) / 3) | 0);
+const PEERS = Array.from({ length: 81 }, (_, i) => { const s = new Set(); const r = (i / 9) | 0, c = i % 9, b = BOX(i); for (let j = 0; j < 81; j++) if (j !== i && (((j / 9) | 0) === r || j % 9 === c || BOX(j) === b)) s.add(j); return [...s]; });
+function solve(g, limit = 2, randomize = false) {
+  const grid = g.slice(); let count = 0, sol = null;
+  const rows = Array(9).fill(0), cols = Array(9).fill(0), boxes = Array(9).fill(0);
+  for (let i = 0; i < 81; i++) if (grid[i]) { const b = 1 << grid[i]; rows[(i / 9) | 0] |= b; cols[i % 9] |= b; boxes[BOX(i)] |= b; }
+  function rec() {
+    let best = -1, bestMask = 0, bestN = 10;
+    for (let i = 0; i < 81; i++) if (!grid[i]) {
+      const m = ~(rows[(i / 9) | 0] | cols[i % 9] | boxes[BOX(i)]) & 0x3FE;
+      let n = 0; for (let x = m; x; x &= x - 1) n++;
+      if (n < bestN) { bestN = n; best = i; bestMask = m; if (n <= 1) break; }
+    }
+    if (best < 0) { count++; if (!sol) sol = grid.slice(); return count >= limit; }
+    if (!bestN) return false;
+    const digits = []; for (let d = 1; d <= 9; d++) if (bestMask & (1 << d)) digits.push(d);
+    if (randomize) U.shuffle(digits);
+    const r = (best / 9) | 0, c = best % 9, bx = BOX(best);
+    for (const d of digits) {
+      const b = 1 << d; grid[best] = d; rows[r] |= b; cols[c] |= b; boxes[bx] |= b;
+      if (rec()) return true;
+      grid[best] = 0; rows[r] &= ~b; cols[c] &= ~b; boxes[bx] &= ~b;
+    }
+    return false;
+  }
+  rec();
+  return { count, sol };
+}
+function generate(clues) {
+  const full = solve(Array(81).fill(0), 1, true).sol;
+  const puzzle = full.slice();
+  const order = U.shuffle([...Array(81).keys()]);
+  let filled = 81;
+  for (const i of order) {
+    if (filled <= clues) break;
+    const keep = puzzle[i]; puzzle[i] = 0;
+    if (solve(puzzle, 2).count !== 1) puzzle[i] = keep; else filled--;
+  }
+  return { puzzle, solution: full };
+}
+
+// ── Estado ────────────────────────────────────────────────────────────────
+let lv = BG.load('lv', 'medio'), puzzle, solution, vals, notes, sel = 40, noteMode = false, errors = 0, hints, hist = [], t0, elapsed = 0, timerId, over = false;
+
+function newGame(level) {
+  lv = level || lv; BG.save('lv', lv);
+  const g = generate(LV[lv].clues);
+  puzzle = g.puzzle; solution = g.solution; vals = puzzle.slice(); notes = Array.from({ length: 81 }, () => 0);
+  errors = 0; hints = LV[lv].hints; hist = []; elapsed = 0; over = false; sel = puzzle.indexOf(0);
+  startTimer(); render(); save(); BG.start();
+}
+function startTimer() { clearInterval(timerId); t0 = performance.now() - elapsed * 1000; timerId = setInterval(tick, 250); }
+function tick() { if (BG.paused || over) { t0 = performance.now() - elapsed * 1000; return; } elapsed = (performance.now() - t0) / 1000; BG.hud.set('time', U.fmtTime(elapsed)); }
+function save() { if (!over) BG.save('game', { lv, puzzle, solution, vals, notes, errors, hints, elapsed }); else BG.save('game', null); }
+function loadGame() {
+  const s = BG.load('game', null);
+  if (!s || !s.puzzle) return false;
+  ({ lv, puzzle, solution, vals, notes, errors, hints, elapsed } = s); hist = []; over = false; sel = Math.max(0, vals.indexOf(0));
+  startTimer(); render(); BG.start(); return true;
+}
+
+function sizeBoard() {
+  // al costado si entra (tablero + panel de ~380px), si no, el panel va abajo
+  const st = BG.stage.getBoundingClientRect();
+  const rowCs = Math.min((st.height - 40) / 9.3, (st.width - 440) / 9.3, 64);
+  const useRow = rowCs >= 40;
+  const cs = Math.floor(Math.max(28, useRow ? rowCs : Math.min((st.width - 30) / 9.3, (st.height - 200) / 9.3, 60)));
+  document.getElementById('wrap').classList.toggle('col', !useRow);
+  document.documentElement.style.setProperty('--cs', cs + 'px');
+}
+function render() {
+  if (!puzzle) return;          // todavía no hay partida (menú / generando)
+  sizeBoard();
+  if (!boardEl.children.length) for (let i = 0; i < 81; i++) { const d = document.createElement('div'); d.className = `cell r${(i / 9) | 0} c${i % 9}`; d.dataset.i = i; boardEl.appendChild(d); }
+  const sv = vals[sel];
+  for (let i = 0; i < 81; i++) {
+    const d = boardEl.children[i], v = vals[i];
+    d.classList.toggle('given', !!puzzle[i]);
+    d.classList.toggle('sel', i === sel);
+    d.classList.toggle('peer', i !== sel && PEERS[sel].includes(i));
+    d.classList.toggle('same', i !== sel && sv && v === sv);
+    d.classList.toggle('err', !!v && !puzzle[i] && v !== solution[i]);
+    if (v) d.textContent = v;
+    else if (notes[i]) { let h = '<div class="notes">'; for (let n = 1; n <= 9; n++) h += `<span class="${sv === n && notes[i] & (1 << n) ? 'hl' : ''}">${notes[i] & (1 << n) ? n : ''}</span>`; d.innerHTML = h + '</div>'; }
+    else d.textContent = '';
+  }
+  // teclado numérico con cantidades restantes
+  if (!padEl.children.length) for (let n = 1; n <= 9; n++) { const b = document.createElement('button'); b.dataset.n = n; b.addEventListener('click', () => input(n)); padEl.appendChild(b); }
+  for (let n = 1; n <= 9; n++) {
+    const left = 9 - vals.filter((v, i) => v === n && v === solution[i]).length;
+    const b = padEl.children[n - 1]; b.innerHTML = `${n}<small>${left || ''}</small>`; b.classList.toggle('done', left === 0);
+  }
+  document.getElementById('t-notes').classList.toggle('on', noteMode);
+  document.getElementById('t-hint').textContent = `💡 PISTA (${hints})`;
+  document.getElementById('t-undo').disabled = !hist.length;
+  BG.hud.set('err', `${errors}/3`); BG.hud.set('lv', LV[lv].name);
+}
+
+function push() { hist.push({ i: sel, v: vals[sel], n: notes.slice() }); if (hist.length > 200) hist.shift(); }
+function input(n) {
+  if (!puzzle || over || BG.ui.open || puzzle[sel]) return;
+  if (noteMode) {
+    if (vals[sel]) return;
+    push(); notes[sel] ^= (1 << n); SFX.play('tick'); render(); save(); return;
+  }
+  if (vals[sel] === n) return;
+  push(); vals[sel] = n; notes[sel] = 0;
+  if (n !== solution[sel]) {
+    errors++; SFX.play('error'); BG.ui.toast('¡Ese número no va ahí!', '#ff4d6d');
+    if (errors >= 3) { render(); lose(); return; }
+  } else {
+    SFX.play('place');
+    PEERS[sel].forEach(j => { notes[j] &= ~(1 << n); });     // limpiar notas de los vecinos
+    flashCompleted(sel);
+  }
+  render(); save(); checkWin();
+}
+function erase() { if (!puzzle || over || puzzle[sel] || (!vals[sel] && !notes[sel])) return; push(); vals[sel] = 0; notes[sel] = 0; SFX.play('swap'); render(); save(); }
+function undo() { if (!puzzle) return; const h = hist.pop(); if (!h || over) return; sel = h.i; vals[h.i] = h.v; notes = h.n; SFX.play('back'); render(); save(); }
+function hint() {
+  if (!puzzle) return;
+  if (over || hints <= 0) { SFX.play('error'); return; }
+  let i = (!vals[sel] || vals[sel] !== solution[sel]) && !puzzle[sel] ? sel : vals.findIndex((v, k) => v !== solution[k]);
+  if (i < 0) return;
+  push(); hints--; sel = i; vals[i] = solution[i]; notes[i] = 0;
+  PEERS[i].forEach(j => { notes[j] &= ~(1 << vals[i]); });
+  SFX.play('power'); boardEl.children[i].classList.add('flash'); setTimeout(() => boardEl.children[i].classList.remove('flash'), 600);
+  flashCompleted(i); render(); save(); checkWin();
+}
+function flashCompleted(i) {
+  const r = (i / 9) | 0, c = i % 9, b = BOX(i), groups = [];
+  const rowI = [...Array(9)].map((_, k) => r * 9 + k), colI = [...Array(9)].map((_, k) => k * 9 + c), boxI = [...Array(81).keys()].filter(k => BOX(k) === b);
+  [rowI, colI, boxI].forEach(g => { if (g.every(k => vals[k] === solution[k])) groups.push(g); });
+  groups.forEach(g => g.forEach((k, n) => setTimeout(() => { const d = boardEl.children[k]; d.classList.remove('flash'); void d.offsetWidth; d.classList.add('flash'); }, n * 30)));
+  if (groups.length) SFX.play('combo', groups.length * 3);
+}
+function checkWin() {
+  if (!vals.every((v, i) => v === solution[i])) return;
+  over = true; clearInterval(timerId); save(); BG.stop();
+  const secs = Math.max(1, Math.round(elapsed));
+  const r = BG.submitScore(secs, { mode: lv, order: 'asc', won: true });
+  SFX.play('win');
+  [...boardEl.children].forEach((d, k) => setTimeout(() => { d.classList.remove('flash'); void d.offsetWidth; d.classList.add('flash'); }, ((k % 9) + ((k / 9) | 0)) * 40));
+  setTimeout(() => BG.ui.gameOver({
+    win: true, title: '¡RESUELTO!', icon: '🧠', score: secs, scoreText: U.fmtTime(secs), scoreLabel: 'TIEMPO',
+    isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Récord', value: U.fmtTime(BG.getBest(lv) || secs) }, { label: 'Errores', value: errors }, { label: 'Nivel', value: LV[lv].name }],
+    onRetry: () => newGame(lv), retryLabel: '↻ OTRO SUDOKU', onMenu: showMenu,
+  }), 1100);
+}
+function lose() {
+  over = true; clearInterval(timerId); save(); BG.stop(); SFX.play('lose');
+  BG.ui.gameOver({ title: '3 ERRORES', icon: '😵', sub: 'Se terminó la partida. ¡La próxima sale!', stats: [{ label: 'Tiempo', value: U.fmtTime(elapsed) }, { label: 'Nivel', value: LV[lv].name }],
+    onRetry: () => newGame(lv), onMenu: showMenu });
+}
+function showMenu() {
+  const saved = BG.load('game', null);
+  BG.ui.show({
+    icon: '🔢', title: 'SUDOKU', sub: BG.game.subtitle,
+    buttons: [
+      ...(saved && saved.puzzle ? [{ label: '▶ CONTINUAR', small: `${LV[saved.lv].name} · ${U.fmtTime(saved.elapsed || 0)}`, primary: true, onClick: () => { BG.ui.hide(); loadGame(); } }] : []),
+      ...Object.entries(LV).map(([k, v]) => { const b = BG.getBest(k); return { label: v.name, small: `${v.clues} pistas iniciales · ${b ? 'Récord ' + U.fmtTime(b) : 'sin récord'}`, primary: !saved && k === lv, onClick: () => { BG.ui.hide(); setTimeout(() => newGame(k), 30); } }; }),
+    ],
+    help: BG.game.help,
+  });
+}
+
+// ── Entrada ───────────────────────────────────────────────────────────────
+boardEl.addEventListener('pointerdown', e => { const c = e.target.closest('.cell'); if (!c || !puzzle) return; sel = +c.dataset.i; SFX.play('tick'); render(); });
+BG.input.onKey((e, code, down) => {
+  if (!down || BG.ui.open || !puzzle) return;
+  const k = e.key;
+  if (/^[1-9]$/.test(k)) { input(+k); return; }
+  if (code && /^Numpad[1-9]$/.test(code)) { input(+code.slice(-1)); return; }
+  if (k === 'Backspace' || k === 'Delete' || k === '0') { erase(); return; }
+  if ((e.ctrlKey || e.metaKey) && (k === 'z' || k === 'Z')) { undo(); return; }
+  if (k === 'n' || k === 'N') { noteMode = !noteMode; render(); return; }
+  if (k === 'h' || k === 'H') { hint(); return; }
+  const mv = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -9, ArrowDown: 9 }[k];
+  if (mv) { const r = (sel / 9) | 0, c = sel % 9; if (mv === -1) sel = r * 9 + (c + 8) % 9; else if (mv === 1) sel = r * 9 + (c + 1) % 9; else sel = (sel + mv + 81) % 81; render(); }
+});
+document.getElementById('t-undo').onclick = undo;
+document.getElementById('t-erase').onclick = erase;
+document.getElementById('t-notes').onclick = () => { noteMode = !noteMode; SFX.play('click'); render(); };
+document.getElementById('t-hint').onclick = hint;
+document.getElementById('t-menu').onclick = showMenu;
+new ResizeObserver(() => { if (puzzle) sizeBoard(); }).observe(BG.stage);
+BG.on('pause', () => { boardEl.style.filter = 'blur(10px)'; }).on('resume', () => { boardEl.style.filter = ''; });
+
+if (BG.thumb) {
+  lv = 'medio'; const g = generate(33); puzzle = g.puzzle; solution = g.solution; vals = puzzle.slice(); notes = Array(81).fill(0);
+  for (let i = 0; i < 81; i++) if (!vals[i] && i % 4 === 0) vals[i] = solution[i];
+  notes[puzzle.indexOf(0)] = 0b1010100100; sel = 30; hints = 3; render();
+  document.getElementById('side').style.display = 'none';
+} else BG.ready.then(() => { if (!loadGame()) showMenu(); });
+</script>
+</body>
+</html>

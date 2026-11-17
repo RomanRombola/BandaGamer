@@ -1,0 +1,19 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "presence": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+
+    "gameRooms":  { "$room": { ".read": true, ".write": true } },
+    "chessRooms": { "$room": { ".read": true, ".write": true } },
+    "impost":     { "$room": { ".read": true, ".write": true } },
+    "gor2phone":  { "$room": { ".read": true, ".write": true } },
+    "gartic":     { "$room": { ".read": true, ".write": true } }
+  }
+}
