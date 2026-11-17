@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 225">
   <defs>
     <linearGradient id="bg_game-028" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1a101c"/>
-      <stop offset="100%" stop-color="#090d16"/>
+      <stop offset="0%" stop-color="#1f1424"/>
+      <stop offset="100%" stop-color="#0b0f19"/>
     </linearGradient>
     <linearGradient id="ac_game-028" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#ff2a5f"/>
-      <stop offset="100%" stop-color="#ff7b00"/>
+      <stop offset="100%" stop-color="#ff8800"/>
     </linearGradient>
   </defs>
   <rect width="400" height="225" fill="url(#bg_game-028)"/>
-  <circle cx="330" cy="40" r="110" fill="url(#ac_game-028)" opacity="0.22"/>
-  <circle cx="70" cy="190" r="95" fill="url(#ac_game-028)" opacity="0.16"/>
-  <polygon points="200,45 236,128 200,110 164,128" fill="#f8fafc" stroke="#00e5ff" stroke-width="4" stroke-linejoin="round"/><circle cx="200" cy="88" r="10" fill="#ff6600"/>
-  <rect x="24" y="158" width="352" height="46" rx="12" fill="rgba(15,23,42,0.78)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
-  <text x="200" y="187" text-anchor="middle" font-family="Outfit, system-ui, sans-serif" font-weight="800" font-size="20" fill="#ffffff" letter-spacing="0.5">ASTEROIDS</text>
+  <circle cx="340" cy="35" r="115" fill="url(#ac_game-028)" opacity="0.25"/>
+  <circle cx="60" cy="195" r="95" fill="url(#ac_game-028)" opacity="0.18"/>
+  <polygon points="200,36 238,122 200,104 162,122" fill="#f8fafc" stroke="#00b4ff" stroke-width="4" stroke-linejoin="round"/><circle cx="200" cy="80" r="11" fill="#ff6600"/>
+  <rect x="22" y="154" width="356" height="50" rx="14" fill="rgba(15, 23, 42, 0.86)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.5"/>
+  <text x="200" y="185" text-anchor="middle" font-family="Outfit, system-ui, sans-serif" font-weight="800" font-size="19" fill="#ffffff" letter-spacing="0.4">ASTEROIDS</text>
 </svg>

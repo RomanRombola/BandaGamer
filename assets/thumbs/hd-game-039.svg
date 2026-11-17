@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 225">
   <defs>
     <linearGradient id="bg_game-039" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#18122B"/>
-      <stop offset="100%" stop-color="#090d16"/>
+      <stop offset="0%" stop-color="#16192b"/>
+      <stop offset="100%" stop-color="#0b0f19"/>
     </linearGradient>
     <linearGradient id="ac_game-039" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#ff6600"/>
-      <stop offset="100%" stop-color="#ff0055"/>
+      <stop offset="100%" stop-color="#ff2a5f"/>
     </linearGradient>
   </defs>
   <rect width="400" height="225" fill="url(#bg_game-039)"/>
-  <circle cx="330" cy="40" r="110" fill="url(#ac_game-039)" opacity="0.22"/>
-  <circle cx="70" cy="190" r="95" fill="url(#ac_game-039)" opacity="0.16"/>
-  <path d="M200 95 L238 68 A46 46 0 1 0 238 122 Z" fill="#fde047"/><circle cx="255" cy="95" r="8" fill="#ff6600"/><circle cx="282" cy="95" r="8" fill="#00e5ff"/>
-  <rect x="24" y="158" width="352" height="46" rx="12" fill="rgba(15,23,42,0.78)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
-  <text x="200" y="187" text-anchor="middle" font-family="Outfit, system-ui, sans-serif" font-weight="800" font-size="20" fill="#ffffff" letter-spacing="0.5">PAC-MAN</text>
+  <circle cx="340" cy="35" r="115" fill="url(#ac_game-039)" opacity="0.25"/>
+  <circle cx="60" cy="195" r="95" fill="url(#ac_game-039)" opacity="0.18"/>
+  <path d="M190 86 L228 58 A44 44 0 1 0 228 114 Z" fill="#ffb800"/><circle cx="248" cy="86" r="8" fill="#ff6600"/><circle cx="276" cy="86" r="8" fill="#00b4ff"/>
+  <rect x="22" y="154" width="356" height="50" rx="14" fill="rgba(15, 23, 42, 0.86)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.5"/>
+  <text x="200" y="185" text-anchor="middle" font-family="Outfit, system-ui, sans-serif" font-weight="800" font-size="19" fill="#ffffff" letter-spacing="0.4">PAC-MAN</text>
 </svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 225">
+  <defs>
+    <linearGradient id="bg_game-033" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#211526"/>
+      <stop offset="100%" stop-color="#0b0f19"/>
+    </linearGradient>
+    <linearGradient id="ac_game-033" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#ffb800"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="225" fill="url(#bg_game-033)"/>
+  <circle cx="340" cy="35" r="115" fill="url(#ac_game-033)" opacity="0.25"/>
+  <circle cx="60" cy="195" r="95" fill="url(#ac_game-033)" opacity="0.18"/>
+  <circle cx="200" cy="84" r="42" fill="rgba(255,255,255,0.1)" stroke="#fff" stroke-width="3"/><polygon points="190,66 222,84 190,102" fill="#ffb800"/>
+  <rect x="22" y="154" width="356" height="50" rx="14" fill="rgba(15, 23, 42, 0.86)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.5"/>
+  <text x="200" y="185" text-anchor="middle" font-family="Outfit, system-ui, sans-serif" font-weight="800" font-size="19" fill="#ffffff" letter-spacing="0.4">TYPING SPEED</text>
+</svg>
