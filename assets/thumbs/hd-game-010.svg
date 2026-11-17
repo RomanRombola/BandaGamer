@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 225">
+  <defs>
+    <linearGradient id="bg_game-010" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a101c"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </linearGradient>
+    <linearGradient id="ac_game-010" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff2a5f"/>
+      <stop offset="100%" stop-color="#ff7b00"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="225" fill="url(#bg_game-010)"/>
+  <circle cx="330" cy="40" r="110" fill="url(#ac_game-010)" opacity="0.22"/>
+  <circle cx="70" cy="190" r="95" fill="url(#ac_game-010)" opacity="0.16"/>
+  <circle cx="200" cy="92" r="42" fill="rgba(255,255,255,0.12)" stroke="#fff" stroke-width="3"/><polygon points="190,74 222,92 190,110" fill="#fff"/>
+  <rect x="24" y="158" width="352" height="46" rx="12" fill="rgba(15,23,42,0.78)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <text x="200" y="187" text-anchor="middle" font-family="Outfit, system-ui, sans-serif" font-weight="800" font-size="20" fill="#ffffff" letter-spacing="0.5">1V1.LOL</text>
+</svg>

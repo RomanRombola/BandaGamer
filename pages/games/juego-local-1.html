@@ -259,9 +259,9 @@ function drawSnake() {
 }
 function render() {
   // fondo con tablero sutil
-  const bg = ctx.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#08101c'); bg.addColorStop(1, '#0b0820');
+  const bg = ctx.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#111827'); bg.addColorStop(1, '#1e293b');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if ((x + y) % 2) { ctx.fillStyle = 'rgba(255,255,255,.022)'; ctx.fillRect(x * CS, y * CS, CS, CS); }
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if ((x + y) % 2) { ctx.fillStyle = 'rgba(255,255,255,.035)'; ctx.beginPath(); ctx.roundRect(x * CS + 2, y * CS + 2, CS - 4, CS - 4, 6); ctx.fill(); }
   const pulse = .5 + Math.sin(t * 2) * .5;
   ctx.save(); FX.applyShake(ctx);
   // borde

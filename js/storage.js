@@ -820,3 +820,112 @@ window.getChatBubbleCSS = function(accesorios={}) {
   return b.css;
 };
 
+
+// ── CATÁLOGO DE ARTE VECTORIAL HD (CERO EMOJIS) ───────────────────────────
+const SVG_AVATARS = {
+  e_smile: `<svg viewBox="0 0 100 100"><defs><linearGradient id="av1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff7b00"/><stop offset="100%" stop-color="#ff3300"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(#av1)"/><circle cx="50" cy="46" r="28" fill="#ffe0bd"/><path d="M22 42 C22 20, 78 20, 78 42 C72 28, 28 28, 22 42 Z" fill="#1a1d2e"/><circle cx="39" cy="46" r="4.5" fill="#1a1d2e"/><circle cx="61" cy="46" r="4.5" fill="#1a1d2e"/><circle cx="40.5" cy="44.5" r="1.5" fill="#fff"/><circle cx="62.5" cy="44.5" r="1.5" fill="#fff"/><path d="M40 57 Q50 65 60 57" stroke="#1a1d2e" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M20 92 C24 72, 76 72, 80 92 Z" fill="#1a1d2e"/></svg>`,
+  e_cool: `<svg viewBox="0 0 100 100"><defs><linearGradient id="av2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00b4db"/><stop offset="100%" stop-color="#0083b0"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(#av2)"/><polygon points="24,22 38,40 20,48" fill="#ff6600"/><polygon points="76,22 62,40 80,48" fill="#ff6600"/><circle cx="50" cy="52" r="27" fill="#fff"/><path d="M26 48 Q50 38 74 48" stroke="#ff6600" stroke-width="4" fill="none"/><ellipse cx="39" cy="51" rx="6" ry="3.5" fill="#00e5ff"/><ellipse cx="61" cy="51" rx="6" ry="3.5" fill="#00e5ff"/><path d="M44 62 Q50 66 56 62" stroke="#1a1d2e" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
+  e_fire: `<svg viewBox="0 0 100 100"><defs><linearGradient id="av3" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#ff0844"/><stop offset="100%" stop-color="#ffb199"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="#161224"/><path d="M50 14 C68 32, 78 48, 72 68 C68 82, 32 82, 28 68 C22 48, 32 32, 50 14 Z" fill="url(#av3)"/><path d="M50 28 C60 40, 65 52, 60 66 C56 75, 44 75, 40 66 C35 52, 40 40, 50 28 Z" fill="#ffe600"/><ellipse cx="41" cy="56" rx="4" ry="6" fill="#161224"/><ellipse cx="59" cy="56" rx="4" ry="6" fill="#161224"/></svg>`,
+  e_skull: `<svg viewBox="0 0 100 100"><defs><linearGradient id="av4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2b3248"/><stop offset="100%" stop-color="#121622"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(#av4)"/><path d="M26 46 C26 24, 74 24, 74 46 C74 58, 66 64, 64 74 L36 74 C34 64, 26 58, 26 46 Z" fill="#f1f5f9"/><circle cx="39" cy="48" r="7" fill="#00e5ff"/><circle cx="61" cy="48" r="7" fill="#00e5ff"/><polygon points="50,55 46,63 54,63" fill="#1e293b"/><line x1="42" y1="68" x2="42" y2="74" stroke="#1e293b" stroke-width="3"/><line x1="50" y1="68" x2="50" y2="74" stroke="#1e293b" stroke-width="3"/><line x1="58" y1="68" x2="58" y2="74" stroke="#1e293b" stroke-width="3"/></svg>`,
+  e_robot: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#111927"/><rect x="25" y="28" width="50" height="44" rx="14" fill="#cbd5e1" stroke="#00aaff" stroke-width="3"/><line x1="50" y1="16" x2="50" y2="28" stroke="#00aaff" stroke-width="4"/><circle cx="50" cy="14" r="5" fill="#ff6600"/><rect x="32" y="38" width="36" height="14" rx="6" fill="#0f172a"/><circle cx="41" cy="45" r="4" fill="#39ff14"/><circle cx="59" cy="45" r="4" fill="#39ff14"/><rect x="38" y="59" width="24" height="5" rx="2.5" fill="#00aaff"/></svg>`,
+  e_ninja: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#1e1b2e"/><circle cx="50" cy="50" r="30" fill="#11131c"/><path d="M22 42 Q50 36 78 42 L78 55 Q50 50 22 55 Z" fill="#fde68a"/><path d="M20 38 L80 38 L80 43 L20 43 Z" fill="#ff0055"/><ellipse cx="39" cy="48" rx="4.5" ry="3" fill="#11131c"/><ellipse cx="61" cy="48" rx="4.5" ry="3" fill="#11131c"/></svg>`,
+  e_dragon: `<svg viewBox="0 0 100 100"><defs><linearGradient id="avDr" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#b45309"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="#18121e"/><polygon points="24,20 36,38 22,42" fill="#fde047"/><polygon points="76,20 64,38 78,42" fill="#fde047"/><path d="M26 42 C26 26, 74 26, 74 42 L68 72 L50 78 L32 72 Z" fill="url(#avDr)"/><polygon points="35,48 45,51 37,55" fill="#fff"/><polygon points="65,48 55,51 63,55" fill="#fff"/></svg>`,
+  e_diamond: `<svg viewBox="0 0 100 100"><defs><linearGradient id="avDi" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#6366f1"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="#0f172a"/><polygon points="50,16 80,42 50,84 20,42" fill="url(#avDi)"/><polygon points="50,16 66,42 50,84 34,42" fill="#bae6fd" opacity="0.45"/><polygon points="20,42 80,42 50,28" fill="#fff" opacity="0.35"/></svg>`,
+  e_supreme: `<svg viewBox="0 0 100 100"><defs><radialGradient id="avSu"><stop offset="0%" stop-color="#fde047"/><stop offset="55%" stop-color="#ff6600"/><stop offset="100%" stop-color="#3b0764"/></radialGradient></defs><circle cx="50" cy="50" r="50" fill="url(#avSu)"/><circle cx="50" cy="50" r="24" fill="#fff"/><polygon points="50,14 57,36 80,36 61,50 68,72 50,58 32,72 39,50 20,36 43,36" fill="#fde047"/></svg>`
+};
+
+const SVG_SOMBREROS = {
+  s_gorra: `<svg viewBox="0 0 120 70"><path d="M24 48 C24 18, 92 18, 92 48 Z" fill="#ff6600"/><path d="M20 45 L106 45 C112 45, 112 53, 102 53 L20 53 Z" fill="#1e293b"/><circle cx="58" cy="22" r="4" fill="#fff"/><rect x="44" y="32" width="28" height="8" rx="4" fill="#fff"/></svg>`,
+  s_auris: `<svg viewBox="0 0 120 90"><path d="M18 62 C18 14, 102 14, 102 62" stroke="#1e293b" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M22 58 C22 18, 98 18, 98 58" stroke="#00e5ff" stroke-width="4" fill="none" stroke-linecap="round"/><rect x="8" y="48" width="16" height="30" rx="8" fill="#ff6600" stroke="#fff" stroke-width="2"/><rect x="96" y="48" width="16" height="30" rx="8" fill="#ff6600" stroke="#fff" stroke-width="2"/></svg>`,
+  s_corona: `<svg viewBox="0 0 120 75"><defs><linearGradient id="crG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fde047"/><stop offset="100%" stop-color="#d97706"/></linearGradient></defs><polygon points="16,58 24,22 44,42 60,14 76,42 96,22 104,58" fill="url(#crG)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><rect x="16" y="54" width="88" height="10" rx="5" fill="#b45309"/><circle cx="60" cy="40" r="5" fill="#ff0055"/><circle cx="36" cy="46" r="4" fill="#00e5ff"/><circle cx="84" cy="46" r="4" fill="#00e5ff"/></svg>`,
+  s_angel: `<svg viewBox="0 0 120 60"><ellipse cx="60" cy="30" rx="42" ry="12" fill="none" stroke="#fde047" stroke-width="7"/><ellipse cx="60" cy="30" rx="42" ry="12" fill="none" stroke="#ffffff" stroke-width="2.5"/></svg>`,
+  s_diablo: `<svg viewBox="0 0 120 70"><path d="M18 56 C10 34, 22 14, 38 12 C30 28, 32 42, 40 54 Z" fill="#ef4444"/><path d="M102 56 C110 34, 98 14, 82 12 C90 28, 88 42, 80 54 Z" fill="#ef4444"/></svg>`,
+  s_bruja: `<svg viewBox="0 0 120 80"><rect x="14" y="54" width="92" height="10" rx="5" fill="#1e293b"/><rect x="32" y="14" width="56" height="44" rx="6" fill="#0f172a" stroke="#334155" stroke-width="2"/><rect x="32" y="44" width="56" height="8" fill="#ff6600"/></svg>`,
+  s_mago: `<svg viewBox="0 0 120 85"><polygon points="60,8 22,64 98,64" fill="#4f46e5"/><ellipse cx="60" cy="64" rx="48" ry="10" fill="#312e81"/><polygon points="60,30 63,38 71,38 65,43 67,51 60,46 53,51 55,43 49,38 57,38" fill="#fde047"/></svg>`,
+  s_vikingo: `<svg viewBox="0 0 120 75"><path d="M22 50 C8 32, 14 14, 28 12 C24 28, 28 38, 36 44 Z" fill="#fef3c7"/><path d="M98 50 C112 32, 106 14, 92 12 C96 28, 92 38, 84 44 Z" fill="#fef3c7"/><path d="M30 56 C30 26, 90 26, 90 56 Z" fill="#64748b" stroke="#cbd5e1" stroke-width="3"/></svg>`,
+  s_chef: `<svg viewBox="0 0 120 80"><circle cx="40" cy="34" r="18" fill="#fff"/><circle cx="60" cy="28" r="22" fill="#fff"/><circle cx="80" cy="34" r="18" fill="#fff"/><rect x="32" y="44" width="56" height="18" rx="4" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/></svg>`,
+  s_alien_hat: `<svg viewBox="0 0 120 75"><path d="M40 36 C40 16, 80 16, 80 36 Z" fill="#38bdf8" opacity="0.8"/><ellipse cx="60" cy="38" rx="44" ry="12" fill="#94a3b8" stroke="#00e5ff" stroke-width="2.5"/><circle cx="36" cy="38" r="3.5" fill="#fde047"/><circle cx="60" cy="41" r="3.5" fill="#39ff14"/><circle cx="84" cy="38" r="3.5" fill="#ff0055"/></svg>`,
+  s_supremo: `<svg viewBox="0 0 120 80"><defs><linearGradient id="supG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff"/><stop offset="40%" stop-color="#fde047"/><stop offset="100%" stop-color="#ff6600"/></linearGradient></defs><polygon points="12,60 22,18 44,40 60,8 76,40 98,18 108,60" fill="url(#supG)" stroke="#fff" stroke-width="2.5"/><circle cx="60" cy="36" r="6" fill="#00e5ff"/><circle cx="35" cy="44" r="4.5" fill="#ff0055"/><circle cx="85" cy="44" r="4.5" fill="#ff0055"/></svg>`
+};
+
+const SVG_LENTES = {
+  l_cool: `<svg viewBox="0 0 120 50"><rect x="14" y="14" width="40" height="22" rx="4" fill="#0f172a" stroke="#fff" stroke-width="2"/><rect x="66" y="14" width="40" height="22" rx="4" fill="#0f172a" stroke="#fff" stroke-width="2"/><line x1="54" y1="22" x2="66" y2="22" stroke="#fff" stroke-width="3"/><line x1="22" y1="19" x2="32" y2="31" stroke="#fff" stroke-width="3" stroke-linecap="round"/><line x1="74" y1="19" x2="84" y2="31" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>`,
+  l_cyber: `<svg viewBox="0 0 120 50"><defs><linearGradient id="cyG" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#00e5ff"/><stop offset="50%" stop-color="#ff007f"/><stop offset="100%" stop-color="#ff6600"/></linearGradient></defs><polygon points="10,14 110,14 102,36 66,36 60,26 54,36 18,36" fill="url(#cyG)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><line x1="24" y1="21" x2="96" y2="21" stroke="#fff" stroke-width="2" opacity="0.7"/></svg>`,
+  l_nerd: `<svg viewBox="0 0 120 50"><circle cx="36" cy="25" r="16" fill="rgba(56,189,248,0.22)" stroke="#f8fafc" stroke-width="3.5"/><circle cx="84" cy="25" r="16" fill="rgba(56,189,248,0.22)" stroke="#f8fafc" stroke-width="3.5"/><path d="M52 25 Q60 20 68 25" stroke="#f8fafc" stroke-width="3.5" fill="none"/></svg>`,
+  l_monoc: `<svg viewBox="0 0 120 55"><circle cx="80" cy="24" r="16" fill="rgba(253,224,71,0.2)" stroke="#fde047" stroke-width="3.5"/><path d="M94 32 Q98 46 90 54" stroke="#fde047" stroke-width="2.5" fill="none" stroke-dasharray="3,3"/></svg>`,
+  l_star: `<svg viewBox="0 0 120 55"><polygon points="36,8 41,20 54,20 43,28 47,41 36,33 25,41 29,28 18,20 31,20" fill="#fde047" stroke="#fff" stroke-width="2"/><polygon points="84,8 89,20 102,20 91,28 95,41 84,33 73,41 77,28 66,20 79,20" fill="#fde047" stroke="#fff" stroke-width="2"/><line x1="50" y1="24" x2="70" y2="24" stroke="#fde047" stroke-width="3"/></svg>`,
+  l_heart: `<svg viewBox="0 0 120 55"><path d="M36 38 L22 24 A10 10 0 0 1 36 12 A10 10 0 0 1 50 24 Z" fill="#ff0055" stroke="#fff" stroke-width="2"/><path d="M84 38 L70 24 A10 10 0 0 1 84 12 A10 10 0 0 1 98 24 Z" fill="#ff0055" stroke="#fff" stroke-width="2"/><line x1="50" y1="22" x2="70" y2="22" stroke="#fff" stroke-width="2.5"/></svg>`,
+  l_vr: `<svg viewBox="0 0 120 55"><rect x="12" y="10" width="96" height="32" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3"/><rect x="20" y="16" width="80" height="20" rx="8" fill="#0f172a"/><path d="M28 26 L92 26" stroke="#00e5ff" stroke-width="3" stroke-linecap="round"/></svg>`,
+  l_fire: `<svg viewBox="0 0 120 55"><circle cx="36" cy="26" r="12" fill="#ff6600"/><circle cx="36" cy="26" r="6" fill="#fde047"/><circle cx="84" cy="26" r="12" fill="#ff6600"/><circle cx="84" cy="26" r="6" fill="#fde047"/></svg>`
+};
+
+const SVG_BOCA = {
+  b_mate: `<svg viewBox="0 0 100 70"><line x1="62" y1="8" x2="48" y2="36" stroke="#cbd5e1" stroke-width="5" stroke-linecap="round"/><circle cx="64" cy="7" r="4" fill="#e2e8f0"/><path d="M30 32 C26 56, 74 56, 70 32 Z" fill="#78350f" stroke="#d97706" stroke-width="3"/><ellipse cx="50" cy="32" rx="20" ry="5" fill="#4ade80" stroke="#cbd5e1" stroke-width="2.5"/></svg>`,
+  b_ninja: `<svg viewBox="0 0 120 65"><path d="M22 14 Q60 24 98 14 L90 50 Q60 62 30 50 Z" fill="#0f172a" stroke="#00e5ff" stroke-width="2.5"/><line x1="42" y1="32" x2="78" y2="32" stroke="#00e5ff" stroke-width="3" stroke-linecap="round"/><line x1="48" y1="41" x2="72" y2="41" stroke="#ff6600" stroke-width="3" stroke-linecap="round"/></svg>`,
+  b_fino: `<svg viewBox="0 0 120 50"><path d="M60 22 C46 12, 26 28, 16 18 C22 36, 46 34, 60 26 C74 34, 98 36, 104 18 C94 28, 74 12, 60 22 Z" fill="#1e293b" stroke="#fff" stroke-width="1.5"/></svg>`,
+  b_rosa: `<svg viewBox="0 0 120 55"><path d="M24 32 Q60 36 88 26" stroke="#22c55e" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="88" cy="24" r="11" fill="#e11d48"/><path d="M82 22 Q88 14 94 24 Q88 30 82 22 Z" fill="#fb7185"/></svg>`,
+  b_king: `<svg viewBox="0 0 120 60"><path d="M22 16 Q60 54 98 16" stroke="#fde047" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="8,4"/><polygon points="60,34 68,46 60,56 52,46" fill="#00e5ff" stroke="#fff" stroke-width="1.5"/></svg>`,
+  b_pizza: `<svg viewBox="0 0 100 65"><polygon points="50,8 22,54 78,54" fill="#fde047" stroke="#d97706" stroke-width="3" stroke-linejoin="round"/><path d="M20 52 Q50 60 80 52" stroke="#b45309" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="46" cy="34" r="5" fill="#ef4444"/><circle cx="58" cy="44" r="5" fill="#ef4444"/><circle cx="42" cy="46" r="4" fill="#ef4444"/></svg>`
+};
+
+const SVG_MASCOTAS = {
+  pet_capi: `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="46" rx="26" ry="22" fill="#b45309"/><ellipse cx="52" cy="42" rx="14" ry="11" fill="#92400e"/><circle cx="26" cy="26" r="6" fill="#78350f"/><circle cx="46" cy="36" r="3.5" fill="#0f172a"/><ellipse cx="62" cy="40" rx="3" ry="2" fill="#0f172a"/><path d="M34 22 Q40 12 48 20" stroke="#4ade80" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`,
+  pet_cat: `<svg viewBox="0 0 80 80"><polygon points="16,40 20,12 38,28" fill="#00e5ff"/><polygon points="64,40 60,12 42,28" fill="#00e5ff"/><circle cx="40" cy="46" r="24" fill="#1e293b" stroke="#00e5ff" stroke-width="2.5"/><circle cx="31" cy="44" r="4" fill="#fde047"/><circle cx="49" cy="44" r="4" fill="#fde047"/><polygon points="40,50 37,54 43,54" fill="#ff007f"/></svg>`,
+  pet_dog: `<svg viewBox="0 0 80 80"><polygon points="16,38 22,14 36,28" fill="#f59e0b"/><polygon points="64,38 58,14 44,28" fill="#f59e0b"/><circle cx="40" cy="46" r="24" fill="#fbbf24"/><ellipse cx="40" cy="52" rx="14" ry="10" fill="#fef3c7"/><circle cx="31" cy="42" r="3.5" fill="#0f172a"/><circle cx="49" cy="42" r="3.5" fill="#0f172a"/><ellipse cx="40" cy="49" rx="4" ry="3" fill="#0f172a"/></svg>`,
+  pet_duck: `<svg viewBox="0 0 80 80"><circle cx="40" cy="44" r="22" fill="#fde047"/><ellipse cx="40" cy="48" rx="11" ry="6" fill="#ff6600"/><circle cx="32" cy="38" r="3.5" fill="#0f172a"/><circle cx="48" cy="38" r="3.5" fill="#0f172a"/></svg>`,
+  pet_ghost: `<svg viewBox="0 0 80 80"><path d="M18 42 C18 18, 62 18, 62 42 L62 66 L52 58 L40 66 L28 58 L18 66 Z" fill="#f8fafc" stroke="#38bdf8" stroke-width="2.5"/><circle cx="32" cy="40" r="4" fill="#0f172a"/><circle cx="48" cy="40" r="4" fill="#0f172a"/><ellipse cx="26" cy="46" rx="4" ry="2" fill="#f43f5e" opacity="0.6"/><ellipse cx="54" cy="46" rx="4" ry="2" fill="#f43f5e" opacity="0.6"/></svg>`,
+  pet_alien: `<svg viewBox="0 0 80 80"><circle cx="40" cy="44" r="22" fill="#0f172a" stroke="#39ff14" stroke-width="3"/><ellipse cx="40" cy="44" rx="14" ry="8" fill="#39ff14"/><circle cx="40" cy="44" r="4" fill="#fff"/><line x1="40" y1="10" x2="40" y2="22" stroke="#39ff14" stroke-width="3"/><circle cx="40" cy="10" r="4" fill="#ff6600"/></svg>`,
+  pet_drag: `<svg viewBox="0 0 80 80"><polygon points="16,24 28,34 18,40" fill="#fde047"/><polygon points="64,24 52,34 62,40" fill="#fde047"/><circle cx="40" cy="46" r="22" fill="#ef4444" stroke="#fde047" stroke-width="2.5"/><circle cx="32" cy="42" r="4" fill="#fde047"/><circle cx="48" cy="42" r="4" fill="#fde047"/></svg>`
+};
+
+window.SVG_STORE = {
+  avatares: SVG_AVATARS,
+  sombreros: SVG_SOMBREROS,
+  lentes: SVG_LENTES,
+  boca: SVG_BOCA,
+  mascotas: SVG_MASCOTAS
+};
+
+
+function renderAvatar(base, accesorios = {}, size = 44, fotoUrl = "") {
+  if (base && typeof base === "object") {
+    const uObj = base;
+    accesorios = uObj.accesorios || {};
+    fotoUrl = uObj.fotoPerfil || "";
+    base = uObj.avatar || "e_smile";
+  }
+  const acc = { ...ACCESORIOS_DEFAULT, ...(accesorios || {}) };
+  const foto = urlFotoSegura(fotoUrl);
+  const avatarId = acc.emoji && SVG_AVATARS[acc.emoji] ? acc.emoji : "e_smile";
+  const svgBase = SVG_AVATARS[avatarId] || SVG_AVATARS.e_smile;
+  const svgSombrero = SVG_SOMBREROS[acc.sombrero] || "";
+  const svgLentes   = SVG_LENTES[acc.lentes] || "";
+  const svgBoca     = SVG_BOCA[acc.bigote] || "";
+  const svgMascota  = SVG_MASCOTAS[acc.mascota] || "";
+  const marcoAcc    = ACCESORIOS.marcos.find(a => a.id === acc.marco);
+  const efectoAcc   = ACCESORIOS.efectos.find(a => a.id === acc.efecto);
+
+  const offY = Math.max(-25, Math.min(25, Number(acc.offsetY) || 0)) * (size / 80);
+  const sc   = Math.max(0.75, Math.min(1.35, (Number(acc.scale) || 100) / 100));
+
+  const auraStyle  = efectoAcc?.css || "";
+  const marcoStyle = marcoAcc?.css || "box-shadow:0 0 0 2px rgba(255,255,255,0.16);";
+  const innerContent = foto
+    ? `<img src="${foto}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">`
+    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">${svgBase}</div>`;
+
+  return `<div class="av-plato-wrap" style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;flex-shrink:0;vertical-align:middle;overflow:visible !important;">
+    ${auraStyle ? `<div class="av-aura-layer" style="position:absolute;inset:-4px;border-radius:50%;pointer-events:none;${auraStyle}"></div>` : ""}
+    <div class="av-frame-ring" style="position:relative;width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#131722;${marcoStyle}">
+      <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+        ${innerContent}
+      </div>
+    </div>
+    ${svgSombrero ? `<div style="position:absolute;top:${Math.round(-size * 0.36 + offY)}px;left:50%;width:${Math.round(size * 0.95)}px;transform:translateX(-50%) scale(${sc});pointer-events:none;z-index:5;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.6))">${svgSombrero}</div>` : ""}
+    ${svgLentes ? `<div style="position:absolute;top:${Math.round(size * 0.18 + offY)}px;left:50%;width:${Math.round(size * 0.86)}px;transform:translateX(-50%) scale(${sc});pointer-events:none;z-index:4;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.55))">${svgLentes}</div>` : ""}
+    ${svgBoca ? `<div style="position:absolute;bottom:${Math.round(-size * 0.14 - offY * 0.5)}px;left:50%;width:${Math.round(size * 0.76)}px;transform:translateX(-50%) scale(${sc});pointer-events:none;z-index:4;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6))">${svgBoca}</div>` : ""}
+    ${svgMascota ? `<div class="av-pet-float" style="position:absolute;bottom:${Math.round(-size * 0.14)}px;right:${Math.round(-size * 0.24)}px;width:${Math.round(size * 0.52)}px;height:${Math.round(size * 0.52)}px;pointer-events:none;z-index:6;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.7))">${svgMascota}</div>` : ""}
+  </div>`;
+}
+window.renderAvatar = renderAvatar;
+
