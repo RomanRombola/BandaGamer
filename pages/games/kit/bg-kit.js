@@ -429,7 +429,7 @@
   }
 
   BG.draw = {
-    font: (size, weight = 700, fam = 'display') => `${weight} ${size}px ${fam === 'display' ? 'Outfit, system-ui, sans-serif' : ''Plus Jakarta Sans', system-ui, sans-serif'}`,
+    font: (size, weight = 700, fam = 'display') => `${weight} ${size}px ${fam === 'display' ? 'Outfit, system-ui, sans-serif' : 'Plus Jakarta Sans, system-ui, sans-serif'}`,
     text(ctx, str, x, y, o = {}) {
       if (drawVectorSprite(ctx, str, x, y, o.size || 24)) return;
       ctx.save();
