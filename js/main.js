@@ -1,18 +1,6 @@
+// main.js — AltoVicio V12 (Vectorial HD sin colisiones)
 
-// ── CATALOGO DE ARTE VECTORIAL LISO HD (ESTILO PLATO) ─────────────────────
-const SVG_ICONS_UI = {
-  logo: `<svg viewBox="0 0 48 48" width="26" height="26"><defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="#ffe600"/></linearGradient></defs><rect x="4" y="12" width="40" height="24" rx="12" fill="url(#lg1)"/><circle cx="15" cy="24" r="5" fill="#ff6600"/><circle cx="31" cy="21" r="2.5" fill="#0f172a"/><circle cx="36" cy="26" r="2.5" fill="#ff0055"/></svg>`,
-  coin: `<svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-3px"><circle cx="12" cy="12" r="10" fill="#ffb800" stroke="#fde047" stroke-width="2"/><path d="M9 8 L12 16 L15 8" stroke="#78350f" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  star: `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:-3px"><polygon points="12,2 15,9 22,9 16,14 18,21 12,17 6,21 8,14 2,9 9,9" fill="#ffb800"/></svg>`,
-  trophy: `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:-3px"><path d="M6 4 H18 V10 C18 13.5 15.5 16 12 16 C8.5 16 6 13.5 6 10 Z" fill="#ffb800"/><rect x="10" y="16" width="4" height="4" fill="#d97706"/><rect x="7" y="20" width="10" height="2.5" rx="1" fill="#fde047"/></svg>`,
-  heart: `<svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-2px"><path d="M12 21 L4 13 A5.5 5.5 0 0 1 12 5 A5.5 5.5 0 0 1 20 13 Z" fill="#ff2a5f"/></svg>`,
-  play: `<svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:-2px"><polygon points="6,4 20,12 6,20" fill="currentColor"/></svg>`,
-  check: `<svg viewBox="0 0 24 24" width="16" height="16" style="vertical-align:-3px"><path d="M5 13 L10 18 L19 6" stroke="#10b981" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  lock: `<svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:-2px"><rect x="5" y="11" width="14" height="10" rx="3" fill="#64748b"/><path d="M8 11 V8 A4 4 0 0 1 16 8 V11" stroke="#94a3b8" stroke-width="2.5" fill="none"/></svg>`
-};
-window.SVG_ICONS_UI = SVG_ICONS_UI;
-
-const SVG_AVATARS = {
+window.SVG_AVATARS = {
   e_smile: `<svg viewBox="0 0 100 100"><defs><linearGradient id="av1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff7b00"/><stop offset="100%" stop-color="#e11d48"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(#av1)"/><circle cx="50" cy="48" r="27" fill="#ffdfc4"/><path d="M22 44 C22 18, 78 18, 78 44 C70 28, 30 28, 22 44 Z" fill="#1e293b"/><circle cx="39" cy="47" r="4.2" fill="#0f172a"/><circle cx="61" cy="47" r="4.2" fill="#0f172a"/><circle cx="40.5" cy="45.5" r="1.5" fill="#fff"/><circle cx="62.5" cy="45.5" r="1.5" fill="#fff"/><path d="M41 58 Q50 65 59 58" stroke="#0f172a" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M22 94 C26 73, 74 73, 78 94 Z" fill="#0f172a"/></svg>`,
   e_cool: `<svg viewBox="0 0 100 100"><defs><linearGradient id="av2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00b4ff"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(#av2)"/><polygon points="24,20 40,38 20,46" fill="#ff6600"/><polygon points="76,20 60,38 80,46" fill="#ff6600"/><circle cx="50" cy="52" r="27" fill="#ffffff"/><path d="M25 46 Q50 36 75 46" stroke="#ff6600" stroke-width="4" fill="none"/><ellipse cx="39" cy="50" rx="6" ry="3.5" fill="#00b4ff"/><ellipse cx="61" cy="50" rx="6" ry="3.5" fill="#00b4ff"/><path d="M43 62 Q50 66 57 62" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
   e_fire: `<svg viewBox="0 0 100 100"><defs><linearGradient id="av3" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#e11d48"/><stop offset="100%" stop-color="#ff7b00"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="#131824"/><path d="M50 14 C68 32, 78 48, 72 68 C68 82, 32 82, 28 68 C22 48, 32 32, 50 14 Z" fill="url(#av3)"/><path d="M50 28 C60 40, 65 52, 60 66 C56 75, 44 75, 40 66 C35 52, 40 40, 50 28 Z" fill="#ffb800"/><ellipse cx="41" cy="56" rx="4" ry="6" fill="#131824"/><ellipse cx="59" cy="56" rx="4" ry="6" fill="#131824"/></svg>`,
@@ -24,7 +12,7 @@ const SVG_AVATARS = {
   e_supreme: `<svg viewBox="0 0 100 100"><defs><radialGradient id="avSu"><stop offset="0%" stop-color="#fde047"/><stop offset="55%" stop-color="#ff6600"/><stop offset="100%" stop-color="#3b0764"/></radialGradient></defs><circle cx="50" cy="50" r="50" fill="url(#avSu)"/><circle cx="50" cy="50" r="24" fill="#fff"/><polygon points="50,14 57,36 80,36 61,50 68,72 50,58 32,72 39,50 20,36 43,36" fill="#fde047"/></svg>`
 };
 
-const SVG_SOMBREROS = {
+window.SVG_SOMBREROS = {
   s_gorra: `<svg viewBox="0 0 120 70"><path d="M24 48 C24 18, 92 18, 92 48 Z" fill="#ff6600"/><path d="M20 45 L106 45 C112 45, 112 53, 102 53 L20 53 Z" fill="#1e293b"/><circle cx="58" cy="22" r="4" fill="#fff"/><rect x="44" y="32" width="28" height="8" rx="4" fill="#fff"/></svg>`,
   s_auris: `<svg viewBox="0 0 120 90"><path d="M18 62 C18 14, 102 14, 102 62" stroke="#1e293b" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M22 58 C22 18, 98 18, 98 58" stroke="#00b4ff" stroke-width="4" fill="none" stroke-linecap="round"/><rect x="8" y="48" width="16" height="30" rx="8" fill="#ff6600" stroke="#fff" stroke-width="2"/><rect x="96" y="48" width="16" height="30" rx="8" fill="#ff6600" stroke="#fff" stroke-width="2"/></svg>`,
   s_corona: `<svg viewBox="0 0 120 75"><defs><linearGradient id="crG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fde047"/><stop offset="100%" stop-color="#d97706"/></linearGradient></defs><polygon points="16,58 24,22 44,42 60,14 76,42 96,22 104,58" fill="url(#crG)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><rect x="16" y="54" width="88" height="10" rx="5" fill="#b45309"/><circle cx="60" cy="40" r="5" fill="#ff2a5f"/><circle cx="36" cy="46" r="4" fill="#00b4ff"/><circle cx="84" cy="46" r="4" fill="#00b4ff"/></svg>`,
@@ -38,7 +26,7 @@ const SVG_SOMBREROS = {
   s_supremo: `<svg viewBox="0 0 120 80"><defs><linearGradient id="supG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff"/><stop offset="40%" stop-color="#fde047"/><stop offset="100%" stop-color="#ff6600"/></linearGradient></defs><polygon points="12,60 22,18 44,40 60,8 76,40 98,18 108,60" fill="url(#supG)" stroke="#fff" stroke-width="2.5"/><circle cx="60" cy="36" r="6" fill="#00b4ff"/><circle cx="35" cy="44" r="4.5" fill="#ff2a5f"/><circle cx="85" cy="44" r="4.5" fill="#ff2a5f"/></svg>`
 };
 
-const SVG_LENTES = {
+window.SVG_LENTES = {
   l_cool: `<svg viewBox="0 0 120 50"><rect x="14" y="14" width="40" height="22" rx="5" fill="#0f172a" stroke="#fff" stroke-width="2"/><rect x="66" y="14" width="40" height="22" rx="5" fill="#0f172a" stroke="#fff" stroke-width="2"/><line x1="54" y1="22" x2="66" y2="22" stroke="#fff" stroke-width="3"/><line x1="22" y1="19" x2="32" y2="31" stroke="#fff" stroke-width="3" stroke-linecap="round"/><line x1="74" y1="19" x2="84" y2="31" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>`,
   l_cyber: `<svg viewBox="0 0 120 50"><defs><linearGradient id="cyG" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#00b4ff"/><stop offset="50%" stop-color="#ff2a5f"/><stop offset="100%" stop-color="#ff6600"/></linearGradient></defs><polygon points="10,14 110,14 102,36 66,36 60,26 54,36 18,36" fill="url(#cyG)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><line x1="24" y1="21" x2="96" y2="21" stroke="#fff" stroke-width="2" opacity="0.7"/></svg>`,
   l_nerd: `<svg viewBox="0 0 120 50"><circle cx="36" cy="25" r="16" fill="rgba(56,189,248,0.22)" stroke="#f8fafc" stroke-width="3.5"/><circle cx="84" cy="25" r="16" fill="rgba(56,189,248,0.22)" stroke="#f8fafc" stroke-width="3.5"/><path d="M52 25 Q60 20 68 25" stroke="#f8fafc" stroke-width="3.5" fill="none"/></svg>`,
@@ -49,7 +37,7 @@ const SVG_LENTES = {
   l_fire: `<svg viewBox="0 0 120 55"><circle cx="36" cy="26" r="12" fill="#ff6600"/><circle cx="36" cy="26" r="6" fill="#fde047"/><circle cx="84" cy="26" r="12" fill="#ff6600"/><circle cx="84" cy="26" r="6" fill="#fde047"/></svg>`
 };
 
-const SVG_BOCA = {
+window.SVG_BOCA = {
   b_mate: `<svg viewBox="0 0 100 70"><line x1="62" y1="8" x2="48" y2="36" stroke="#cbd5e1" stroke-width="5" stroke-linecap="round"/><circle cx="64" cy="7" r="4" fill="#e2e8f0"/><path d="M30 32 C26 56, 74 56, 70 32 Z" fill="#78350f" stroke="#d97706" stroke-width="3"/><ellipse cx="50" cy="32" rx="20" ry="5" fill="#4ade80" stroke="#cbd5e1" stroke-width="2.5"/></svg>`,
   b_ninja: `<svg viewBox="0 0 120 65"><path d="M22 14 Q60 24 98 14 L90 50 Q60 62 30 50 Z" fill="#0f172a" stroke="#00b4ff" stroke-width="2.5"/><line x1="42" y1="32" x2="78" y2="32" stroke="#00b4ff" stroke-width="3" stroke-linecap="round"/><line x1="48" y1="41" x2="72" y2="41" stroke="#ff6600" stroke-width="3" stroke-linecap="round"/></svg>`,
   b_fino: `<svg viewBox="0 0 120 50"><path d="M60 22 C46 12, 26 28, 16 18 C22 36, 46 34, 60 26 C74 34, 98 36, 104 18 C94 28, 74 12, 60 22 Z" fill="#1e293b" stroke="#fff" stroke-width="1.5"/></svg>`,
@@ -58,7 +46,7 @@ const SVG_BOCA = {
   b_pizza: `<svg viewBox="0 0 100 65"><polygon points="50,8 22,54 78,54" fill="#fde047" stroke="#d97706" stroke-width="3" stroke-linejoin="round"/><path d="M20 52 Q50 60 80 52" stroke="#b45309" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="46" cy="34" r="5" fill="#ef4444"/><circle cx="58" cy="44" r="5" fill="#ef4444"/><circle cx="42" cy="46" r="4" fill="#ef4444"/></svg>`
 };
 
-const SVG_MASCOTAS = {
+window.SVG_MASCOTAS = {
   pet_capi: `<svg viewBox="0 0 80 80"><ellipse cx="40" cy="46" rx="26" ry="22" fill="#b45309"/><ellipse cx="52" cy="42" rx="14" ry="11" fill="#92400e"/><circle cx="26" cy="26" r="6" fill="#78350f"/><circle cx="46" cy="36" r="3.5" fill="#0f172a"/><ellipse cx="62" cy="40" rx="3" ry="2" fill="#0f172a"/><path d="M34 22 Q40 12 48 20" stroke="#4ade80" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`,
   pet_cat: `<svg viewBox="0 0 80 80"><polygon points="16,40 20,12 38,28" fill="#00b4ff"/><polygon points="64,40 60,12 42,28" fill="#00b4ff"/><circle cx="40" cy="46" r="24" fill="#1e293b" stroke="#00b4ff" stroke-width="2.5"/><circle cx="31" cy="44" r="4" fill="#fde047"/><circle cx="49" cy="44" r="4" fill="#fde047"/><polygon points="40,50 37,54 43,54" fill="#ff2a5f"/></svg>`,
   pet_dog: `<svg viewBox="0 0 80 80"><polygon points="16,38 22,14 36,28" fill="#f59e0b"/><polygon points="64,38 58,14 44,28" fill="#f59e0b"/><circle cx="40" cy="46" r="24" fill="#fbbf24"/><ellipse cx="40" cy="52" rx="14" ry="10" fill="#fef3c7"/><circle cx="31" cy="42" r="3.5" fill="#0f172a"/><circle cx="49" cy="42" r="3.5" fill="#0f172a"/><ellipse cx="40" cy="49" rx="4" ry="3" fill="#0f172a"/></svg>`,
@@ -67,17 +55,6 @@ const SVG_MASCOTAS = {
   pet_alien: `<svg viewBox="0 0 80 80"><circle cx="40" cy="44" r="22" fill="#0f172a" stroke="#10b981" stroke-width="3"/><ellipse cx="40" cy="44" rx="14" ry="8" fill="#10b981"/><circle cx="40" cy="44" r="4" fill="#fff"/><line x1="40" y1="10" x2="40" y2="22" stroke="#10b981" stroke-width="3"/><circle cx="40" cy="10" r="4" fill="#ff6600"/></svg>`,
   pet_drag: `<svg viewBox="0 0 80 80"><polygon points="16,24 28,34 18,40" fill="#fde047"/><polygon points="64,24 52,34 62,40" fill="#fde047"/><circle cx="40" cy="46" r="22" fill="#ef4444" stroke="#fde047" stroke-width="2.5"/><circle cx="32" cy="42" r="4" fill="#fde047"/><circle cx="48" cy="42" r="4" fill="#fde047"/></svg>`
 };
-
-window.SVG_STORE = {
-  avatares: SVG_AVATARS,
-  sombreros: SVG_SOMBREROS,
-  lentes: SVG_LENTES,
-  boca: SVG_BOCA,
-  mascotas: SVG_MASCOTAS
-};
-
-// main.js — AltoVicio V9 (Limpio y completo)
-// Maneja autenticación, perfil en Firestore, ranking global, logros y tienda estilo Plato.
 
 function esc(s) {
   return String(s == null ? "" : s)
@@ -113,7 +90,7 @@ const LOGROS = [
   { id: "diez_horas",      icon: "🏆", nombre: "Sin Vida Social",  desc: "Jugaste 10 horas en total",     condicion: u => u.tiempo_jugado_total >= 36000 }
 ];
 
-const ACCESORIOS_DEFAULT = {
+window.ACCESORIOS_DEFAULT = {
   emoji: "e_smile",
   sombrero: "s_none",
   lentes: "l_none",
@@ -126,116 +103,102 @@ const ACCESORIOS_DEFAULT = {
   offsetY: 0,
   scale: 100
 };
-window.ACCESORIOS_DEFAULT = ACCESORIOS_DEFAULT;
+const ACCESORIOS_DEFAULT = window.ACCESORIOS_DEFAULT;
 
-const ACCESORIOS = {
+window.ACCESORIOS = {
   sombreros: [
-    { id: "s_none",       emoji: "",     nombre: "Sin sombrero",    precio: 0,    reqNivel: 1, rareza: "comun" },
-    { id: "s_gorra",      emoji: "🧢",   nombre: "Gorra Street",    precio: 40,   reqNivel: 1, rareza: "comun" },
-    { id: "s_auris",      emoji: "🎧",   nombre: "Auris Streamer",  precio: 90,   reqNivel: 1, rareza: "raro" },
-    { id: "s_cowboy",     emoji: "🤠",   nombre: "Vaquero Picante", precio: 120,  reqNivel: 2, rareza: "raro" },
-    { id: "s_chef",       emoji: "👨‍🍳",  nombre: "Master Chef",     precio: 150,  reqNivel: 2, rareza: "raro" },
-    { id: "s_casco",      emoji: "⛑️",   nombre: "Casco Rescate",   precio: 160,  reqNivel: 3, rareza: "raro" },
-    { id: "s_bruja",      emoji: "🎩",   nombre: "Galera VIP",      precio: 220,  reqNivel: 3, rareza: "epico" },
-    { id: "s_angel",      emoji: "😇",   nombre: "Santo Inocente",  precio: 260,  reqNivel: 4, rareza: "epico" },
-    { id: "s_diablo",     emoji: "😈",   nombre: "Diablito",        precio: 280,  reqNivel: 4, rareza: "epico" },
-    { id: "s_santa",      emoji: "🎅",   nombre: "Papá Noel",       precio: 250,  reqNivel: 4, rareza: "epico" },
-    { id: "s_corona",     emoji: "👑",   nombre: "Corona del Rey",  precio: 400,  reqNivel: 5, rareza: "legendario" },
-    { id: "s_vikingo",    emoji: "🪖",   nombre: "Casco Táctico",   precio: 420,  reqNivel: 6, rareza: "epico" },
-    { id: "s_mago",       emoji: "🧙‍♂️",  nombre: "Hechicero",       precio: 500,  reqNivel: 7, rareza: "legendario" },
-    { id: "s_astronauta", emoji: "👨‍🚀",  nombre: "Cosmonauta",      precio: 650,  reqNivel: 8, rareza: "legendario" },
-    { id: "s_alien_hat",  emoji: "🛸",   nombre: "Abducción OVNI",  precio: 850,  reqNivel: 9, rareza: "mitico" },
-    { id: "s_supremo",    emoji: "🏆",   nombre: "Copa del Mundo",  precio: 1000, reqNivel: 10, rareza: "mitico" }
+    { id: "s_none",      nombre: "Sin sombrero",    precio: 0,    reqNivel: 1, rareza: "comun" },
+    { id: "s_gorra",     nombre: "Gorra Street",    precio: 40,   reqNivel: 1, rareza: "comun" },
+    { id: "s_auris",     nombre: "Auris Streamer",  precio: 90,   reqNivel: 1, rareza: "raro" },
+    { id: "s_chef",      nombre: "Master Chef",     precio: 150,  reqNivel: 2, rareza: "raro" },
+    { id: "s_bruja",     nombre: "Galera VIP",      precio: 220,  reqNivel: 3, rareza: "epico" },
+    { id: "s_angel",     nombre: "Aureola Ángel",   precio: 260,  reqNivel: 4, rareza: "epico" },
+    { id: "s_diablo",    nombre: "Cuernos Demonio", precio: 280,  reqNivel: 4, rareza: "epico" },
+    { id: "s_corona",    nombre: "Corona del Rey",  precio: 400,  reqNivel: 5, rareza: "legendario" },
+    { id: "s_vikingo",   nombre: "Casco Vikingo",   precio: 420,  reqNivel: 6, rareza: "epico" },
+    { id: "s_mago",      nombre: "Sombrero Mago",   precio: 500,  reqNivel: 7, rareza: "legendario" },
+    { id: "s_alien_hat", nombre: "Platillo OVNI",   precio: 850,  reqNivel: 9, rareza: "mitico" },
+    { id: "s_supremo",   nombre: "Corona Suprema",  precio: 1000, reqNivel: 10, rareza: "mitico" }
   ],
   lentes: [
-    { id: "l_none",  emoji: "",   nombre: "Sin lentes",     precio: 0,   reqNivel: 1, rareza: "comun" },
-    { id: "l_cool",  emoji: "🕶️", nombre: "Deal With It",   precio: 60,  reqNivel: 1, rareza: "comun" },
-    { id: "l_nerd",  emoji: "👓", nombre: "Intelectual",    precio: 90,  reqNivel: 1, rareza: "comun" },
-    { id: "l_monoc", emoji: "🧐", nombre: "Fino Señores",   precio: 150, reqNivel: 2, rareza: "raro" },
-    { id: "l_fuego", emoji: "🥸", nombre: "Incógnito",      precio: 160, reqNivel: 3, rareza: "raro" },
-    { id: "l_star",  emoji: "🤩", nombre: "Ojos Estrella",  precio: 220, reqNivel: 4, rareza: "epico" },
-    { id: "l_heart", emoji: "😍", nombre: "Enamorado",      precio: 240, reqNivel: 4, rareza: "epico" },
-    { id: "l_vr",    emoji: "🥽", nombre: "Visor Meta VR",  precio: 350, reqNivel: 5, rareza: "epico" },
-    { id: "l_fire",  emoji: "🔥", nombre: "Mirada Ígnea",   precio: 480, reqNivel: 6, rareza: "legendario" },
-    { id: "l_cyber", emoji: "⚡", nombre: "Láser Voltaico", precio: 650, reqNivel: 8, rareza: "mitico" }
+    { id: "l_none",  nombre: "Sin lentes",     precio: 0,   reqNivel: 1, rareza: "comun" },
+    { id: "l_cool",  nombre: "Deal With It",   precio: 60,  reqNivel: 1, rareza: "comun" },
+    { id: "l_nerd",  nombre: "Cristal HD",     precio: 90,  reqNivel: 1, rareza: "comun" },
+    { id: "l_monoc", nombre: "Monóculo Dorado",precio: 150, reqNivel: 2, rareza: "raro" },
+    { id: "l_star",  nombre: "Estrellas Pop",  precio: 220, reqNivel: 4, rareza: "epico" },
+    { id: "l_heart", nombre: "Corazones",      precio: 240, reqNivel: 4, rareza: "epico" },
+    { id: "l_vr",    nombre: "Visor Pro VR",   precio: 350, reqNivel: 5, rareza: "epico" },
+    { id: "l_fire",  nombre: "Mirada Ígnea",   precio: 480, reqNivel: 6, rareza: "legendario" },
+    { id: "l_cyber", nombre: "Visor Cyberpunk",precio: 650, reqNivel: 8, rareza: "mitico" }
   ],
   bigotes: [
-    { id: "b_none",   emoji: "",    nombre: "Sin accesorio",   precio: 0,   reqNivel: 1, rareza: "comun" },
-    { id: "b_mate",   emoji: "🧉",  nombre: "Mate Amargo",     precio: 80,  reqNivel: 1, rareza: "raro" },
-    { id: "b_fino",   emoji: "🥸",  nombre: "Mostacho",        precio: 60,  reqNivel: 1, rareza: "comun" },
-    { id: "b_pizza",  emoji: "🍕",  nombre: "Porción Muzza",   precio: 120, reqNivel: 2, rareza: "raro" },
-    { id: "b_largo",  emoji: "🧔",  nombre: "Barba Leñador",   precio: 140, reqNivel: 2, rareza: "raro" },
-    { id: "b_rosa",   emoji: "🌹",  nombre: "Galán Seductor",  precio: 180, reqNivel: 3, rareza: "epico" },
-    { id: "b_pirata", emoji: "🏴‍☠️", nombre: "Parche Pirata",   precio: 220, reqNivel: 4, rareza: "epico" },
-    { id: "b_ninja",  emoji: "🥷",  nombre: "Máscara Shinobi", precio: 320, reqNivel: 5, rareza: "epico" },
-    { id: "b_fuego",  emoji: "🌶️",  nombre: "Picante",         precio: 380, reqNivel: 6, rareza: "legendario" },
-    { id: "b_king",   emoji: "💎",  nombre: "Grillz Diamante", precio: 550, reqNivel: 7, rareza: "mitico" }
+    { id: "b_none",  nombre: "Sin accesorio",   precio: 0,   reqNivel: 1, rareza: "comun" },
+    { id: "b_mate",  nombre: "Mate Argentino",  precio: 80,  reqNivel: 1, rareza: "raro" },
+    { id: "b_fino",  nombre: "Mostacho Fino",   precio: 60,  reqNivel: 1, rareza: "comun" },
+    { id: "b_pizza", nombre: "Pizza Caliente",  precio: 120, reqNivel: 2, rareza: "raro" },
+    { id: "b_rosa",  nombre: "Rosa Seductora",  precio: 180, reqNivel: 3, rareza: "epico" },
+    { id: "b_ninja", nombre: "Máscara Shinobi", precio: 320, reqNivel: 5, rareza: "epico" },
+    { id: "b_king",  nombre: "Collar Diamante", precio: 550, reqNivel: 7, rareza: "mitico" }
   ],
   marcos: [
     { id: "m_none",    css: "", nombre: "Sin marco", precio: 0, reqNivel: 1, rareza: "comun" },
     { id: "m_naranja", css: "box-shadow:0 0 0 3px #ff6600, 0 0 14px #ff6600;", nombre: "Neón Naranja", precio: 50, reqNivel: 1, rareza: "comun" },
-    { id: "m_azul",    css: "box-shadow:0 0 0 3px #00aaff, 0 0 14px #00aaff;", nombre: "Láser Azul", precio: 50, reqNivel: 1, rareza: "comun" },
-    { id: "m_verde",   css: "box-shadow:0 0 0 3px #39ff14, 0 0 16px #39ff14;", nombre: "Tóxico Radioactivo", precio: 100, reqNivel: 2, rareza: "raro" },
-    { id: "m_rojo",    css: "box-shadow:0 0 0 3px #ff0055, 0 0 18px #ff0055;", nombre: "Furia Carmesí", precio: 150, reqNivel: 2, rareza: "raro" },
-    { id: "m_dorado",  css: "box-shadow:0 0 0 3px #ffe600, 0 0 20px #ff9900;", nombre: "Oro Puro", precio: 220, reqNivel: 3, rareza: "epico" },
-    { id: "m_arg",     css: "background:conic-gradient(#74acdf 0 33%, #fff 33% 66%, #ffd700 66% 100%);padding:3px;box-shadow:0 0 18px rgba(116,172,223,0.8);", nombre: "Campeón ⭐⭐⭐", precio: 350, reqNivel: 3, rareza: "legendario", spin: true },
-    { id: "m_morado",  css: "box-shadow:0 0 0 3px #a855f7, 0 0 20px #a855f7;", nombre: "Abismo Púrpura", precio: 200, reqNivel: 3, rareza: "epico" },
-    { id: "m_celeste", css: "box-shadow:0 0 0 3px #00ffcc, 0 0 20px #00ffcc;", nombre: "Hielo Eterno", precio: 260, reqNivel: 4, rareza: "epico" },
-    { id: "m_galaxy",  css: "background:conic-gradient(#ff0055,#ff6600,#ffe600,#39ff14,#00aaff,#a855f7,#ff0055);padding:3px;box-shadow:0 0 22px rgba(0,170,255,0.7);", nombre: "RGB Gamer Pro", precio: 500, reqNivel: 5, rareza: "legendario", spin: true },
-    { id: "m_fuego",   css: "background:conic-gradient(#ff0000,#ff6600,#ffe600,#ff6600,#ff0000);padding:3px;box-shadow:0 0 24px rgba(255,80,0,0.9);", nombre: "Llama Solar", precio: 650, reqNivel: 7, rareza: "legendario", spin: true },
-    { id: "m_aurora",  css: "background:conic-gradient(#00ffcc,#00aaff,#a855f7,#ff00aa,#00ffcc);padding:3px;box-shadow:0 0 26px rgba(168,85,247,0.85);", nombre: "Galaxia Mítica", precio: 800, reqNivel: 8, rareza: "mitico", spin: true },
-    { id: "m_banda",   css: "background:conic-gradient(#ffe600,#ff6600,#ffffff,#ff6600,#ffe600);padding:3.5px;box-shadow:0 0 30px rgba(255,215,0,0.95);", nombre: "Dios del Vicio", precio: 1000, reqNivel: 10, rareza: "mitico", spin: true }
+    { id: "m_azul",    css: "box-shadow:0 0 0 3px #00b4ff, 0 0 14px #00b4ff;", nombre: "Láser Azul", precio: 50, reqNivel: 1, rareza: "comun" },
+    { id: "m_verde",   css: "box-shadow:0 0 0 3px #10b981, 0 0 16px #10b981;", nombre: "Esmeralda", precio: 100, reqNivel: 2, rareza: "raro" },
+    { id: "m_rojo",    css: "box-shadow:0 0 0 3px #ff2a5f, 0 0 18px #ff2a5f;", nombre: "Carmesí", precio: 150, reqNivel: 2, rareza: "raro" },
+    { id: "m_dorado",  css: "box-shadow:0 0 0 3px #ffb800, 0 0 20px #ff9900;", nombre: "Oro Puro", precio: 220, reqNivel: 3, rareza: "epico" },
+    { id: "m_arg",     css: "background:conic-gradient(#74acdf 0 33%, #fff 33% 66%, #ffd700 66% 100%);padding:3px;box-shadow:0 0 18px rgba(116,172,223,0.8);", nombre: "Campeón Mundial", precio: 350, reqNivel: 3, rareza: "legendario" },
+    { id: "m_galaxy",  css: "background:conic-gradient(#ff2a5f,#ff6600,#ffb800,#10b981,#00b4ff,#a855f7,#ff2a5f);padding:3px;box-shadow:0 0 22px rgba(0,180,255,0.7);", nombre: "RGB Gamer Pro", precio: 500, reqNivel: 5, rareza: "legendario" },
+    { id: "m_fuego",   css: "background:conic-gradient(#ff0000,#ff6600,#ffb800,#ff6600,#ff0000);padding:3px;box-shadow:0 0 24px rgba(255,80,0,0.9);", nombre: "Llama Solar", precio: 650, reqNivel: 7, rareza: "legendario" },
+    { id: "m_aurora",  css: "background:conic-gradient(#00ffcc,#00b4ff,#a855f7,#ff2a5f,#00ffcc);padding:3px;box-shadow:0 0 26px rgba(168,85,247,0.85);", nombre: "Galaxia Mítica", precio: 800, reqNivel: 8, rareza: "mitico" }
   ],
   efectos: [
-    { id: "ef_none",   badge: "",   css: "", nombre: "Sin aura", precio: 0, reqNivel: 1, rareza: "comun" },
-    { id: "ef_stars",  badge: "✨", css: "box-shadow:0 0 24px rgba(255,230,0,0.55);", nombre: "Polvo Estelar", precio: 180, reqNivel: 2, rareza: "raro" },
-    { id: "ef_hearts", badge: "💖", css: "box-shadow:0 0 24px rgba(255,51,153,0.65);", nombre: "Rompecorazones", precio: 240, reqNivel: 3, rareza: "epico" },
-    { id: "ef_fire",   badge: "🔥", css: "box-shadow:0 0 28px rgba(255,80,0,0.8), 0 -6px 20px rgba(255,200,0,0.6);", nombre: "Aura Ígnea", precio: 380, reqNivel: 4, rareza: "epico" },
-    { id: "ef_saiyan", badge: "⚡", css: "box-shadow:0 0 32px rgba(255,230,0,0.95), 0 0 12px #00e5ff;", nombre: "Ki Saiyajin", precio: 550, reqNivel: 6, rareza: "legendario" },
-    { id: "ef_dark",   badge: "🌀", css: "box-shadow:0 0 32px rgba(147,51,234,0.9), inset 0 0 12px #000;", nombre: "Materia Oscura", precio: 750, reqNivel: 8, rareza: "mitico" }
+    { id: "ef_none",   css: "", nombre: "Sin aura", precio: 0, reqNivel: 1, rareza: "comun" },
+    { id: "ef_stars",  css: "box-shadow:0 0 24px rgba(255,184,0,0.6);", nombre: "Polvo Estelar", precio: 180, reqNivel: 2, rareza: "raro" },
+    { id: "ef_hearts", css: "box-shadow:0 0 24px rgba(255,42,95,0.7);", nombre: "Pulso Carmesí", precio: 240, reqNivel: 3, rareza: "epico" },
+    { id: "ef_fire",   css: "box-shadow:0 0 28px rgba(255,102,0,0.85);", nombre: "Aura Ígnea", precio: 380, reqNivel: 4, rareza: "epico" },
+    { id: "ef_saiyan", css: "box-shadow:0 0 32px rgba(0,180,255,0.9);", nombre: "Energía Voltaica", precio: 550, reqNivel: 6, rareza: "legendario" },
+    { id: "ef_dark",   css: "box-shadow:0 0 32px rgba(168,85,247,0.95);", nombre: "Materia Oscura", precio: 750, reqNivel: 8, rareza: "mitico" }
   ],
   mascotas: [
-    { id: "pet_none",  emoji: "",   nombre: "Sin mascota",    precio: 0,   reqNivel: 1, rareza: "comun" },
-    { id: "pet_capi",  emoji: "🦫", nombre: "Capibara Chill", precio: 150, reqNivel: 1, rareza: "raro" },
-    { id: "pet_cat",   emoji: "🐱", nombre: "Michi Vicioso",  precio: 180, reqNivel: 2, rareza: "raro" },
-    { id: "pet_dog",   emoji: "🐶", nombre: "Doge Guardián",  precio: 180, reqNivel: 2, rareza: "raro" },
-    { id: "pet_duck",  emoji: "🦆", nombre: "Patito Táctico", precio: 260, reqNivel: 3, rareza: "epico" },
-    { id: "pet_ghost", emoji: "👻", nombre: "Gasparín",       precio: 320, reqNivel: 4, rareza: "epico" },
-    { id: "pet_alien", emoji: "👾", nombre: "Invasor 8-Bit",  precio: 450, reqNivel: 5, rareza: "legendario" },
-    { id: "pet_drag",  emoji: "🐉", nombre: "Shenlong Mini",  precio: 700, reqNivel: 7, rareza: "mitico" }
+    { id: "pet_none",  nombre: "Sin mascota",    precio: 0,   reqNivel: 1, rareza: "comun" },
+    { id: "pet_capi",  nombre: "Capibara Chill", precio: 150, reqNivel: 1, rareza: "raro" },
+    { id: "pet_cat",   nombre: "Michi Neón",     precio: 180, reqNivel: 2, rareza: "raro" },
+    { id: "pet_dog",   nombre: "Doge Guardián",  precio: 180, reqNivel: 2, rareza: "raro" },
+    { id: "pet_duck",  nombre: "Patito Táctico", precio: 260, reqNivel: 3, rareza: "epico" },
+    { id: "pet_ghost", nombre: "Fantasmita HD",  precio: 320, reqNivel: 4, rareza: "epico" },
+    { id: "pet_alien", nombre: "Dron Alien",     precio: 450, reqNivel: 5, rareza: "legendario" },
+    { id: "pet_drag",  nombre: "Dragón Carmesí", precio: 700, reqNivel: 7, rareza: "mitico" }
   ],
   titulos: [
-    { id: "t_none",     texto: "",                     color: "#888888", precio: 0,   reqNivel: 1, rareza: "comun" },
-    { id: "t_cebador",  texto: "🧉 Cebador Oficial",   color: "#39ff88", precio: 80,  reqNivel: 1, rareza: "comun" },
-    { id: "t_tryhard",  texto: "💦 Tryhard 24/7",      color: "#00aaff", precio: 140, reqNivel: 2, rareza: "raro" },
-    { id: "t_impostor", texto: "🔪 Impostor Pro",      color: "#ff3366", precio: 200, reqNivel: 3, rareza: "epico" },
-    { id: "t_campeon",  texto: "⭐⭐⭐ Campeón Mundial", color: "#74acdf", precio: 300, reqNivel: 3, rareza: "legendario" },
-    { id: "t_millo",    texto: "💸 Magnate VicioCoin", color: "#ffe600", precio: 500, reqNivel: 5, rareza: "legendario" },
-    { id: "t_dios",     texto: "👑 Rey de AltoVicio",  color: "#ff6600", precio: 900, reqNivel: 8, rareza: "mitico" }
+    { id: "t_none",     texto: "",                 color: "#94a3b8", precio: 0,   reqNivel: 1, rareza: "comun" },
+    { id: "t_cebador",  texto: "Cebador Oficial",  color: "#10b981", precio: 80,  reqNivel: 1, rareza: "comun" },
+    { id: "t_tryhard",  texto: "Tryhard 24/7",     color: "#00b4ff", precio: 140, reqNivel: 2, rareza: "raro" },
+    { id: "t_impostor", texto: "Impostor Pro",     color: "#ff2a5f", precio: 200, reqNivel: 3, rareza: "epico" },
+    { id: "t_campeon",  texto: "Campeón Mundial",  color: "#38bdf8", precio: 300, reqNivel: 3, rareza: "legendario" },
+    { id: "t_millo",    texto: "Magnate VicioCoin",color: "#ffb800", precio: 500, reqNivel: 5, rareza: "legendario" },
+    { id: "t_dios",     texto: "Rey de AltoVicio", color: "#ff6600", precio: 900, reqNivel: 8, rareza: "mitico" }
   ],
   burbujas: [
     { id: "chat_default", nombre: "Clásica",        precio: 0,   reqNivel: 1, rareza: "comun",      css: "background:rgba(255,102,0,0.2);border:1px solid rgba(255,102,0,0.35);color:#fff;" },
-    { id: "chat_cyber",   nombre: "Cyberpunk Neón", precio: 120, reqNivel: 1, rareza: "raro",       css: "background:linear-gradient(135deg,rgba(0,170,255,0.28),rgba(168,85,247,0.28));border:1px solid #00e5ff;color:#e0faff;box-shadow:0 0 12px rgba(0,229,255,0.25);" },
-    { id: "chat_toxic",   nombre: "Ácido Verde",    precio: 180, reqNivel: 2, rareza: "raro",       css: "background:rgba(57,255,20,0.16);border:1px solid #39ff14;color:#d8ffd0;box-shadow:0 0 10px rgba(57,255,20,0.2);" },
-    { id: "chat_fire",    nombre: "Fuego Infernal", precio: 280, reqNivel: 4, rareza: "epico",      css: "background:linear-gradient(135deg,rgba(255,0,60,0.3),rgba(255,120,0,0.3));border:1px solid #ff4500;color:#fff2e6;box-shadow:0 0 14px rgba(255,69,0,0.3);" },
-    { id: "chat_gold",    nombre: "VIP Oro Real",   precio: 450, reqNivel: 6, rareza: "legendario", css: "background:linear-gradient(135deg,rgba(255,215,0,0.28),rgba(180,100,0,0.35));border:1px solid #ffd700;color:#fffbe0;box-shadow:0 0 16px rgba(255,215,0,0.35);font-weight:700;" }
+    { id: "chat_cyber",   nombre: "Cyberpunk Neón", precio: 120, reqNivel: 1, rareza: "raro",       css: "background:linear-gradient(135deg,rgba(0,180,255,0.28),rgba(168,85,247,0.28));border:1px solid #00b4ff;color:#e0faff;" },
+    { id: "chat_toxic",   nombre: "Esmeralda Pro",  precio: 180, reqNivel: 2, rareza: "raro",       css: "background:rgba(16,185,129,0.2);border:1px solid #10b981;color:#d8ffd0;" },
+    { id: "chat_fire",    nombre: "Fuego Solar",    precio: 280, reqNivel: 4, rareza: "epico",      css: "background:linear-gradient(135deg,rgba(255,42,95,0.3),rgba(255,120,0,0.3));border:1px solid #ff6600;color:#fff2e6;" },
+    { id: "chat_gold",    nombre: "VIP Oro Real",   precio: 450, reqNivel: 6, rareza: "legendario", css: "background:linear-gradient(135deg,rgba(255,184,0,0.28),rgba(180,100,0,0.35));border:1px solid #ffb800;color:#fffbe0;font-weight:700;" }
   ],
   emojis: [
-    { id: "e_smile",     emoji: "😊", nombre: "Sonrisa",   precio: 0,    reqNivel: 1, rareza: "comun" },
-    { id: "e_cool",      emoji: "😎", nombre: "Fachero",   precio: 50,   reqNivel: 1, rareza: "comun" },
-    { id: "e_clown",     emoji: "🤡", nombre: "Payaso",    precio: 80,   reqNivel: 1, rareza: "raro" },
-    { id: "e_fire",      emoji: "🔥", nombre: "Fuego",     precio: 100,  reqNivel: 2, rareza: "raro" },
-    { id: "e_Ghostface", emoji: "😱", nombre: "Scream",    precio: 150,  reqNivel: 2, rareza: "raro" },
-    { id: "e_skull",     emoji: "💀", nombre: "Calavera",  precio: 220,  reqNivel: 3, rareza: "epico" },
-    { id: "e_alien",     emoji: "👽", nombre: "Visitante", precio: 280,  reqNivel: 4, rareza: "epico" },
-    { id: "e_robot",     emoji: "🤖", nombre: "Mecha",     precio: 340,  reqNivel: 5, rareza: "epico" },
-    { id: "e_ninja",     emoji: "🥷", nombre: "Sombra",    precio: 420,  reqNivel: 6, rareza: "legendario" },
-    { id: "e_dragon",    emoji: "🐲", nombre: "Dragón",    precio: 550,  reqNivel: 7, rareza: "legendario" },
-    { id: "e_diamond",   emoji: "💎", nombre: "Diamante",  precio: 750,  reqNivel: 8, rareza: "mitico" },
-    { id: "e_supreme",   emoji: "🌌", nombre: "Cósmico",   precio: 1000, reqNivel: 10, rareza: "mitico" }
+    { id: "e_smile",   nombre: "Clásico HD",  precio: 0,    reqNivel: 1, rareza: "comun" },
+    { id: "e_cool",    nombre: "Kitsune",     precio: 60,   reqNivel: 1, rareza: "comun" },
+    { id: "e_fire",    nombre: "Espíritu",    precio: 120,  reqNivel: 2, rareza: "raro" },
+    { id: "e_skull",   nombre: "Calavera",    precio: 220,  reqNivel: 3, rareza: "epico" },
+    { id: "e_robot",   nombre: "Mecha Bot",   precio: 340,  reqNivel: 5, rareza: "epico" },
+    { id: "e_ninja",   nombre: "Shinobi",     precio: 420,  reqNivel: 6, rareza: "legendario" },
+    { id: "e_dragon",  nombre: "Dragón",      precio: 550,  reqNivel: 7, rareza: "legendario" },
+    { id: "e_diamond", nombre: "Cristal",     precio: 750,  reqNivel: 8, rareza: "mitico" },
+    { id: "e_supreme", nombre: "Cósmico",     precio: 1000, reqNivel: 10, rareza: "mitico" }
   ]
 };
-window.ACCESORIOS = ACCESORIOS;
+const ACCESORIOS = window.ACCESORIOS;
 
 function renderAvatar(base, accesorios = {}, size = 44, fotoUrl = "") {
   if (base && typeof base === "object") {
@@ -246,12 +209,12 @@ function renderAvatar(base, accesorios = {}, size = 44, fotoUrl = "") {
   }
   const acc = { ...ACCESORIOS_DEFAULT, ...(accesorios || {}) };
   const foto = urlFotoSegura(fotoUrl);
-  const avatarId = acc.emoji && SVG_AVATARS[acc.emoji] ? acc.emoji : "e_smile";
-  const svgBase = SVG_AVATARS[avatarId] || SVG_AVATARS.e_smile;
-  const svgSombrero = SVG_SOMBREROS[acc.sombrero] || "";
-  const svgLentes   = SVG_LENTES[acc.lentes] || "";
-  const svgBoca     = SVG_BOCA[acc.bigote] || "";
-  const svgMascota  = SVG_MASCOTAS[acc.mascota] || "";
+  const avatarId = acc.emoji && window.SVG_AVATARS[acc.emoji] ? acc.emoji : "e_smile";
+  const svgBase     = window.SVG_AVATARS[avatarId] || window.SVG_AVATARS.e_smile;
+  const svgSombrero = window.SVG_SOMBREROS[acc.sombrero] || "";
+  const svgLentes   = window.SVG_LENTES[acc.lentes] || "";
+  const svgBoca     = window.SVG_BOCA[acc.bigote] || "";
+  const svgMascota  = window.SVG_MASCOTAS[acc.mascota] || "";
   const marcoAcc    = ACCESORIOS.marcos.find(a => a.id === acc.marco);
   const efectoAcc   = ACCESORIOS.efectos.find(a => a.id === acc.efecto);
 
@@ -259,7 +222,7 @@ function renderAvatar(base, accesorios = {}, size = 44, fotoUrl = "") {
   const sc   = Math.max(0.75, Math.min(1.35, (Number(acc.scale) || 100) / 100));
 
   const auraStyle  = efectoAcc?.css || "";
-  const marcoStyle = marcoAcc?.css || "box-shadow:0 0 0 2px rgba(255,255,255,0.16);";
+  const marcoStyle = marcoAcc?.css || "box-shadow:0 0 0 2px rgba(255,255,255,0.14);";
   const innerContent = foto
     ? `<img src="${foto}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">`
     : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">${svgBase}</div>`;
@@ -283,7 +246,7 @@ function renderTituloBadge(accesorios = {}) {
   const id = accesorios?.titulo || "t_none";
   const t = ACCESORIOS.titulos.find(x => x.id === id);
   if (!t || !t.texto) return "";
-  return `<span class="av-titulo-pill" style="display:inline-block;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:800;padding:2px 8px;border-radius:99px;background:rgba(0,0,0,0.45);border:1px solid ${t.color};color:${t.color};letter-spacing:0.6px;box-shadow:0 0 8px ${t.color}33;vertical-align:middle">${t.texto}</span>`;
+  return `<span class="av-titulo-pill" style="display:inline-block;font-family:'Outfit',sans-serif;font-size:10px;font-weight:800;padding:2px 9px;border-radius:99px;background:rgba(15,23,42,0.75);border:1px solid ${t.color};color:${t.color};vertical-align:middle">${t.texto}</span>`;
 }
 window.renderTituloBadge = renderTituloBadge;
 
@@ -297,7 +260,6 @@ window.getChatBubbleCSS = getChatBubbleCSS;
 let categoriaActiva = "todos";
 let terminoBusqueda = "";
 
-// ── AUTENTICACIÓN ─────────────────────────────────────────────────────────
 async function loginConGoogle() {
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
@@ -323,7 +285,7 @@ function loginComoInvitado() {
   ocultarPantallaLogin();
   iniciarInterfaz(u);
   verificarLogros();
-  mostrarToast(`¡Bienvenido a AltoVicio, ${nombre}!`, "👤");
+  mostrarToast(`¡Bienvenido a AltoVicio, ${nombre}!`, "🎮");
 }
 
 async function cerrarSesion() {
@@ -339,7 +301,6 @@ async function cerrarSesion() {
   setTimeout(() => location.reload(), 800);
 }
 
-// ── INICIO ────────────────────────────────────────────────────────────────
 async function iniciarApp() {
   Storage.auth.onAuthStateChanged(async (user) => {
     if (user) {
@@ -401,7 +362,6 @@ function ocultarPantallaLogin() {
   document.querySelector("header").style.display = "flex";
 }
 
-// ── PERFIL EN HEADER ──────────────────────────────────────────────────────
 async function actualizarPerfil() {
   const u = await Storage.getUsuario();
   if (typeof Social !== "undefined" && u.uid) {
@@ -416,7 +376,7 @@ async function actualizarPerfil() {
   if (el("perfil-nombre"))      el("perfil-nombre").textContent      = u.nombre || "—";
   if (el("perfil-nivel"))       el("perfil-nivel").textContent       = `Nv.${u.nivel}`;
   if (el("perfil-monedas"))     el("perfil-monedas").textContent     = (u.monedas || 0).toLocaleString();
-  if (el("perfil-avatar"))      el("perfil-avatar").innerHTML        = renderAvatar(u.avatar || "😊", u.accesorios, 34, u.fotoPerfil);
+  if (el("perfil-avatar"))      el("perfil-avatar").innerHTML        = renderAvatar(u.avatar || "e_smile", u.accesorios, 34, u.fotoPerfil);
   if (el("xp-bar-fill"))        el("xp-bar-fill").style.width        = pct + "%";
   if (el("xp-texto"))           el("xp-texto").textContent           = maxNivel ? "NIVEL MÁXIMO" : `${xpAct}/1000 XP`;
   if (el("perfil-nivel-texto")) el("perfil-nivel-texto").textContent = NOMBRES_NIVEL[u.nivel] || "";
@@ -429,12 +389,11 @@ function showSocialToast(text, gotoUrl) {
   if (typeof Notifs !== "undefined") Notifs.toast(text, gotoUrl);
 }
 
-// ── GRID DE JUEGOS ────────────────────────────────────────────────────────
 async function renderizarGrid(lista) {
   const grid = document.getElementById("games-grid");
   if (!grid) return;
   if (!lista.length) {
-    grid.innerHTML = `<div class="sin-resultados"><span class="sin-icon">🔍</span><p>No encontramos juegos para "<strong>${esc(terminoBusqueda)}</strong>". Probá con otra palabra.</p></div>`;
+    grid.innerHTML = `<div class="sin-resultados"><p>No encontramos juegos para "<strong>${esc(terminoBusqueda)}</strong>".</p></div>`;
     return;
   }
   grid.innerHTML = await crearCardsHTML(lista);
@@ -456,7 +415,6 @@ function crearCardHTML(juego, indice, esFav, visitas) {
 
   return `
     <a class="game-card" href="pages/juego.html?id=${esc(juego.id)}"
-       style="animation-delay:${indice * 0.04}s"
        ${tieneVideo ? `data-preview-video="${esc(juego.preview_video)}"` : (tienePreview ? `data-preview="pages/${esc(juego.embed_url)}${sep}preview=1"` : "")}
        onmouseenter="iniciarPreview(this)"
        onmouseleave="detenerPreview(this)">
@@ -464,12 +422,11 @@ function crearCardHTML(juego, indice, esFav, visitas) {
         <div class="card-thumb-static">
           ${tieneThumb ? `<img src="${esc(juego.thumbnail)}" alt="${nombre}" loading="lazy" onerror="this.style.display='none';this.parentNode.querySelector('.thumb-fallback').style.display='flex'">` : ""}
           <div class="thumb-fallback" style="display:${tieneThumb ? 'none' : 'flex'}">
-            <span class="thumb-fallback-icon">🎮</span>
             <span class="thumb-fallback-nombre">${nombre}</span>
           </div>
         </div>
         <div class="card-preview-wrap" style="display:none">
-          <div class="card-preview-label">🎬 GAMEPLAY</div>
+          <div class="card-preview-label">GAMEPLAY</div>
         </div>
         <button class="btn-favorito ${esFav ? 'activo' : ''}" data-id="${esc(juego.id)}"
                 title="${esFav ? 'Quitar de favoritos' : 'Agregar a favoritos'}">${esFav ? '♥' : '♡'}</button>
@@ -479,7 +436,7 @@ function crearCardHTML(juego, indice, esFav, visitas) {
         <span class="card-nombre">${nombre}</span>
         <div class="card-meta">
           <span class="card-categoria">${esc(juego.categoria)}</span>
-          ${visitas > 0 ? `<span class="card-visitas">▶ ${visitas}</span>` : ""}
+          ${visitas > 0 ? `<span class="card-visitas">${visitas} jugadas</span>` : ""}
         </div>
       </div>
     </a>`;
@@ -500,7 +457,6 @@ function configurarFavoritosDelegado() {
       document.querySelectorAll(`.btn-favorito[data-id="${btn.dataset.id}"]`).forEach(b => {
         b.classList.toggle("activo", ahora);
         b.textContent = ahora ? "♥" : "♡";
-        b.title = ahora ? "Quitar de favoritos" : "Agregar a favoritos";
       });
       if (!ahora) {
         const cont = btn.closest("#favoritos-grid");
@@ -513,7 +469,6 @@ function configurarFavoritosDelegado() {
       renderizarHeroYMisiones();
       verificarLogros();
     } catch (err) {
-      console.warn("[Favoritos]", err);
       mostrarToast("No se pudo guardar el favorito", "❌");
     } finally {
       delete btn.dataset.busy;
@@ -521,7 +476,6 @@ function configurarFavoritosDelegado() {
   }, true);
 }
 
-// ── PREVIEW AL HOVER ──────────────────────────────────────────────────────
 function iniciarPreview(card) {
   const videoUrl = card.dataset.previewVideo;
   const iframeUrl = card.dataset.preview;
@@ -543,10 +497,6 @@ function iniciarPreview(card) {
         vid.muted = true;
         vid.playsInline = true;
         vid.style.cssText = "width:100%;height:100%;object-fit:cover;pointer-events:none;";
-        vid.onerror = () => {
-          wrap.style.display = "none";
-          staticDiv.style.opacity = "1";
-        };
         wrap.insertBefore(vid, wrap.firstChild);
       } else {
         const vid = wrap.querySelector("video");
@@ -565,11 +515,8 @@ function iniciarPreview(card) {
     }
 
     staticDiv.style.opacity = "0";
-    staticDiv.style.transition = "opacity .25s ease";
     wrap.style.display = "block";
-    wrap.style.opacity = "0";
-    wrap.style.transition = "opacity .25s ease";
-    requestAnimationFrame(() => { wrap.style.opacity = "1"; });
+    wrap.style.opacity = "1";
   }, 220);
 }
 
@@ -586,12 +533,11 @@ function detenerPreview(card) {
       wrap.style.display = "none";
       const f = wrap.querySelector("iframe");
       if (f) f.remove();
-    }, 250);
+    }, 200);
   }
   if (staticDiv) staticDiv.style.opacity = "1";
 }
 
-// ── FILTROS Y SIDEBAR ─────────────────────────────────────────────────────
 async function filtrarPorCategoria(categoria) {
   categoriaActiva = categoria;
   terminoBusqueda = "";
@@ -599,27 +545,20 @@ async function filtrarPorCategoria(categoria) {
   if (buscador) buscador.value = "";
 
   const lista = categoria === "todos" ? juegos : juegos.filter(j => j.categoria === categoria);
-  const grid = document.getElementById("games-grid");
-  if (!grid) return;
-  grid.style.opacity = "0"; grid.style.transform = "translateY(8px)";
-  setTimeout(async () => {
-    await renderizarGrid(lista);
-    grid.style.transition = "opacity 0.25s ease, transform 0.25s ease";
-    grid.style.opacity = "1"; grid.style.transform = "translateY(0)";
-  }, 150);
+  await renderizarGrid(lista);
 
   document.querySelectorAll("[data-categoria]").forEach(btn => {
     btn.classList.toggle("activo", btn.dataset.categoria === categoria);
   });
   const titulo = document.getElementById("catalogo-titulo");
-  if (titulo) titulo.textContent = categoria === "todos" ? "Todos los Juegos" : `Juegos: ${categoria.charAt(0).toUpperCase() + categoria.slice(1)}`;
+  if (titulo) titulo.textContent = categoria === "todos" ? "Todos los Juegos" : `Categoría: ${ETIQUETAS_CATEGORIA[categoria] || categoria}`;
 }
 
 async function filtrarPorBusqueda(termino) {
   terminoBusqueda = termino;
   await renderizarGrid(buscar(termino));
   const titulo = document.getElementById("catalogo-titulo");
-  if (titulo) titulo.textContent = termino ? `Resultados: "${termino}"` : "Todos los Juegos";
+  if (titulo) titulo.textContent = termino ? `Resultados para "${termino}"` : "Todos los Juegos";
 }
 
 function buscar(termino) {
@@ -659,14 +598,13 @@ async function renderizarMasJugados() {
   if (!contenedor) return;
   const ids = await Storage.getMasJugados(5);
   if (!ids.length) {
-    contenedor.innerHTML = "<p class='muted-text'>Jugá para ver aquí tus más visitados.</p>";
+    contenedor.innerHTML = "<p class='muted-text'>Jugá para ver aquí tus favoritos.</p>";
     return;
   }
   const lista = ids.map(id => juegos.find(j => j.id === id)).filter(Boolean);
   contenedor.innerHTML = lista.map(j => `
     <a href="pages/juego.html?id=${j.id}" class="mini-juego-link">
-      <span class="mini-juego-icon">🎮</span>
-      <span class="mini-juego-nombre">${j.nombre}</span>
+      <span class="mini-juego-nombre">${esc(j.nombre)}</span>
     </a>`).join("");
 }
 
@@ -692,7 +630,7 @@ function configurarBuscador() {
   let timer;
   input.addEventListener("input", () => {
     clearTimeout(timer);
-    timer = setTimeout(() => filtrarPorBusqueda(input.value.trim()), 220);
+    timer = setTimeout(() => filtrarPorBusqueda(input.value.trim()), 200);
   });
 }
 
@@ -721,6 +659,7 @@ function configurarFiltrosCategorias() {
   const validas = new Set(categoriasConJuegos());
   strip.querySelectorAll("[data-categoria]").forEach(btn => {
     if (!validas.has(btn.dataset.categoria)) { btn.style.display = "none"; return; }
+    btn.textContent = ETIQUETAS_CATEGORIA[btn.dataset.categoria] || btn.dataset.categoria;
     btn.addEventListener("click", () => filtrarPorCategoria(btn.dataset.categoria));
   });
 }
@@ -751,11 +690,10 @@ async function renderizarFavoritos() {
   contenedor.innerHTML = await crearCardsHTML(lista);
 }
 
-// ── RANKING GLOBAL ────────────────────────────────────────────────────────
 async function renderizarRankingGlobal() {
   const contenedor = document.getElementById("ranking-lista");
   if (!contenedor) return;
-  contenedor.innerHTML = `<div class="ranking-loading">Cargando ranking<span class="loading-dots"></span></div>`;
+  contenedor.innerHTML = `<div class="ranking-loading">Cargando ranking...</div>`;
 
   const lista = await Storage.getRankingGlobal(50);
   const miUid = Storage.auth.currentUser?.uid;
@@ -766,20 +704,17 @@ async function renderizarRankingGlobal() {
   }
 
   contenedor.innerHTML = lista.map((p, i) => {
-    const medal = ["🥇", "🥈", "🥉"][i] || `${i + 1}`;
+    const pos = `#${i + 1}`;
     const esSoy = p.uid === miUid;
     const nivelNombre = NOMBRES_NIVEL[p.nivel] || "";
-    const avatarHtml = renderAvatar(p.avatar || "😊", p.accesorios, 40, p.fotoPerfil);
+    const avatarHtml = renderAvatar(p.avatar || "e_smile", p.accesorios, 42, p.fotoPerfil);
     const tituloBadge = renderTituloBadge(p.accesorios);
     return `
-      <div class="ranking-fila ${esSoy ? "ranking-yo" : ""}" data-uid="${esc(p.uid)}"
-           style="cursor:pointer;transition:background .15s"
-           onmouseenter="this.style.background='rgba(255,102,0,0.06)'"
-           onmouseleave="this.style.background=''">
-        <div class="ranking-pos">${medal}</div>
-        <div class="ranking-avatar" style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;overflow:visible">${avatarHtml}</div>
+      <div class="ranking-fila ${esSoy ? "ranking-yo" : ""}" data-uid="${esc(p.uid)}" style="cursor:pointer">
+        <div class="ranking-pos">${pos}</div>
+        <div class="ranking-avatar" style="display:flex;align-items:center;justify-content:center;width:46px;height:46px;overflow:visible">${avatarHtml}</div>
         <div class="ranking-info">
-          <div class="ranking-nombre">${esc(p.nombre)}${esSoy ? ' <span class="ranking-tu-tag">vos</span>' : ""}</div>
+          <div class="ranking-nombre">${esc(p.nombre)}${esSoy ? ' <span class="ranking-tu-tag">(vos)</span>' : ""}</div>
           <div class="ranking-nivel-txt">${esc(nivelNombre)} ${tituloBadge}</div>
         </div>
         <div class="ranking-xp">${(p.xp || 0).toLocaleString()} XP</div>
@@ -792,7 +727,6 @@ async function renderizarRankingGlobal() {
   });
 }
 
-// ── VER PERFIL DE OTRO USUARIO ────────────────────────────────────────────
 async function verPerfilUsuario(uid) {
   const miUid = Storage.auth.currentUser?.uid;
   if (uid === miUid) { mostrarSeccion("perfil"); return; }
@@ -801,24 +735,24 @@ async function verPerfilUsuario(uid) {
   if (!modal) {
     modal = document.createElement("div");
     modal.id = "modal-perfil-usuario";
-    modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px";
-    modal.innerHTML = `<div style="background:#111120;border:1px solid rgba(255,102,0,0.3);border-radius:18px;padding:24px;max-width:340px;width:100%;position:relative;text-align:center">
-      <button onclick="document.getElementById('modal-perfil-usuario').remove()" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#aaa;padding:4px 10px;border-radius:8px;cursor:pointer">✕</button>
-      <div id="mpf-avatar" style="margin-bottom:12px;display:flex;justify-content:center">😊</div>
-      <div id="mpf-nombre" style="font-size:20px;font-weight:700;margin-bottom:4px">Cargando...</div>
-      <div id="mpf-rango" style="font-size:12px;color:#ff6600;letter-spacing:1px;margin-bottom:14px"></div>
+    modal.style.cssText = "position:fixed;inset:0;background:rgba(10,14,24,0.82);backdrop-filter:blur(8px);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px";
+    modal.innerHTML = `<div style="background:#141b29;border:1px solid rgba(255,255,255,0.1);border-radius:22px;padding:26px;max-width:350px;width:100%;position:relative;text-align:center">
+      <button onclick="document.getElementById('modal-perfil-usuario').remove()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.06);border:none;color:#94a3b8;padding:6px 10px;border-radius:10px;cursor:pointer">✕</button>
+      <div id="mpf-avatar" style="margin-bottom:14px;display:flex;justify-content:center"></div>
+      <div id="mpf-nombre" style="font-family:'Outfit',sans-serif;font-size:21px;font-weight:800;margin-bottom:4px">Cargando...</div>
+      <div id="mpf-rango" style="font-size:13px;color:#00b4ff;margin-bottom:16px"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
-        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px">
-          <div id="mpf-xp" style="font-size:18px;font-weight:700;color:#00aaff">0</div>
-          <div style="font-size:10px;color:#666;letter-spacing:1px">XP</div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:10px">
+          <div id="mpf-xp" style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:#00b4ff">0</div>
+          <div style="font-size:10px;color:#94a3b8">XP</div>
         </div>
-        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px">
-          <div id="mpf-nivel" style="font-size:18px;font-weight:700;color:#ff6600">1</div>
-          <div style="font-size:10px;color:#666;letter-spacing:1px">NIVEL</div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:10px">
+          <div id="mpf-nivel" style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:#ff6600">1</div>
+          <div style="font-size:10px;color:#94a3b8">NIVEL</div>
         </div>
-        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px">
-          <div id="mpf-juegos" style="font-size:18px;font-weight:700;color:#39ff14">0</div>
-          <div style="font-size:10px;color:#666;letter-spacing:1px">PARTIDAS</div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:10px">
+          <div id="mpf-juegos" style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:800;color:#10b981">0</div>
+          <div style="font-size:10px;color:#94a3b8">PARTIDAS</div>
         </div>
       </div>
       <div id="mpf-acciones" style="display:flex;gap:8px;justify-content:center"></div>
@@ -830,50 +764,17 @@ async function verPerfilUsuario(uid) {
   try {
     const p = await Storage.getPerfilPublico(uid);
     if (!p) { modal.querySelector("#mpf-nombre").textContent = "Usuario no encontrado"; return; }
-
-    modal.querySelector("#mpf-avatar").innerHTML = renderAvatar(p.avatar || "😊", p.accesorios, 84, p.fotoPerfil);
+    modal.querySelector("#mpf-avatar").innerHTML = renderAvatar(p.avatar || "e_smile", p.accesorios, 84, p.fotoPerfil);
     modal.querySelector("#mpf-nombre").textContent = p.nombre || "Usuario";
     modal.querySelector("#mpf-rango").innerHTML = esc(NOMBRES_NIVEL[p.nivel] || "") + " " + renderTituloBadge(p.accesorios);
     modal.querySelector("#mpf-xp").textContent = (p.xp || 0).toLocaleString();
     modal.querySelector("#mpf-nivel").textContent = p.nivel || 1;
     modal.querySelector("#mpf-juegos").textContent = p.juegos_jugados || 0;
-
-    if (typeof Social !== "undefined" && Social.uid) {
-      const estado = await Social.estadoAmistad(uid);
-      const acciones = modal.querySelector("#mpf-acciones");
-      acciones.innerHTML = "";
-      const crearBtn = (txt, color, onClick) => {
-        const b = document.createElement("button");
-        b.textContent = txt;
-        b.style.cssText = `background:${color[0]};border:1px solid ${color[1]};color:${color[2]};padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:700`;
-        b.addEventListener("click", onClick);
-        acciones.appendChild(b);
-        return b;
-      };
-      if (estado === "friends") {
-        crearBtn("💬 Chat", ["rgba(0,170,255,0.15)", "rgba(0,170,255,0.4)", "#00aaff"], () => { window.location.href = "pages/social.html"; });
-      } else if (estado === "none") {
-        const b = crearBtn("+ Agregar amigo", ["rgba(255,102,0,0.15)", "rgba(255,102,0,0.4)", "#ff6600"], async () => {
-          b.disabled = true;
-          const r = await Social.enviarSolicitud(uid);
-          b.textContent = r && r.ok ? (r.aceptada ? "✅ Ahora son amigos" : "✅ Enviado") : "❌ " + ((r && r.error) || "Error");
-        });
-      } else if (estado === "pending_out") {
-        acciones.innerHTML = `<span style="color:#666;font-size:13px">⏳ Solicitud enviada</span>`;
-      } else if (estado === "pending_in") {
-        const b = crearBtn("✅ Aceptar solicitud", ["rgba(57,255,20,0.12)", "rgba(57,255,20,0.4)", "#39ff14"], async () => {
-          b.disabled = true;
-          await Social.aceptarSolicitud(uid);
-          b.textContent = "✅ Ahora son amigos";
-        });
-      }
-    }
   } catch (e) {
     console.error("Error cargando perfil:", e);
   }
 }
 
-// ── MI PERFIL ─────────────────────────────────────────────────────────────
 async function renderizarPerfil() {
   const u = await Storage.getUsuario();
   const contenedor = document.getElementById("perfil-contenido");
@@ -889,68 +790,43 @@ async function renderizarPerfil() {
 
   contenedor.innerHTML = `
     <div class="perfil-card">
-      <div class="perfil-avatar-grande" title="Cambiar foto" onclick="document.getElementById('foto-input').click()" style="cursor:pointer;position:relative;padding:8px">
-        ${renderAvatar(u.avatar || "😊", u.accesorios, 88, u.fotoPerfil)}
-        <div style="position:absolute;bottom:2px;right:2px;background:rgba(255,102,0,0.9);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:14px;z-index:10">📷</div>
+      <div class="perfil-avatar-grande" title="Cambiar foto de perfil" onclick="document.getElementById('foto-input').click()" style="cursor:pointer;position:relative;padding:8px">
+        ${renderAvatar(u.avatar || "e_smile", u.accesorios, 92, u.fotoPerfil)}
+        <div style="position:absolute;bottom:2px;right:2px;background:#ff6600;color:#fff;border-radius:99px;padding:3px 8px;font-size:10px;font-weight:800;z-index:10">FOTO</div>
       </div>
       <input type="file" id="foto-input" accept="image/*" style="display:none" onchange="cambiarFotoPerfil(this)">
       <div class="perfil-datos">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
           <div class="perfil-nombre-grande" id="perfil-nombre-display">${esc(u.nombre)}</div>
-          <button onclick="editarNombre()" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:var(--color-muted);font-size:10px;padding:4px 8px;border-radius:6px;cursor:pointer;font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:1px">✏️</button>
+          <button onclick="editarNombre()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--color-muted);font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;font-weight:700">Editar</button>
         </div>
         <div id="nombre-edit-form" style="display:none;margin-bottom:8px">
           <div style="display:flex;gap:6px">
             <input type="text" id="nombre-nuevo-input" value="${esc(u.nombre)}" maxlength="20"
-              style="flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,102,0,0.3);color:var(--color-text);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;padding:7px 11px;border-radius:8px;outline:none;">
-            <button onclick="guardarNombre()" style="background:linear-gradient(135deg,#ff6600,#ff9500);border:none;color:#fff;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;letter-spacing:1px;white-space:nowrap">✓ OK</button>
+              style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,102,0,0.4);color:#fff;font-size:14px;font-weight:700;padding:8px 12px;border-radius:10px;outline:none;">
+            <button onclick="guardarNombre()" style="background:#ff6600;border:none;color:#fff;font-size:12px;font-weight:800;padding:8px 14px;border-radius:10px;cursor:pointer">Guardar</button>
           </div>
         </div>
         <div class="perfil-rango">${esc(NOMBRES_NIVEL[u.nivel] || "")} ${renderTituloBadge(u.accesorios)}</div>
-        ${esInvitado ? `<div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--color-muted);margin-top:8px">👤 Modo invitado — <button onclick="loginConGoogle()" style="background:none;border:none;color:#00aaff;cursor:pointer;font-size:12px;font-weight:700;padding:0">Conectá con Google</button> para guardar tu progreso</div>` : ""}
-        <div class="perfil-xp-barra-wrap" style="margin-top:10px">
+        ${esInvitado ? `<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--color-muted);margin-top:8px">Modo invitado — <button onclick="loginConGoogle()" style="background:none;border:none;color:#00b4ff;cursor:pointer;font-size:12px;font-weight:700">Conectá con Google</button> para sincronizar en la nube</div>` : ""}
+        <div class="perfil-xp-barra-wrap" style="margin-top:12px">
           <div class="perfil-xp-barra"><div class="perfil-xp-fill" style="width:${pct}%"></div></div>
           <span class="perfil-xp-num">${maxNivel ? "NIVEL MÁXIMO" : xpAct + " / 1000 XP"}</span>
         </div>
       </div>
     </div>
     <div class="perfil-stats-grid">
-      <div class="pstat-card">
-        <span class="pstat-icon">⭐</span>
-        <span class="pstat-val">${(u.xp || 0).toLocaleString()}</span>
-        <span class="pstat-lbl">XP Total</span>
-      </div>
-      <div class="pstat-card">
-        <span class="pstat-icon">🪙</span>
-        <span class="pstat-val">${(u.monedas || 0).toLocaleString()}</span>
-        <span class="pstat-lbl">VicioCoins</span>
-      </div>
-      <div class="pstat-card">
-        <span class="pstat-icon">🎮</span>
-        <span class="pstat-val">${u.juegos_jugados || 0}</span>
-        <span class="pstat-lbl">Partidas</span>
-      </div>
-      <div class="pstat-card">
-        <span class="pstat-icon">⏰</span>
-        <span class="pstat-val">${tiempoH}h ${tiempoM}m</span>
-        <span class="pstat-lbl">Tiempo jugado</span>
-      </div>
-      <div class="pstat-card">
-        <span class="pstat-icon">❤️</span>
-        <span class="pstat-val">${(u.favoritos || []).length}</span>
-        <span class="pstat-lbl">Favoritos</span>
-      </div>
-      <div class="pstat-card">
-        <span class="pstat-icon">🏆</span>
-        <span class="pstat-val">${logrosCount}/${LOGROS.length}</span>
-        <span class="pstat-lbl">Logros</span>
-      </div>
+      <div class="pstat-card"><span class="pstat-val">${(u.xp || 0).toLocaleString()}</span><span class="pstat-lbl">XP Total</span></div>
+      <div class="pstat-card"><span class="pstat-val">${(u.monedas || 0).toLocaleString()}</span><span class="pstat-lbl">VicioCoins</span></div>
+      <div class="pstat-card"><span class="pstat-val">${u.juegos_jugados || 0}</span><span class="pstat-lbl">Partidas</span></div>
+      <div class="pstat-card"><span class="pstat-val">${tiempoH}h ${tiempoM}m</span><span class="pstat-lbl">Tiempo jugado</span></div>
+      <div class="pstat-card"><span class="pstat-val">${(u.favoritos || []).length}</span><span class="pstat-lbl">Favoritos</span></div>
+      <div class="pstat-card"><span class="pstat-val">${logrosCount}/${LOGROS.length}</span><span class="pstat-lbl">Logros</span></div>
     </div>
-    <button class="btn-cerrar-sesion" onclick="cerrarSesion()">🚪 CERRAR SESIÓN</button>
+    <button class="btn-cerrar-sesion" onclick="cerrarSesion()">CERRAR SESIÓN</button>
   `;
 }
 
-// ── LOGROS ────────────────────────────────────────────────────────────────
 async function renderizarLogros() {
   const u = await Storage.getUsuario();
   const contenedor = document.getElementById("logros-grid");
@@ -960,12 +836,11 @@ async function renderizarLogros() {
     const tiene = (u.logros || []).includes(l.id);
     return `
       <div class="logro-card ${tiene ? "logro-desbloqueado" : "logro-bloqueado"}">
-        <div class="logro-icon">${l.icon}</div>
         <div class="logro-info">
-          <div class="logro-nombre">${l.nombre}</div>
-          <div class="logro-desc">${l.desc}</div>
+          <div class="logro-nombre">${esc(l.nombre)}</div>
+          <div class="logro-desc">${esc(l.desc)}</div>
         </div>
-        ${tiene ? '<div class="logro-check">✓</div>' : '<div class="logro-lock">🔒</div>'}
+        ${tiene ? '<div class="logro-check" style="color:#10b981;font-weight:900">COMPLETADO</div>' : '<div class="logro-lock" style="color:#64748b;font-size:12px">BLOQUEADO</div>'}
       </div>`;
   }).join("");
 }
@@ -985,14 +860,14 @@ async function _verificarLogros() {
       const nuevo = await Storage.desbloquearLogro(logro.id);
       if (nuevo) {
         UISfx.win();
-        mostrarToast(`🏆 Logro: ${logro.nombre}`, "✨");
+        mostrarToast(`Logro desbloqueado: ${logro.nombre}`, "🏆");
         await new Promise(r => setTimeout(r, 1500));
       }
     }
   }
 }
 
-// ── TIENDA ESTILO PLATO (VICIOSHOP STUDIO V9) ─────────────────────────────
+// ── TIENDA ESTILO PLATO (VICIOSHOP STUDIO V12) ────────────────────────────
 let _catTiendaActiva = "todos";
 let _previewOverride = null;
 
@@ -1046,34 +921,34 @@ async function renderizarTienda() {
       const mockAcc = { ...baseEquip, [cat.key]: item.id };
       let previewHtml = "";
       if (cat.key === "titulo") {
-        previewHtml = `<div style="min-height:54px;display:flex;align-items:center;justify-content:center">${item.texto ? renderTituloBadge(mockAcc) : '<span style="color:#666;font-size:12px">Ninguno</span>'}</div>`;
+        previewHtml = `<div style="min-height:58px;display:flex;align-items:center;justify-content:center">${item.texto ? renderTituloBadge(mockAcc) : '<span style="color:#64748b;font-size:12px">Ninguno</span>'}</div>`;
       } else if (cat.key === "burbuja") {
-        previewHtml = `<div style="min-height:54px;display:flex;align-items:center;justify-content:center"><div style="padding:6px 10px;border-radius:10px;font-size:11px;${item.css}">¡Hola banda! 🎮</div></div>`;
+        previewHtml = `<div style="min-height:58px;display:flex;align-items:center;justify-content:center"><div style="padding:6px 12px;border-radius:12px;font-size:11px;${item.css}">¡Hola amigos!</div></div>`;
       } else {
-        previewHtml = `<div style="margin:6px 0">${renderAvatar(u.avatar || "😊", mockAcc, 54, u.fotoPerfil)}</div>`;
+        previewHtml = `<div style="margin:8px 0">${renderAvatar(u.avatar || "e_smile", mockAcc, 58, u.fotoPerfil)}</div>`;
       }
 
       let btnAccion = "";
-      if (equipado)     btnAccion = `<button class="av-btn av-btn-equipado" disabled>✓ EQUIPADO</button>`;
+      if (equipado)     btnAccion = `<button class="av-btn av-btn-equipado" disabled>EQUIPADO</button>`;
       else if (poseido) btnAccion = `<button class="av-btn av-btn-equipar" onclick="equiparAccesorio('${cat.key}','${item.id}')">EQUIPAR</button>`;
-      else if (bloq)    btnAccion = `<button class="av-btn av-btn-bloqueado" disabled>🔒 Nv.${item.reqNivel}</button>`;
-      else              btnAccion = `<button class="av-btn av-btn-comprar ${puede ? '' : 'av-sin-fondos'}" onclick="comprarAccesorio('${item.id}','${cat.key}')" ${puede ? '' : 'disabled'}>🪙 ${item.precio}</button>`;
+      else if (bloq)    btnAccion = `<button class="av-btn av-btn-bloqueado" disabled>Nivel ${item.reqNivel}</button>`;
+      else              btnAccion = `<button class="av-btn av-btn-comprar ${puede ? '' : 'av-sin-fondos'}" onclick="comprarAccesorio('${item.id}','${cat.key}')" ${puede ? '' : 'disabled'}>${item.precio} VicioCoins</button>`;
 
       const btnProbar = !equipado
-        ? `<button class="av-btn av-btn-probar" onclick="probarEnEstudio('${cat.key}','${item.id}')">👁️ Probar en mí</button>`
+        ? `<button class="av-btn av-btn-probar" onclick="probarEnEstudio('${cat.key}','${item.id}')">Probar en mi avatar</button>`
         : "";
 
       return `<div class="tienda-card ${equipado ? 'tienda-card-equipado' : ''} ${bloq ? 'tienda-card-bloqueado' : ''}">
         <span class="rareza-tag rareza-${rar}">${rar}</span>
         ${previewHtml}
-        <div class="tienda-avatar-nombre" style="color:#fff;font-size:13px">${esc(item.nombre)}</div>
+        <div class="tienda-avatar-nombre">${esc(item.nombre)}</div>
         ${btnAccion}
         ${btnProbar}
       </div>`;
     }).join("");
 
-    return `<div style="margin-bottom:24px">
-      <div style="font-family:'Orbitron',sans-serif;font-size:12px;font-weight:800;color:var(--color-primary);letter-spacing:1.5px;margin-bottom:12px">${cat.label}</div>
+    return `<div style="margin-bottom:26px">
+      <div style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:800;color:#fff;margin-bottom:12px">${cat.label}</div>
       <div class="tienda-grid">${cards}</div>
     </div>`;
   }).join("");
@@ -1081,38 +956,37 @@ async function renderizarTienda() {
   contenedor.innerHTML = `
     <div class="plato-studio">
       <div class="plato-stage-box">
-        <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:var(--color-accent);letter-spacing:1.5px">PROBADOR EN VIVO</div>
+        <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;color:var(--color-accent)">TU AVATAR EN VIVO</div>
         <div id="studio-avatar-stage" style="padding:14px 0">
-          ${renderAvatar(u.avatar || "😊", lookActual, 96, u.fotoPerfil)}
+          ${renderAvatar(u.avatar || "e_smile", lookActual, 96, u.fotoPerfil)}
         </div>
-        <div style="font-family:'Orbitron',sans-serif;font-weight:900;font-size:15px;color:#fff">${esc(u.nombre || "Jugador")}</div>
+        <div style="font-family:'Outfit',sans-serif;font-weight:900;font-size:16px;color:#fff">${esc(u.nombre || "Jugador")}</div>
         <div>${tituloHtml}</div>
-        ${_previewOverride ? `<span style="font-size:11px;color:#38bdf8">👁️ Modo prueba activo</span>` : ""}
+        ${_previewOverride ? `<span style="font-size:11px;color:#38bdf8">Vista previa activa</span>` : ""}
       </div>
       <div class="plato-controls-box">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
           <div>
-            <div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:800;color:#fff">Personalizá tu Avatar sobre tu Foto o Emoji</div>
-            <div style="font-size:13px;color:var(--color-muted)">Los accesorios se ven en el header, ranking, salas de chat y dentro de los 45 juegos.</div>
+            <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff">Estudio de Personalización HD</div>
+            <div style="font-size:13px;color:var(--color-muted)">Todos los accesorios son ilustraciones vectoriales que se adaptan sobre tu foto de perfil o avatar.</div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            
-            <button class="av-btn-glow bonus" style="padding:8px 12px;font-size:11px" onclick="resetearAccesorios()">🧹 Quitar Todo</button>
+            <button class="av-btn-glow bonus" style="padding:8px 14px;font-size:12px" onclick="resetearAccesorios()">Restaurar por defecto</button>
           </div>
         </div>
         <div class="plato-sliders">
           <label class="plato-slider-row">
-            <span>↕ Altura sobre tu foto (${lookActual.offsetY || 0}px)</span>
+            <span>Posición vertical sobre tu foto (${lookActual.offsetY || 0}px)</span>
             <input type="range" min="-20" max="20" value="${lookActual.offsetY || 0}" onchange="ajustarCalibracion('offsetY', this.value)">
           </label>
           <label class="plato-slider-row">
-            <span>🔍 Tamaño de accesorios (${lookActual.scale || 100}%)</span>
+            <span>Escala de accesorios (${lookActual.scale || 100}%)</span>
             <input type="range" min="75" max="135" value="${lookActual.scale || 100}" onchange="ajustarCalibracion('scale', this.value)">
           </label>
         </div>
         <div>
           <div style="font-size:11px;color:var(--color-muted);margin-bottom:4px;font-weight:700">VISTA PREVIA DE TU BURBUJA DE CHAT:</div>
-          <div class="plato-chat-preview" style="${bubbleCss}">¡Sale ese Impostor o 8 Ball Pool en AltoVicio! 🚀</div>
+          <div class="plato-chat-preview" style="${bubbleCss}">¡Sale partida con amigos en AltoVicio!</div>
         </div>
       </div>
     </div>
@@ -1132,22 +1006,6 @@ function probarEnEstudio(catKey, itemId) {
   renderizarTienda();
 }
 
-function probarLookAleatorio() {
-  const pick = arr => arr[Math.floor(Math.random() * arr.length)].id;
-  _previewOverride = {
-    sombrero: pick(ACCESORIOS.sombreros),
-    lentes:   pick(ACCESORIOS.lentes),
-    bigote:   pick(ACCESORIOS.bigotes),
-    marco:    pick(ACCESORIOS.marcos),
-    efecto:   pick(ACCESORIOS.efectos),
-    mascota:  pick(ACCESORIOS.mascotas),
-    titulo:   pick(ACCESORIOS.titulos),
-    burbuja:  pick(ACCESORIOS.burbujas)
-  };
-  UISfx.equip();
-  renderizarTienda();
-}
-
 async function resetearAccesorios() {
   _previewOverride = null;
   await Storage.actualizarUsuario(u => {
@@ -1156,7 +1014,7 @@ async function resetearAccesorios() {
   await Storage.publicarPerfil();
   await actualizarPerfil();
   await renderizarTienda();
-  mostrarToast("Accesorios restaurados", "🧹");
+  mostrarToast("Accesorios restaurados", "✅");
 }
 
 async function ajustarCalibracion(campo, valor) {
@@ -1225,7 +1083,6 @@ async function equiparAccesorio(catKey, id) {
   mostrarToast(`${item.nombre} equipado`, "✅");
 }
 
-// ── EDICIÓN DE PERFIL ─────────────────────────────────────────────────────
 function editarNombre() {
   const form = document.getElementById("nombre-edit-form");
   const btn  = document.getElementById("nombre-nuevo-input");
@@ -1266,7 +1123,7 @@ async function cambiarFotoPerfil(input) {
       const ox = (img.width - size) / 2;
       const oy = (img.height - size) / 2;
       ctx2.drawImage(img, ox, oy, size, size, 0, 0, 200, 200);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
       try {
         await Storage.actualizarUsuario(u => { u.fotoPerfil = dataUrl; });
       } catch (err) { mostrarToast("No se pudo guardar la foto", "❌"); return; }
@@ -1274,41 +1131,29 @@ async function cambiarFotoPerfil(input) {
       await Storage.publicarPerfil();
       await actualizarPerfil();
       await renderizarPerfil();
-      mostrarToast("Foto actualizada con tus accesorios", "📷");
+      mostrarToast("Foto de perfil actualizada", "📷");
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
-// ── OVERLAY DE NIVEL Y TOASTS ─────────────────────────────────────────────
 function mostrarOverlayNivel(nombreNivel) {
   const overlay = document.getElementById("overlay-nivel");
   if (!overlay) return;
   overlay.querySelector(".overlay-nivel-nombre").textContent = nombreNivel;
-  const particulas = overlay.querySelector(".particulas");
-  particulas.innerHTML = "";
-  for (let i = 0; i < 30; i++) {
-    const p = document.createElement("span");
-    p.className = "particula";
-    p.style.setProperty("--x",     `${Math.random() * 100}%`);
-    p.style.setProperty("--delay", `${Math.random() * 1}s`);
-    p.style.setProperty("--dur",   `${0.8 + Math.random() * 0.8}s`);
-    p.style.setProperty("--color", ["#ff6600", "#ffe600", "#00aaff", "#ff0055"][Math.floor(Math.random() * 4)]);
-    particulas.appendChild(p);
-  }
   UISfx.win();
   overlay.classList.add("visible");
   setTimeout(() => { overlay.classList.remove("visible"); verificarLogros(); }, 3000);
 }
 
-function mostrarToast(mensaje, icon = "ℹ️") {
+function mostrarToast(mensaje, icon = "") {
   const container = document.getElementById("toast-container") || crearToastContainer();
   const toast = document.createElement("div");
   toast.className = "toast-notif";
-  const i = document.createElement("span"); i.textContent = icon;
-  const m = document.createElement("span"); m.textContent = mensaje;
-  toast.append(i, m);
+  const m = document.createElement("span");
+  m.textContent = (icon ? icon + " " : "") + mensaje;
+  toast.append(m);
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 3200);
 }
@@ -1316,12 +1161,11 @@ function mostrarToast(mensaje, icon = "ℹ️") {
 function crearToastContainer() {
   const c = document.createElement("div");
   c.id = "toast-container";
-  c.style.cssText = "position:fixed;top:70px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none";
+  c.style.cssText = "position:fixed;top:76px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none";
   document.body.appendChild(c);
   return c;
 }
 
-// ── SONIDOS UI, HERO BANNER Y MISIONES DIARIAS ────────────────────────────
 const UISfx = (() => {
   let ctx = null;
   function tone(f, dur, type = "triangle", delay = 0, vol = 0.12) {
@@ -1341,7 +1185,7 @@ const UISfx = (() => {
     } catch (e) {}
   }
   return {
-    coin:  () => { tone(988, 0.08, "square", 0, 0.1); tone(1319, 0.22, "square", 0.07, 0.12); },
+    coin:  () => { tone(988, 0.08, "sine", 0, 0.1); tone(1319, 0.22, "sine", 0.07, 0.12); },
     win:   () => { [523, 659, 784, 1047].forEach((n, i) => tone(n, 0.16, "triangle", i * 0.08, 0.14)); },
     equip: () => { tone(587, 0.07, "sine", 0, 0.1); tone(880, 0.12, "sine", 0.06, 0.1); }
   };
@@ -1359,15 +1203,15 @@ async function renderizarHeroYMisiones() {
   heroEl.innerHTML = `
     <div class="av-hero">
       <div class="av-hero-info">
-        <span class="av-hero-badge">🔥 PORTAL OFICIAL ALTOVICIO</span>
-        <div class="av-hero-title">¡Viciá con amigos sin descargar nada!</div>
-        <div class="av-hero-desc">Salas online en tiempo real para Impostor, Gartic Phone, 8 Ball Pool y Ajedrez + 45 arcades con ranking global y VicioCoins.</div>
+        <span class="av-hero-badge">PORTAL OFICIAL ALTOVICIO</span>
+        <div class="av-hero-title">Jugá y competí con amigos sin descargar nada</div>
+        <div class="av-hero-desc">Salas multijugador en tiempo real para Impostor, Gartic Phone, 8 Ball Pool y Ajedrez, más de 45 juegos con ranking global y personalización HD.</div>
       </div>
       <div class="av-hero-actions">
-        <button class="av-btn-glow primary" onclick="mostrarSeccion('tienda')">✨ PERSONALIZAR AVATAR</button>
-        <a class="av-btn-glow secondary" href="pages/juego.html?id=game-022">🕵️ IMPOSTOR ONLINE</a>
+        <button class="av-btn-glow primary" onclick="mostrarSeccion('tienda')">Personalizar Avatar</button>
+        <a class="av-btn-glow secondary" href="pages/juego.html?id=game-022">Impostor Online</a>
         <button class="av-btn-glow bonus" onclick="reclamarBonusDiario()" ${bonusReclamado ? "disabled style='opacity:0.5;cursor:default'" : ""}>
-          ${bonusReclamado ? "✅ BONUS RECLAMADO" : "🎁 +50 VICIOCOINS GRATIS"}
+          ${bonusReclamado ? "Bonus Diario Reclamado" : "Reclamar +50 VicioCoins"}
         </button>
       </div>
     </div>
@@ -1387,25 +1231,19 @@ async function renderizarHeroYMisiones() {
     return `
       <div class="av-mision-card ${lista ? 'lista' : ''}">
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:14px;color:#fff">${m.titulo} <span style="color:var(--color-accent);font-size:12px">+${m.premio} 🪙</span></div>
+          <div style="font-weight:700;font-size:14px;color:#fff">${m.titulo} <span style="color:var(--color-accent);font-size:12px">+${m.premio} VicioCoins</span></div>
           <div style="font-size:12px;color:var(--color-muted)">${m.desc} (${m.actual}/${m.meta})</div>
           <div class="av-mision-prog"><div class="av-mision-fill" style="width:${pct}%"></div></div>
         </div>
         ${ya
-          ? `<button class="av-mision-btn done" disabled>✓ LISTO</button>`
+          ? `<button class="av-mision-btn done" disabled>LISTO</button>`
           : (lista
               ? `<button class="av-mision-btn claim" onclick="reclamarMision('${m.id}', ${m.premio})">RECLAMAR</button>`
-              : `<span style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--color-muted)">${pct}%</span>`
+              : `<span style="font-family:'Outfit',sans-serif;font-size:12px;font-weight:800;color:var(--color-muted)">${pct}%</span>`
             )
         }
       </div>`;
   }).join("") + `</div>`;
-}
-
-function jugarAlAzar() {
-  const locales = juegos.filter(j => j.tipo === "local");
-  const elegido = locales[Math.floor(Math.random() * locales.length)] || juegos[0];
-  if (elegido) window.location.href = `pages/juego.html?id=${encodeURIComponent(elegido.id)}`;
 }
 
 async function reclamarBonusDiario() {
@@ -1415,7 +1253,7 @@ async function reclamarBonusDiario() {
   await Storage.sumarMonedas(50);
   await Storage.sumarXP(25);
   UISfx.coin();
-  mostrarToast("¡Bonus diario: +50 VicioCoins y +25 XP!", "🎁");
+  mostrarToast("Bonus diario: +50 VicioCoins y +25 XP", "🎁");
   await actualizarPerfil();
   await renderizarHeroYMisiones();
 }
@@ -1430,7 +1268,7 @@ async function reclamarMision(id, premio) {
   await Storage.sumarMonedas(premio);
   await Storage.sumarXP(30);
   UISfx.win();
-  mostrarToast(`¡Misión completada! +${premio} VicioCoins`, "🏆");
+  mostrarToast(`Misión completada: +${premio} VicioCoins`, "🏆");
   await actualizarPerfil();
   await renderizarHeroYMisiones();
 }
