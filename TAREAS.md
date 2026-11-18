@@ -14,10 +14,7 @@ Estado: ✅ hecho · 🔄 en curso · ⬜ pendiente
 - ✅ BG Kit en celular: barra compacta en una fila y aviso único de "girá el celular".
 - ✅ App instalable: `manifest.webmanifest`, íconos y `sw.js` (abre sin conexión).
 - ✅ Compra de cosméticos dentro de los juegos: mensaje `bg-buy` → `Storage.comprarItemJuego` (ver AGENTS.md).
-- ⬜ Cerrar las salas del pool (`gameRooms`) en las reglas, **cuando Antigravity termine su parte (A2)**.
-- ⬜ Empaquetar la app para Play Store (Trusted Web Activity). Necesita la cuenta de Google Play Console de Román.
-- ⬜ Monedas y rankings validados en un servidor (Cloud Functions). Necesita activar el plan Blaze de Firebase: Román decide.
-- ⬜ Juegos repetidos: tres de correr (Endless Runner, Infinite Runner, Geometry Dash), dos de ladrillos (Breakout Neon, Arkanoid) y tres de naves (Space Shooter, Galaga, Asteroids). Román decide si se fusionan o se diferencian.
+- ➡️ Las tareas pendientes de Claude pasaron a **Antigravity** (A9 a A13), porque Román necesita sus tokens en otro proyecto.
 
 ## Antigravity — 8 Ball Pool y juegos de acción
 - ⬜ **A1 · Pool, cartel largo:** en vertical, los carteles ("Falta del rival… ¡Bola en mano!") se salen de la pantalla. Que hagan salto de línea o achiquen la letra.
@@ -38,7 +35,24 @@ Estado: ✅ hecho · 🔄 en curso · ⬜ pendiente
   - Sacar el texto "BG" del auto y "BANDA GAMER" del cartel en Retro Racer (`juego-local-44.html`), y el "BG" de Endless Runner (`juego-local-5.html`).
   - Reemplazar `Orbitron` y `Rajdhani` por `Outfit` en los 15 juegos que todavía los nombran (`grep -l Orbitron pages/games/*.html`).
 
-## Gemini (Argon 4) — rediseño gráfico de juegos de lógica y casuales
+- ⬜ **A9 · Cerrar `gameRooms`** (después de A2). En `firebase/database.rules.json`, `gameRooms` pasa a `".read": "auth != null", ".write": "auth != null"`, igual que `chessRooms`.
+  - Avisarle a Román que la publique en la consola **después** de aceptar el pull request.
+- ⬜ **A10 · Integrar lo que mande Gemini** (G1 a G6). Román te pasa el HTML; antes de subirlo, revisá:
+  - que no haya scripts que hagan `git push`, pisen `.gitignore` o cambien los `?v=N`;
+  - que las monedas pasen solo por `bg-score` y `bg-buy`, sin tocar `bandagamer_usuario_v2`;
+  - que el texto de otros jugadores no se meta con `innerHTML`;
+  - que se vea bien en el celular (390×844), que `?preview=1` funcione y que no haya errores en la consola.
+  - Ejemplo de integración: el ajedrez (`juego-local-37.html`), que vino de Gemini.
+- ⬜ **A11 · App para Play Store** (Trusted Web Activity con Bubblewrap). El manifest y el service worker ya están.
+  - Hace falta la cuenta de Google Play Console de Román y publicar `.well-known/assetlinks.json` en el sitio.
+- ⬜ **A12 · Juegos repetidos:** tres de correr (Endless Runner, Infinite Runner, Geometry Dash), dos de ladrillos (Breakout Neon, Arkanoid) y tres de naves (Space Shooter, Galaga, Asteroids).
+  - Proponerle a Román fusionarlos o diferenciarlos, y hacerlo.
+- ⬜ **A13 · Monedas y rankings validados en un servidor** (Cloud Functions de Firebase).
+  - Solo si Román activa el plan Blaze. Hoy cualquiera con conocimientos puede editarse las monedas o mandar un récord falso.
+
+Si Antigravity necesita tocar archivos del área de Claude (`js/`, `firebase/`, `pages/games/kit/`), puede hacerlo: hacé cambios chicos, probalos y explicalos en el pull request.
+
+## Gemini (Argon 4) — rediseño gráfico de juegos de lógica y casuales (los integra Antigravity, A10)
 - ✅ Ajedrez HD (lo integró Claude).
 - ⬜ **G1 · Ahorcado** (`juego-local-40.html`): hoy es un muñequito de palitos y ocupa el 21% de la pantalla del celular. Hace falta un escenario ilustrado, un personaje con animación por cada error y que ocupe la pantalla.
 - ⬜ **G2 · Snake** (`juego-local-1.html`): tablero con estilo (pasto, piedras), serpiente y frutas dibujadas.
