@@ -249,8 +249,12 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
 <script>
 // ── Firebase ───────────────────────────────────────────────────────────────
 const fbCfg={apiKey:"AIzaSyACkFsE_0cBEsLEPQPc3GLeZD3KZ0i89RE",authDomain:"gor2games-657f7.firebaseapp.com",databaseURL:"https://gor2games-657f7-default-rtdb.firebaseio.com",projectId:"gor2games-657f7",storageBucket:"gor2games-657f7.firebasestorage.app",messagingSenderId:"91189543289",appId:"1:91189543289:web:2a6ffc41710279febb6fa8"};
-const fbApp=firebase.apps.length?firebase.apps[0]:firebase.initializeApp(fbCfg);
-const db=firebase.database();
+// Si el SDK de Firebase no cargó (bloqueador de anuncios, red filtrada) la sala no puede
+// funcionar: se avisa en vez de dejar la página rota en silencio.
+const FB_OK=typeof firebase!=="undefined";
+if(!FB_OK) document.addEventListener("DOMContentLoaded",()=>{const t=document.createElement("div");t.textContent="⚠️ No se pudo conectar al servidor de salas. Revisá tu conexión o desactivá el bloqueador de anuncios.";t.style.cssText="position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:9999;background:#2a1220;border:1px solid #ff3366;color:#fff;padding:12px 16px;border-radius:12px;font-weight:700;max-width:92vw;text-align:center";document.body.appendChild(t);});
+const fbApp=FB_OK?(firebase.apps.length?firebase.apps[0]:firebase.initializeApp(fbCfg)):null;
+const db=FB_OK?firebase.database():null;
 
 // ── Palabras ───────────────────────────────────────────────────────────────
 const POOL=["Pizza","Sushi","Hamburguesa","Avión","Cohete","Castillo","Volcán","Pingüino","Jirafa","Submarino","Guitarra","Helado","Cactus","Tiburón","Dinosaurio","Robot","Fantasma","Arcoíris","Tornado","Iglú","Pulpo","Dragón","Hada","Pirata","Ballena","Elefante","Cascada","Montaña","Payaso","Mago","Astronauta","Samurái","Ninja","Cowboy","Detective","Bombero","Bicicleta","Tren","Moto","Helicóptero","Sandía","Banana","Piña","Coco","Mango","Perro","Gato","Conejo","Caballo","León","Árbol","Flor","Hongo","Coral","Girasol","Sirena","Unicornio","Zombie","Bruja","Fénix","Espejo","Diamante","Faro","Trampolín","Telescopio","Mariposa","Tableta","Reloj","Zapato","Paraguas","Sombrero","Anteojos","Mochila","Violín","Tambor","Flauta","Escalera","Puente","Molino","Faro","Iglesia","Pirámide","Cueva","Lago","Desierto"];

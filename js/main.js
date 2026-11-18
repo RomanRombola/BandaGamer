@@ -185,7 +185,9 @@ async function crearCardsHTML(lista) {
 function crearCardHTML(juego, indice, esFav, visitas) {
   const tieneThumb = juego.thumbnail && juego.thumbnail.length > 0;
   const badgeTipo  = { iframe: "", local: '<span class="badge badge-local">LOCAL</span>', emulador: '<span class="badge badge-emulador">RETRO</span>' }[juego.tipo] || "";
-  const tienePreview = juego.tipo === "local" && juego.embed_url;
+  // Vista previa solo para juegos del BG Kit (pages/games/), que tienen modo ?preview=1.
+  // Las salas online (Impostor, Gartic) no lo tienen: se conectaban a la base en cada hover.
+  const tienePreview = juego.tipo === "local" && /^games\//.test(juego.embed_url || "");
   const tieneVideo = juego.preview_video;
   const nombre = esc(juego.nombre);
   const sep = juego.embed_url && juego.embed_url.includes("?") ? "&" : "?";
