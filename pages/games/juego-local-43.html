@@ -309,7 +309,7 @@ const SONG = { bpm: 132, tracks: [
   { type: 'triangle', vol: .5, notes: 'G2 . D3 . G2 . D3 . C3 . G3 . C3 . G3 . D3 . A3 . D3 . A3 . G2 . D3 . G2 . D3 . G2 . D3 . G2 . D3 . C3 . G3 . C3 . G3 . D3 . A3 . D3 . A3 . G2 . D3 . G2 . . .' },
   { drum: true, vol: .45, notes: 'K . H . S . H . K K H . S . H .' },
 ] };
-if (BG.thumb) { level = 3; buildLanes(); frog = newFrog(); frog.row = 9; frog.x = W / 2 + 20; homes = [true, false, true, false, false]; fly = { bay: 3, t: 0 }; state = 'thumb'; for (let i = 0; i < 400; i++) for (const l of lanes) for (const o of l.objs) { o.x += l.dir * l.sp / 60; if (l.dir > 0 && o.x > W + C * 3) o.x -= l.span; else if (l.dir < 0 && o.x + o.w < -C * 3) o.x += l.span; } update = () => { t += 1 / 60; }; }
+if (BG.thumb && !BG.preview) { level = 3; buildLanes(); frog = newFrog(); frog.row = 9; frog.x = W / 2 + 20; homes = [true, false, true, false, false]; fly = { bay: 3, t: 0 }; state = 'thumb'; for (let i = 0; i < 400; i++) for (const l of lanes) for (const o of l.objs) { o.x += l.dir * l.sp / 60; if (l.dir > 0 && o.x > W + C * 3) o.x -= l.span; else if (l.dir < 0 && o.x + o.w < -C * 3) o.x += l.span; } update = () => { t += 1 / 60; }; }
 else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>

@@ -21,7 +21,7 @@ const SIZES = { 3: { r: 46, pts: 20, sp: 50 }, 2: { r: 26, pts: 50, sp: 85 }, 1:
 const PU = [{ id: 'triple', c: '#ffd400', t: 'TRIPLE' }, { id: 'shield', c: '#2ef2ff', t: 'ESCUDO' }, { id: 'rapid', c: '#ff3d6e', t: 'RÁFAGA' }];
 
 BG.init({
-  post: { bloom: .6, vignette: .4, scan: .05, thumbFx: true },
+  post: { bloom: .6, vignette: .4, thumbFx: true },
   id: 'asteroids', title: 'ASTEROIDS', icon: '☄️', accent: '#a46bff', accent2: '#2ef2ff', music: true,
   subtitle: 'Sobreviví al campo de asteroides. Cuidado con los platillos.',
   hud: [{ id: 'score', label: 'Puntos' }, { id: 'wave', label: 'Oleada', color: '#2ef2ff' }, { id: 'lives', label: 'Naves', color: '#ff3d6e', value: '▲▲▲' }],
@@ -377,7 +377,7 @@ function render() {
 
 // ── Arranque ──────────────────────────────────────────────────────────────
 wave = 1;
-if (BG.thumb) {
+if (BG.thumb && !BG.preview) {
   rocks = [makeRock(3, 160, 140), makeRock(3, 620, 430), makeRock(2, 560, 150), makeRock(2, 250, 460), makeRock(1, 690, 300), makeRock(1, 120, 360)];
   rocks.forEach(r => { r.vx = r.vy = 0; });
   ship = newShip(); ship.inv = 0; ship.thrust = true; ship.a = -0.6; bullets = [{ x: 460, y: 220, r: 2 }, { x: 500, y: 192, r: 2 }, { x: 540, y: 165, r: 2 }];

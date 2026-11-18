@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Infinite Runner</title>
+<title>Cyber Lanes 3D</title>
 <link rel="stylesheet" href="kit/bg-kit.css">
 </head>
 <body>
 <script src="kit/bg-kit.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  INFINITE RUNNER — AltoVicio
+//  CYBER LANES 3D — AltoVicio
 //  3 carriles en perspectiva · saltá vallas bajas, deslizate bajo las altas,
 //  esquivá los muros · monedas · power-ups: imán, ×2 y jetpack · cada vez más rápido
 // ═══════════════════════════════════════════════════════════════════════════
@@ -18,8 +18,8 @@ const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
 const W = 420, H = 680, HOR = 150, F = 300, CAMH = 5, PZ = 3.9, FAR = 50;
 BG.init({
   post: { bloom: .55, vignette: .35, thumbFx: true },
-  id: 'runner3d', title: 'INFINITE RUNNER', icon: '🏃', accent: '#ff3dd0', accent2: '#2ef2ff', music: true,
-  subtitle: 'Corré, esquivá y juntá monedas. ¿Hasta dónde llegás?',
+  id: 'runner3d', title: 'CYBER LANES 3D', icon: '🏃', accent: '#ff3dd0', accent2: '#2ef2ff', music: true,
+  subtitle: 'Cambiá de carril en perspectiva 3D, saltá vallas, deslizate y usá el jetpack.',
   hud: [{ id: 'score', label: 'Puntos' }, { id: 'coins', label: 'Monedas', color: '#ffd400' }, { id: 'dist', label: 'Metros', color: '#2ef2ff' }],
   help: '<kbd>←</kbd><kbd>→</kbd> cambiar de carril · <kbd>↑</kbd> saltar · <kbd>↓</kbd> deslizarse',
   helpTouch: 'Deslizá el dedo: izquierda/derecha cambia de carril, arriba salta, abajo se desliza.',
@@ -175,7 +175,7 @@ const SONG = { bpm: 150, tracks: [
   { type: 'triangle', vol: .6, notes: 'A2 A2 . A2 A2 . A2 . F2 F2 . F2 F2 . F2 . G2 G2 . G2 G2 . G2 . E2 E2 . E2 E2 . E2 .' },
   { drum: true, vol: .5, notes: 'K . H . S . H . K K H . S . H . K . H . S . H . K K H . S . S S' },
 ] };
-if (BG.thumb) { start(); BG.stop(); BG.music.stop(); for (let i = 0; i < 60; i++) update(1 / 30); state = 'thumb'; p.y = .9; update = () => {}; }
+if (BG.thumb && !BG.preview) { start(); BG.stop(); BG.music.stop(); for (let i = 0; i < 60; i++) update(1 / 30); state = 'thumb'; p.y = .9; update = () => {}; }
 else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>

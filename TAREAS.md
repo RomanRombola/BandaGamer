@@ -45,8 +45,8 @@ Estado: ✅ hecho · 🔄 en curso · ⬜ pendiente
   - Ejemplo de integración: el ajedrez (`juego-local-37.html`), que vino de Gemini.
 - ⬜ **A11 · App para Play Store** (Trusted Web Activity con Bubblewrap). El manifest y el service worker ya están.
   - Hace falta la cuenta de Google Play Console de Román y publicar `.well-known/assetlinks.json` en el sitio.
-- ⬜ **A12 · Juegos repetidos:** tres de correr (Endless Runner, Infinite Runner, Geometry Dash), dos de ladrillos (Breakout Neon, Arkanoid) y tres de naves (Space Shooter, Galaga, Asteroids).
-  - Proponerle a Román fusionarlos o diferenciarlos, y hacerlo.
+- [x] ✅ **A12 · Juegos repetidos:** tres de correr (Endless Runner, Infinite Runner, Geometry Dash), dos de ladrillos (Breakout Neon, Arkanoid) y tres de naves (Space Shooter, Galaga, Asteroids).
+  - Unificados Breakout Neon y Arkanoid en **Arkanoid & Breakout** (`game-012`, 16 niveles diseñados a mano + infinitos + modo Avalancha + cápsula de salida Warp `W`), y diferenciados los runners (**Fit Runner**, **Cyber Lanes 3D**, **Geometry Dash**) y los de espacio (**Nova Striker**, **Galaga & Invasores**, **Asteroids**).
 - ⬜ **A13 · Monedas y rankings validados en un servidor** (Cloud Functions de Firebase).
   - Solo si Román activa el plan Blaze. Hoy cualquiera con conocimientos puede editarse las monedas o mandar un récord falso.
 

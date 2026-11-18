@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Galaga</title>
+<title>Galaga &amp; Invasores</title>
 <link rel="stylesheet" href="kit/bg-kit.css">
 </head>
 <body>
 <script src="kit/bg-kit.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  GALAGA — AltoVicio
+//  GALAGA & INVASORES — AltoVicio
 //  Entradas en curva por grupos · formación que se balancea y "respira"
 //  Picadas con loop que disparan · jefes de 2 golpes (sueltan NAVE DOBLE)
 //  Etapa de desafío cada 4 · velocidad creciente · vida extra a 20k y 70k
@@ -27,7 +27,7 @@ const TYPES = {
 };
 
 BG.init({
-  id: 'galaga', title: 'GALAGA', icon: '👾', accent: '#ff3d6e', accent2: '#ffd400', music: true, post: { bloom: .65, vignette: .45, scan: .06, thumbFx: true },
+  id: 'galaga', title: 'GALAGA & INVASORES', icon: '👾', accent: '#ff3d6e', accent2: '#ffd400', music: true, post: { bloom: .65, vignette: .45, thumbFx: true },
   subtitle: 'Defendé la galaxia de las oleadas de insectos espaciales.',
   hud: [{ id: 'score', label: 'Puntos' }, { id: 'stage', label: 'Etapa', color: '#ffd400' }, { id: 'lives', label: 'Naves', color: '#2ef2ff', value: '▲▲' }],
   help: '<kbd>←</kbd><kbd>→</kbd> mover · <kbd>Espacio</kbd> disparar · <kbd>P</kbd> pausa',
@@ -427,7 +427,7 @@ view.canvas.addEventListener('pointermove', e => { if (touchX != null) touchX = 
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => view.canvas.addEventListener(ev, () => { touchX = null; touchFire = false; }));
 
 // ── Arranque ──────────────────────────────────────────────────────────────
-if (BG.thumb) {
+if (BG.thumb && !BG.preview) {
   stage = 1; buildStage(); enemies.forEach(e => { e.state = 'form'; [e.x, e.y] = slotPos(e); e.a = Math.PI / 2; });
   enemies[24].state = 'dive'; enemies[24].phase = 1; enemies[24].x = 300; enemies[24].y = 380; enemies[24].a = 1.2;
   enemies[5].state = 'dead'; enemies[13].state = 'dead';

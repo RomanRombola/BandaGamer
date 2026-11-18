@@ -137,7 +137,7 @@ view.canvas.addEventListener('pointermove', e => { if (e.pointerType === 'mouse'
 view.canvas.addEventListener('pointerdown', e => { pointerX = view.toLocal(e.clientX, e.clientY).x; });
 view.canvas.addEventListener('pointerleave', () => { pointerX = null; });
 window.addEventListener('keydown', e => { if (/Arrow|KeyA|KeyD/.test(e.code)) pointerX = null; });
-if (BG.thumb) { start(); BG.stop(); state = 'thumb'; items = [{ kind: 'fruit', e: '🍉', x: 120, y: 200, rot: 0 }, { kind: 'gold', e: '🍓', x: 300, y: 320, rot: .4 }, { kind: 'bomb', e: '💣', x: 380, y: 140, rot: 0 }, { kind: 'fruit', e: '🍌', x: 210, y: 470, rot: .2 }, { kind: 'power', e: '🧲', x: 70, y: 380, rot: 0 }]; basket.x = 230; update = () => {}; }
+if (BG.thumb && !BG.preview) { start(); BG.stop(); state = 'thumb'; items = [{ kind: 'fruit', e: '🍉', x: 120, y: 200, rot: 0 }, { kind: 'gold', e: '🍓', x: 300, y: 320, rot: .4 }, { kind: 'bomb', e: '💣', x: 380, y: 140, rot: 0 }, { kind: 'fruit', e: '🍌', x: 210, y: 470, rot: .2 }, { kind: 'power', e: '🧲', x: 70, y: 380, rot: 0 }]; basket.x = 230; update = () => {}; }
 else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>

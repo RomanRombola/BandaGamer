@@ -1,5 +1,19 @@
 # AltoVicio — Changelog
 
+## 🧱 V15.5 — Fusión/diferenciación de juegos repetidos (A12) y auditoría general del sitio
+
+- **A12 · Fusión de Arkanoid & Breakout (`game-012`, `pages/games/juego-local-2.html` y `juego-local-24.html`)**: se unificaron *Breakout Neon* y *Arkanoid* en un solo juego con 16 niveles diseñados a mano (incluyendo la escalera clásica, barreras doradas, cámaras gemelas y torreón final) + niveles procedurales infinitos, modo *Avalancha*, 9 cápsulas (sumando la cápsula `W` que abre la salida Warp lateral con bonus de `+1.000` puntos) y se quitó la entrada duplicada `game-038` del catálogo (`juego-local-24.html` conserva copia del juego unificado para no romper enlaces ni historial).
+- **A12 · Diferenciación de Runners y Naves**:
+  - Runners: **Fit Runner** (`game-015`, `juego-local-5.html`), **Cyber Lanes 3D** (`game-050`, `juego-local-36.html`) y **Geometry Dash** (`game-031`, `juego-local-17.html`).
+  - Espacio: **Nova Striker** (`game-014`, `juego-local-4.html`), **Galaga & Invasores** (`game-037`, `juego-local-23.html`) y **Asteroids** (`game-028`, `juego-local-14.html`).
+- **Auditoría y pulido general del sitio (`pages/games/kit/bg-kit.js`, `js/games-data.js`, `sw.js` y 24 juegos)**:
+  - **Vista previa en vivo (`?preview=1`)**: `BG.ui.show` ahora inicia y reintenta automáticamente las partidas durante `?preview=1` sin mostrar menús superpuestos, el piloto automático envía eventos `pointerdown`/`pointerup` sobre el canvas y los 24 juegos que quedaban congelados en `if (BG.thumb)` ahora corren en vivo (en *Tower Defense*, las 5 torres combaten activamente contra la oleada en marcha).
+  - **Protección de récords en vista previa**: `BG.submitScore` ignora partidas ejecutadas en `?preview=1` o `?thumb=1` para no alterar récords locales ni enviar `bg-score` al portal durante la demostración del catálogo.
+  - **Cero scanlines**: se eliminó el parámetro `scan:` restante en 8 juegos (`juego-local-2, 12, 14, 23, 24, 25, 44, 45`), cumpliendo al 100 % la estética limpia estilo Plato.
+  - **Catálogo sincronizado y caché `?v=16`**: se actualizaron modos, insignia online (`multi: true`) y descripciones de *Piedra Papel Tijera*, *Curve Fever* y *Ahorcado* en `js/games-data.js`, y se subió la versión de caché a `?v=16` (`altovicio-v16`).
+
+---
+
 ## 🎨 V15.4 — Rediseño e integración de juegos casuales y de lógica (A10 · G1 a G6)
 
 - **Ahorcado HD (`pages/games/juego-local-40.html`, G1)**: diseño vertical completo (560×820) que aprovecha toda la pantalla en celular (`390×844`), escenario de cápsula de contención energética con personaje guardián ilustrado que reacciona y pierde piezas de escudo con cada error, más de 240 palabras en 8 categorías con pistas y cosméticos desbloqueables con VicioCoins vía `bg-buy` (sin leer `bandagamer_usuario_v2`).

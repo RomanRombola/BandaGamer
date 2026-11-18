@@ -207,7 +207,7 @@ function render() {
 }
 BG.input.on('action', () => { if (mode === 'war') flipWar(); });
 BG.input.on('up', () => guess(1)); BG.input.on('down', () => guess(-1));
-if (BG.thumb) { mode = 'menu'; update = () => {}; } else BG.ready.then(showMenu);
+if (BG.thumb && !BG.preview) { mode = 'menu'; update = () => {}; } else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>
 </body>

@@ -2,10 +2,10 @@
 // y permite abrirla sin conexión. Estrategia "primero la red": siempre se intenta bajar lo último;
 // la copia guardada solo se usa si no hay internet. Así nunca queda una versión vieja trabada.
 // Firebase, Google y cualquier otro dominio NO se guardan.
-const CACHE = 'altovicio-v15';
+const CACHE = 'altovicio-v16';
 const BASE = new URL('./', self.location).href;
-const PRECARGA = ['index.html', 'css/styles.css?v=15', 'js/games-data.js?v=15', 'js/storage.js?v=15', 'js/avatar.js?v=15',
-  'js/main.js?v=15', 'assets/logo/logo.svg', 'assets/logo/icon-192.png', 'manifest.webmanifest'].map(p => BASE + p);
+const PRECARGA = ['index.html', 'css/styles.css?v=16', 'js/games-data.js?v=16', 'js/storage.js?v=16', 'js/avatar.js?v=16',
+  'js/main.js?v=16', 'assets/logo/logo.svg', 'assets/logo/icon-192.png', 'manifest.webmanifest'].map(p => BASE + p);
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(PRECARGA.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting()));

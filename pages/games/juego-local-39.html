@@ -170,7 +170,7 @@ function render() {
 view.canvas.addEventListener('pointerdown', e => { const p = view.toLocal(e.clientX, e.clientY); tap(Math.floor(p.x / LW), p.y); });
 BG.input.onKey((e, code, down) => { if (!down || e.repeat) return; const l = KEYS.indexOf(code); if (l >= 0) tap(l, null); });
 
-if (BG.thumb) { start('arcade'); BG.stop(); state = 'thumb'; rows.forEach((r, i) => { if (i === 1) { r.hit = true; r.hitT = .0001; } }); eq[rows[1].lane] = .8; startedT = true; update = () => {}; }
+if (BG.thumb && !BG.preview) { start('arcade'); BG.stop(); state = 'thumb'; rows.forEach((r, i) => { if (i === 1) { r.hit = true; r.hitT = .0001; } }); eq[rows[1].lane] = .8; startedT = true; update = () => {}; }
 else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>

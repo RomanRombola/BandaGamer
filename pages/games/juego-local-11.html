@@ -116,7 +116,7 @@ function die() {
 }
 
 function update(dt) {
-  if (BG.thumb) return;
+  if (BG.thumb && !BG.preview) return;
   t += dt;
   if (state === 'menu' || state === 'ready') {
     bird.y = 300 + Math.sin(t * 4) * 10; bird.wing += dt * 10; bird.rot = 0;
@@ -265,7 +265,7 @@ function drawBird() {
 
 // ── Arranque ──────────────────────────────────────────────────────────────
 reset();
-if (BG.thumb) {
+if (BG.thumb && !BG.preview) {
   state = 'play'; score = 14; scroll = 400;
   pipes = [{ x: 170, top: 200, gap: 150, passed: true }, { x: 370, top: 280, gap: 150 }];
   coins = [{ x: 300, y: 330, t: 1 }];

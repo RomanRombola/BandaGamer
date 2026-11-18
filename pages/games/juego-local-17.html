@@ -368,7 +368,7 @@ function song(bpm) {
 }
 view.canvas.addEventListener('pointerdown', e => { e.preventDefault(); holdTouch = true; });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => view.canvas.addEventListener(ev, () => { holdTouch = false; }));
-if (BG.thumb) { li = 1; L = LEVELS[1].make(); pl = makePlayer(14 * T); pl.y = FLOOR - T * 3; pl.rot = .5; pl.onGround = false; camX = pl.x - W * .3; state = 'thumb'; update = () => {}; }
+if (BG.thumb && !BG.preview) { li = 1; L = LEVELS[1].make(); pl = makePlayer(14 * T); pl.y = FLOOR - T * 3; pl.rot = .5; pl.onGround = false; camX = pl.x - W * .3; state = 'thumb'; update = () => {}; }
 else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>
