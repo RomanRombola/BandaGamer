@@ -1,5 +1,12 @@
 # AltoVicio — Changelog
 
+## 🎨 V15.2 — Limpieza de marca vieja y fuentes Outfit (A8)
+
+- **Retro Racer (`juego-local-44.html`) y Endless Runner (`juego-local-5.html`)**: se quitó la sigla `"BG"` del auto y de la remera del corredor, y se cambió el cartel `"BANDA GAMER"` de la ruta por `"ALTO VICIO"`.
+- **Tipografía unificada (`Outfit` y `Plus Jakarta Sans`)**: se reemplazaron todas las referencias restantes a `Orbitron` y `Rajdhani` por `Outfit` en los 15 juegos que aún las nombraban (`juego-local-6, 8, 9, 16, 19, 20, 21, 22, 29, 30, 32, 35, 40, 42, 44`) y en la precarga de fuentes de `pages/games/kit/bg-kit.js`.
+
+---
+
 ## 🎱 V15.1 — 8 Ball Pool: VicioCoins, salas con identidad y carteles en vertical (A1, A2, A3, A9)
 
 - **A1 · Carteles (`#toast`) en vertical**: ahora hacen salto de línea automático y achican la tipografía en pantallas angostas para que avisos largos (*"✋ Falta del rival… ¡Bola en mano!"*) nunca se salgan de la pantalla.

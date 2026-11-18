@@ -11,7 +11,7 @@
 #wrap.col #pad { grid-template-columns: repeat(9, 1fr); gap: 4px; }
 #wrap.col #pad button { width: calc(var(--cs) * .98); min-width: 0; height: 48px; font-size: 18px; }
 #board { display: grid; grid-template-columns: repeat(9, var(--cs)); grid-template-rows: repeat(9, var(--cs)); background: #0d0d22; border-radius: 12px; padding: 4px; box-shadow: 0 0 0 2px rgba(124,92,255,.5), 0 16px 50px rgba(0,0,0,.6); user-select: none; }
-.cell { position: relative; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-size: calc(var(--cs) * .48); font-weight: 700; color: #9fd0ff; cursor: pointer;
+.cell { position: relative; display: flex; align-items: center; justify-content: center; font-family: 'Outfit', sans-serif; font-size: calc(var(--cs) * .48); font-weight: 700; color: #9fd0ff; cursor: pointer;
   border-right: 1px solid rgba(255,255,255,.08); border-bottom: 1px solid rgba(255,255,255,.08); transition: background .08s; }
 .cell.given { color: #f2f2ff; font-weight: 900; }
 .cell.c2, .cell.c5 { border-right: 2px solid rgba(124,92,255,.65); }
@@ -24,14 +24,14 @@
 @keyframes errpulse { 50% { transform: scale(1.2); } }
 .cell.flash { animation: flashc .6s ease; }
 @keyframes flashc { 40% { background: rgba(57,255,136,.4); } }
-.notes { position: absolute; inset: 2px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: calc(var(--cs) * .24); color: #8b8bb3; }
+.notes { position: absolute; inset: 2px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); font-family: 'Outfit', sans-serif; font-weight: 700; font-size: calc(var(--cs) * .24); color: #8b8bb3; }
 .notes span { display: flex; align-items: center; justify-content: center; }
 .notes span.hl { color: #fff; background: rgba(124,92,255,.5); border-radius: 3px; }
 #side { display: flex; flex-direction: column; gap: 10px; align-items: center; }
 #pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-#pad button { width: calc(var(--cs) * 1.25); height: calc(var(--cs) * 1.25); min-width: 46px; min-height: 46px; border-radius: 12px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: #fff; font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 700; cursor: pointer; position: relative; }
+#pad button { width: calc(var(--cs) * 1.25); height: calc(var(--cs) * 1.25); min-width: 46px; min-height: 46px; border-radius: 12px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: #fff; font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; cursor: pointer; position: relative; }
 #pad button:hover { border-color: #7c5cff; }
-#pad button small { position: absolute; right: 5px; bottom: 3px; font-size: 9px; color: #8b8ba3; font-family: 'Rajdhani', sans-serif; }
+#pad button small { position: absolute; right: 5px; bottom: 3px; font-size: 9px; color: #8b8ba3; font-family: 'Outfit', sans-serif; }
 #pad button.done { opacity: .25; }
 #tools { display: flex; gap: 8px; }
 #tools .bg-btn { padding: 9px 10px; font-size: 11px; }

@@ -8,19 +8,19 @@
 <style>
 #wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 640px; height: 100%; padding: 8px; justify-content: space-between; }
 #top { display: flex; align-items: center; gap: 10px; width: 100%; justify-content: center; }
-#cat { font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 2px; color: #ff9a1f; padding: 6px 12px; border-radius: 999px; background: rgba(255,154,31,.12); border: 1px solid rgba(255,154,31,.35); }
+#cat { font-family: 'Outfit', sans-serif; font-size: 12px; letter-spacing: 2px; color: #ff9a1f; padding: 6px 12px; border-radius: 999px; background: rgba(255,154,31,.12); border: 1px solid rgba(255,154,31,.35); }
 #hintBtn { padding: 6px 12px; font-size: 11px; }
 #hint { min-height: 22px; color: #c9c9e6; font-weight: 600; font-size: 15px; text-align: center; }
 canvas#gallows { width: min(300px, 60vw); aspect-ratio: 1; }
 #word { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; min-height: 56px; }
-.lt { width: clamp(28px, 7vw, 42px); height: clamp(40px, 9vw, 54px); border-bottom: 3px solid rgba(255,255,255,.4); display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(18px, 5vw, 28px); color: #fff; }
+.lt { width: clamp(28px, 7vw, 42px); height: clamp(40px, 9vw, 54px); border-bottom: 3px solid rgba(255,255,255,.4); display: flex; align-items: center; justify-content: center; font-family: 'Outfit', sans-serif; font-weight: 900; font-size: clamp(18px, 5vw, 28px); color: #fff; }
 .lt.sp { border: none; width: 16px; }
 .lt.show { animation: drop .3s ease; border-color: #39ff88; }
 .lt.miss { color: #ff3d6e; border-color: #ff3d6e; }
 @keyframes drop { from { transform: translateY(-14px); opacity: 0; } }
 #kb { display: flex; flex-direction: column; gap: 6px; width: 100%; }
 .kr { display: flex; gap: 5px; justify-content: center; }
-.k { flex: 1; max-width: 46px; height: 48px; border: none; border-radius: 8px; background: #34345a; color: #fff; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 17px; cursor: pointer; transition: transform .08s, background .2s; }
+.k { flex: 1; max-width: 46px; height: 48px; border: none; border-radius: 8px; background: #34345a; color: #fff; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 17px; cursor: pointer; transition: transform .08s, background .2s; }
 .k:active { transform: scale(.92); }
 .k.ok { background: linear-gradient(135deg, #22c55e, #15803d); }
 .k.no { background: #24243a; color: #5a5a7a; }
@@ -124,7 +124,7 @@ function celebrate() { const ws = document.querySelectorAll('.lt'); ws.forEach((
 function askSecret() {
   twoP = true;
   BG.ui.show({ icon: '✍', title: 'PALABRA SECRETA', sub: 'Jugador 1: escribí una palabra (o frase corta) sin que mire el otro.',
-    html: `<input id="sec" type="password" maxlength="24" autocomplete="off" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font-size:18px;font-family:Orbitron,sans-serif;letter-spacing:3px;margin-bottom:8px">
+    html: `<input id="sec" type="password" maxlength="24" autocomplete="off" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font-size:18px;font-family:Outfit,sans-serif;letter-spacing:3px;margin-bottom:8px">
       <input id="pis" type="text" maxlength="60" placeholder="Pista (opcional)" autocomplete="off" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font-size:15px;margin-bottom:10px">`,
     buttons: [{ label: '▶ ¡QUE ADIVINE!', primary: true, onClick: () => {
       const w = norm(document.getElementById('sec').value.trim()).replace(/[^A-ZÑ ]/g, '').replace(/\s+/g, ' ');

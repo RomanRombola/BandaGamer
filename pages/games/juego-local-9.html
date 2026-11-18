@@ -14,7 +14,7 @@
 .row.shake { animation: shake .45s; }
 @keyframes shake { 10%, 90% { transform: translateX(-2px); } 20%, 80% { transform: translateX(4px); } 30%, 50%, 70% { transform: translateX(-7px); } 40%, 60% { transform: translateX(7px); } }
 .tile { width: var(--ts); height: var(--ts); border: 2px solid rgba(255,255,255,.16); border-radius: 8px; display: flex; align-items: center; justify-content: center;
-  font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: calc(var(--ts) * .5); text-transform: uppercase; color: #fff; background: rgba(255,255,255,.02); transition: border-color .1s; }
+  font-family: 'Outfit', sans-serif; font-weight: 900; font-size: calc(var(--ts) * .5); text-transform: uppercase; color: #fff; background: rgba(255,255,255,.02); transition: border-color .1s; }
 .tile.filled { border-color: rgba(255,255,255,.45); animation: pop .1s; }
 @keyframes pop { 50% { transform: scale(1.1); } }
 .tile.flip { animation: flip .5s ease forwards; }
@@ -26,7 +26,7 @@
 @keyframes bounce { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-20px); } 60% { transform: translateY(4px); } }
 #kb { width: 100%; display: flex; flex-direction: column; gap: 6px; }
 .krow { display: flex; gap: 5px; justify-content: center; }
-.key { flex: 1; max-width: 46px; height: 54px; border-radius: 8px; border: none; background: #3a3a58; color: #fff; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 17px; cursor: pointer; text-transform: uppercase; transition: background .2s, transform .08s; }
+.key { flex: 1; max-width: 46px; height: 54px; border-radius: 8px; border: none; background: #3a3a58; color: #fff; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 17px; cursor: pointer; text-transform: uppercase; transition: background .2s, transform .08s; }
 .key:active { transform: scale(.94); }
 .key.wide { max-width: 72px; flex: 1.5; font-size: 12px; }
 #msg { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: #fff; color: #111; font-weight: 700; padding: 9px 16px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 30; font-size: 15px; }
