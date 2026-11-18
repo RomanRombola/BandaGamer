@@ -81,6 +81,11 @@ window.ACCESORIOS_DEFAULT = {
   mascota: "pet_none",
   titulo: "t_none",
   burbuja: "chat_default",
+  cara: "c_none",
+  cuello: "k_none",
+  espalda: "w_none",
+  pin: "p_none",
+  fondo: "fd_none",
   offsetY: 0,
   scale: 100
 };
@@ -179,7 +184,179 @@ window.ACCESORIOS = {
     { id: "e_supreme", nombre: "Cósmico",     precio: 1000, reqNivel: 10, rareza: "mitico" }
   ]
 };
+
+// ── Tienda ilustrada (V15) ────────────────────────────────────────────────
+// Arte en assets/tienda/ (acc/, marcos/, fondos/). Colocación relativa al tamaño del avatar:
+// w = ancho, x/y = centro, yb = borde inferior (0 = arriba del avatar, 1 = abajo), doble = un par simétrico.
+// Para calibrar un ítem, cambiá sus números acá y miralo en la tienda.
+window.TIENDA_ILUSTRADA = {
+  sombreros: [
+    {"id":"s_cotillon","nombre":"Gorrito de Cumple","precio":70,"reqNivel":1,"rareza":"comun","img":"acc/cotillon.webp","ar":0.975,"w":0.5,"x":0.6,"yb":0.2},
+    {"id":"s_mono_rojo","nombre":"Moño Rojo","precio":80,"reqNivel":1,"rareza":"comun","img":"acc/mono_rojo.webp","ar":0.832,"w":0.46,"x":0.74,"y":0.1},
+    {"id":"s_mono_violeta","nombre":"Moño Lila","precio":90,"reqNivel":1,"rareza":"comun","img":"acc/mono_violeta.webp","ar":0.822,"w":0.46,"x":0.74,"y":0.1},
+    {"id":"s_mono_cafe","nombre":"Moño Caramelo","precio":70,"reqNivel":1,"rareza":"comun","img":"acc/mono_cafe.webp","ar":0.864,"w":0.46,"x":0.74,"y":0.1},
+    {"id":"s_hebilla","nombre":"Hebilla Estrella","precio":80,"reqNivel":1,"rareza":"comun","img":"acc/hebilla_estrella.webp","ar":0.596,"w":0.4,"x":0.74,"y":0.16},
+    {"id":"s_flor","nombre":"Flor al Pelo","precio":90,"reqNivel":1,"rareza":"comun","img":"acc/flor.webp","ar":1.106,"w":0.3,"x":0.8,"y":0.18},
+    {"id":"s_orejas_gato","nombre":"Orejitas de Michi","precio":180,"reqNivel":2,"rareza":"raro","img":"acc/orejas_gato.webp","ar":0.453,"w":1.0,"yb":0.24},
+    {"id":"s_cuernos","nombre":"Cuernitos","precio":190,"reqNivel":2,"rareza":"raro","img":"acc/cuernos.webp","ar":0.46,"w":0.86,"yb":0.2},
+    {"id":"s_detective","nombre":"Gorra Detective","precio":200,"reqNivel":2,"rareza":"raro","img":"acc/detective.webp","ar":0.694,"w":0.92,"yb":0.3},
+    {"id":"s_vaquero","nombre":"Sombrero Vaquero","precio":180,"reqNivel":2,"rareza":"raro","img":"acc/vaquero.webp","ar":0.668,"w":1.12,"yb":0.3},
+    {"id":"s_corona_flores","nombre":"Corona de Flores","precio":190,"reqNivel":2,"rareza":"raro","img":"acc/corona_flores.webp","ar":0.469,"w":1.0,"yb":0.24},
+    {"id":"s_mono_lazo","nombre":"Lazo Vintage","precio":200,"reqNivel":2,"rareza":"raro","img":"acc/mono_lazo.webp","ar":0.494,"w":0.6,"x":0.5,"y":0.02},
+    {"id":"s_auriculares","nombre":"Auris Gamer","precio":340,"reqNivel":4,"rareza":"epico","img":"acc/auriculares.webp","ar":1.009,"w":1.16,"y":0.44},
+    {"id":"s_aureola","nombre":"Aureola","precio":350,"reqNivel":4,"rareza":"epico","img":"acc/aureola.webp","ar":0.369,"w":0.8,"y":-0.06},
+    {"id":"s_sombrero_bruja","nombre":"Sombrero de Bruja","precio":360,"reqNivel":4,"rareza":"epico","img":"acc/bruja.webp","ar":0.842,"w":1.02,"yb":0.3},
+    {"id":"s_aviador","nombre":"Casco Aviador","precio":560,"reqNivel":6,"rareza":"legendario","img":"acc/aviador.webp","ar":1.014,"w":1.06,"yb":0.5},
+    {"id":"s_corona_real","nombre":"Corona Real","precio":910,"reqNivel":8,"rareza":"mitico","img":"acc/corona.webp","ar":0.724,"w":0.66,"yb":0.2}
+  ],
+  lentes: [
+    {"id":"l_redondos","nombre":"Lentes Redondos","precio":70,"reqNivel":1,"rareza":"comun","img":"acc/lentes_redondos.webp","ar":0.438,"w":0.8,"y":0.44},
+    {"id":"l_finos","nombre":"Lentes de Lectura","precio":80,"reqNivel":1,"rareza":"comun","img":"acc/lentes_finos.webp","ar":0.294,"w":0.8,"y":0.46},
+    {"id":"l_sol","nombre":"Lentes de Sol","precio":200,"reqNivel":2,"rareza":"raro","img":"acc/lentes_sol.webp","ar":0.398,"w":0.84,"y":0.44},
+    {"id":"l_parche","nombre":"Parche Pirata","precio":180,"reqNivel":2,"rareza":"raro","img":"acc/parche.webp","ar":0.498,"w":0.84,"y":0.4},
+    {"id":"l_monoculo","nombre":"Monóculo","precio":350,"reqNivel":4,"rareza":"epico","img":"acc/monoculo.webp","ar":1.234,"w":0.3,"x":0.66,"y":0.5},
+    {"id":"l_antifaz","nombre":"Antifaz de Carnaval","precio":580,"reqNivel":6,"rareza":"legendario","img":"acc/antifaz.webp","ar":0.441,"w":0.86,"y":0.42}
+  ],
+  bigotes: [
+    {"id":"b_bigote_castano","nombre":"Bigote Castaño","precio":70,"reqNivel":1,"rareza":"comun","img":"acc/bigote_castano.webp","ar":0.36,"w":0.5,"y":0.66},
+    {"id":"b_bigote_gris","nombre":"Bigote Gris","precio":80,"reqNivel":1,"rareza":"comun","img":"acc/bigote_gris.webp","ar":0.35,"w":0.5,"y":0.66},
+    {"id":"b_pipa","nombre":"Pipa del Abuelo","precio":360,"reqNivel":4,"rareza":"epico","img":"acc/pipa.webp","ar":0.8,"w":0.42,"x":0.72,"y":0.76}
+  ],
+  caras: [
+    {"id":"c_rubor","nombre":"Cachetes Rosados","precio":70,"reqNivel":1,"rareza":"comun","img":"acc/rubor.webp","ar":0.566,"w":0.3,"y":0.62,"doble":true},
+    {"id":"c_pecas","nombre":"Pecas","precio":80,"reqNivel":1,"rareza":"comun","img":"acc/pecas.webp","ar":0.511,"w":0.56,"y":0.56},
+    {"id":"c_lunar","nombre":"Lunar","precio":90,"reqNivel":1,"rareza":"comun","img":"acc/lunar.webp","ar":1.0,"w":0.07,"x":0.7,"y":0.66},
+    {"id":"c_curita","nombre":"Curita","precio":70,"reqNivel":1,"rareza":"comun","img":"acc/curita.webp","ar":0.985,"w":0.3,"x":0.28,"y":0.62},
+    {"id":"c_curitas","nombre":"Curitas Cruzadas","precio":190,"reqNivel":2,"rareza":"raro","img":"acc/curitas.webp","ar":1.0,"w":0.32,"x":0.72,"y":0.64},
+    {"id":"c_cicatriz","nombre":"Cicatriz","precio":200,"reqNivel":2,"rareza":"raro","img":"acc/cicatriz.webp","ar":1.157,"w":0.26,"x":0.3,"y":0.36},
+    {"id":"c_cicatrices","nombre":"Arañazo","precio":340,"reqNivel":4,"rareza":"epico","img":"acc/cicatrices.webp","ar":1.203,"w":0.32,"x":0.7,"y":0.4}
+  ],
+  cuellos: [
+    {"id":"k_mono_negro","nombre":"Moño de Gala","precio":70,"reqNivel":1,"rareza":"comun","img":"acc/mono_negro.webp","ar":0.553,"w":0.42,"y":0.97},
+    {"id":"k_monito","nombre":"Moñito Lila","precio":80,"reqNivel":1,"rareza":"comun","img":"acc/monito_violeta.webp","ar":0.574,"w":0.42,"y":0.97},
+    {"id":"k_panuelo","nombre":"Pañuelo","precio":200,"reqNivel":2,"rareza":"raro","img":"acc/panuelo.webp","ar":0.824,"w":0.56,"y":0.96},
+    {"id":"k_corbata","nombre":"Corbata","precio":180,"reqNivel":2,"rareza":"raro","img":"acc/corbata.webp","ar":1.556,"w":0.34,"y":1.0},
+    {"id":"k_medalla","nombre":"Medalla de Oro","precio":350,"reqNivel":4,"rareza":"epico","img":"acc/medalla.webp","ar":1.231,"w":0.3,"y":0.98},
+    {"id":"k_sheriff","nombre":"Condecoración","precio":580,"reqNivel":6,"rareza":"legendario","img":"acc/estrella_sheriff.webp","ar":1.983,"w":0.26,"y":1.0}
+  ],
+  espaldas: [
+    {"id":"w_alas_angel","nombre":"Alas de Ángel","precio":340,"reqNivel":4,"rareza":"epico","img":"acc/alas_angel.webp","ar":0.57,"w":1.62,"y":0.5},
+    {"id":"w_alas_murcielago","nombre":"Alas de Murciélago","precio":350,"reqNivel":4,"rareza":"epico","img":"acc/alas_murcielago.webp","ar":0.359,"w":1.72,"y":0.44},
+    {"id":"w_espadas","nombre":"Espadas Cruzadas","precio":580,"reqNivel":6,"rareza":"legendario","img":"acc/espadas.webp","ar":0.966,"w":1.36,"y":0.5},
+    {"id":"w_rayos","nombre":"Electrizado","precio":900,"reqNivel":8,"rareza":"mitico","img":"acc/rayos.webp","ar":0.707,"w":1.6,"y":0.5}
+  ],
+  pins: [
+    {"id":"p_corazon","nombre":"Corazón","precio":70,"reqNivel":1,"rareza":"comun","img":"acc/corazon.webp","ar":0.875},
+    {"id":"p_estrella","nombre":"Estrella","precio":80,"reqNivel":1,"rareza":"comun","img":"acc/estrella.webp","ar":0.989},
+    {"id":"p_hoja","nombre":"Hojita","precio":90,"reqNivel":1,"rareza":"comun","img":"acc/hoja.webp","ar":1.255},
+    {"id":"p_gota","nombre":"Gota","precio":70,"reqNivel":1,"rareza":"comun","img":"acc/gota.webp","ar":1.425},
+    {"id":"p_rayo","nombre":"Rayo","precio":190,"reqNivel":2,"rareza":"raro","img":"acc/rayo.webp","ar":1.558},
+    {"id":"p_trebol","nombre":"Trébol de la Suerte","precio":200,"reqNivel":2,"rareza":"raro","img":"acc/trebol.webp","ar":1.212},
+    {"id":"p_notas","nombre":"Notas Musicales","precio":180,"reqNivel":2,"rareza":"raro","img":"acc/notas.webp","ar":1.255},
+    {"id":"p_destello","nombre":"Destello","precio":190,"reqNivel":2,"rareza":"raro","img":"acc/destello.webp","ar":1.036},
+    {"id":"p_brillo","nombre":"Brillo Dorado","precio":200,"reqNivel":2,"rareza":"raro","img":"acc/brillo.webp","ar":1.016},
+    {"id":"p_varita","nombre":"Varita Mágica","precio":340,"reqNivel":4,"rareza":"epico","img":"acc/varita.webp","ar":1.044},
+    {"id":"p_placa","nombre":"Placa de Sheriff","precio":350,"reqNivel":4,"rareza":"epico","img":"acc/placa_sheriff.webp","ar":1.131},
+    {"id":"p_gema_verde","nombre":"Gema Esmeralda","precio":360,"reqNivel":4,"rareza":"epico","img":"acc/gema_verde.webp","ar":1.462},
+    {"id":"p_gema_violeta","nombre":"Gema Amatista","precio":340,"reqNivel":4,"rareza":"epico","img":"acc/gema_violeta.webp","ar":1.033},
+    {"id":"p_broche","nombre":"Broche Antiguo","precio":570,"reqNivel":6,"rareza":"legendario","img":"acc/broche_esmeralda.webp","ar":1.085},
+    {"id":"p_broche_gema","nombre":"Joya Arcoíris","precio":920,"reqNivel":8,"rareza":"mitico","img":"acc/broche_gema.webp","ar":1.165}
+  ],
+  marcos: [
+    {"id":"mk_plata","nombre":"Plata","precio":70,"reqNivel":1,"rareza":"comun","img":"marcos/mk_plata.webp"},
+    {"id":"mk_oro_fino","nombre":"Oro Fino","precio":80,"reqNivel":1,"rareza":"comun","img":"marcos/mk_oro_fino.webp"},
+    {"id":"mk_neon_cian","nombre":"Neón Cian","precio":90,"reqNivel":1,"rareza":"comun","img":"marcos/mk_neon_cian.webp"},
+    {"id":"mk_soga","nombre":"Soga","precio":70,"reqNivel":1,"rareza":"comun","img":"marcos/mk_soga.webp"},
+    {"id":"mk_cadena","nombre":"Cadena","precio":80,"reqNivel":1,"rareza":"comun","img":"marcos/mk_cadena.webp"},
+    {"id":"mk_pixel","nombre":"Pixel","precio":90,"reqNivel":1,"rareza":"comun","img":"marcos/mk_pixel.webp"},
+    {"id":"mk_geometrico","nombre":"Geométrico","precio":70,"reqNivel":1,"rareza":"comun","img":"marcos/mk_geometrico.webp"},
+    {"id":"mk_hielo","nombre":"Hielo","precio":80,"reqNivel":1,"rareza":"comun","img":"marcos/mk_hielo.webp"},
+    {"id":"mk_trenza","nombre":"Trenza","precio":200,"reqNivel":2,"rareza":"raro","img":"marcos/mk_trenza.webp"},
+    {"id":"mk_neon_doble","nombre":"Neón Doble","precio":180,"reqNivel":2,"rareza":"raro","img":"marcos/mk_neon_doble.webp"},
+    {"id":"mk_holo_puntos","nombre":"Holograma","precio":190,"reqNivel":2,"rareza":"raro","img":"marcos/mk_holo_puntos.webp"},
+    {"id":"mk_ramas","nombre":"Ramas","precio":200,"reqNivel":2,"rareza":"raro","img":"marcos/mk_ramas.webp"},
+    {"id":"mk_enredadera","nombre":"Enredadera","precio":180,"reqNivel":2,"rareza":"raro","img":"marcos/mk_enredadera.webp"},
+    {"id":"mk_espinas","nombre":"Espinas","precio":190,"reqNivel":2,"rareza":"raro","img":"marcos/mk_espinas.webp"},
+    {"id":"mk_ramas_secas","nombre":"Otoño","precio":200,"reqNivel":2,"rareza":"raro","img":"marcos/mk_ramas_secas.webp"},
+    {"id":"mk_orbitas","nombre":"Órbitas","precio":180,"reqNivel":2,"rareza":"raro","img":"marcos/mk_orbitas.webp"},
+    {"id":"mk_rosado_diamante","nombre":"Oro Rosa","precio":350,"reqNivel":4,"rareza":"epico","img":"marcos/mk_rosado_diamante.webp"},
+    {"id":"mk_plata_puntas","nombre":"Plata Estelar","precio":360,"reqNivel":4,"rareza":"epico","img":"marcos/mk_plata_puntas.webp"},
+    {"id":"mk_circuito","nombre":"Circuito","precio":340,"reqNivel":4,"rareza":"epico","img":"marcos/mk_circuito.webp"},
+    {"id":"mk_orbita_azul","nombre":"Órbita Azul","precio":350,"reqNivel":4,"rareza":"epico","img":"marcos/mk_orbita_azul.webp"},
+    {"id":"mk_laureles","nombre":"Laureles","precio":360,"reqNivel":4,"rareza":"epico","img":"marcos/mk_laureles.webp"},
+    {"id":"mk_flores_doradas","nombre":"Flores Doradas","precio":340,"reqNivel":4,"rareza":"epico","img":"marcos/mk_flores_doradas.webp"},
+    {"id":"mk_luna","nombre":"Luna","precio":350,"reqNivel":4,"rareza":"epico","img":"marcos/mk_luna.webp"},
+    {"id":"mk_constelaciones","nombre":"Constelaciones","precio":360,"reqNivel":4,"rareza":"epico","img":"marcos/mk_constelaciones.webp"},
+    {"id":"mk_burbujas","nombre":"Burbujas","precio":340,"reqNivel":4,"rareza":"epico","img":"marcos/mk_burbujas.webp"},
+    {"id":"mk_ola","nombre":"Marea","precio":350,"reqNivel":4,"rareza":"epico","img":"marcos/mk_ola.webp"},
+    {"id":"mk_diamantes","nombre":"Diamantes","precio":580,"reqNivel":6,"rareza":"legendario","img":"marcos/mk_diamantes.webp"},
+    {"id":"mk_chispas_violeta","nombre":"Chispas Lila","precio":560,"reqNivel":6,"rareza":"legendario","img":"marcos/mk_chispas_violeta.webp"},
+    {"id":"mk_halo_violeta","nombre":"Halo Lila","precio":570,"reqNivel":6,"rareza":"legendario","img":"marcos/mk_halo_violeta.webp"},
+    {"id":"mk_torbellino","nombre":"Torbellino","precio":580,"reqNivel":6,"rareza":"legendario","img":"marcos/mk_torbellino.webp"},
+    {"id":"mk_polvo_estelar","nombre":"Polvo Estelar","precio":560,"reqNivel":6,"rareza":"legendario","img":"marcos/mk_polvo_estelar.webp"},
+    {"id":"mk_alado","nombre":"Alado","precio":570,"reqNivel":6,"rareza":"legendario","img":"marcos/mk_alado.webp"},
+    {"id":"mk_nebulosa","nombre":"Nebulosa","precio":920,"reqNivel":8,"rareza":"mitico","img":"marcos/mk_nebulosa.webp"},
+    {"id":"mk_planeta","nombre":"Planeta","precio":900,"reqNivel":8,"rareza":"mitico","img":"marcos/mk_planeta.webp"},
+    {"id":"mk_runas","nombre":"Runas","precio":910,"reqNivel":8,"rareza":"mitico","img":"marcos/mk_runas.webp"},
+    {"id":"mk_fuego","nombre":"Anillo de Fuego","precio":920,"reqNivel":8,"rareza":"mitico","img":"marcos/mk_fuego.webp"}
+  ],
+  fondos: [
+    {"id":"fd_none","nombre":"Sin fondo","precio":0,"reqNivel":1,"rareza":"comun"},
+    {"id":"fd_selva","nombre":"Selva Perdida","precio":110,"reqNivel":1,"rareza":"comun","img":"fondos/fd_selva.webp"},
+    {"id":"fd_sabana","nombre":"Sabana","precio":120,"reqNivel":1,"rareza":"comun","img":"fondos/fd_sabana.webp"},
+    {"id":"fd_oeste","nombre":"Salvaje Oeste","precio":130,"reqNivel":1,"rareza":"comun","img":"fondos/fd_oeste.webp"},
+    {"id":"fd_oceano","nombre":"Fondo del Mar","precio":220,"reqNivel":2,"rareza":"raro","img":"fondos/fd_oceano.webp"},
+    {"id":"fd_hielo","nombre":"Cueva de Hielo","precio":230,"reqNivel":2,"rareza":"raro","img":"fondos/fd_hielo.webp"},
+    {"id":"fd_volcan","nombre":"Volcán","precio":240,"reqNivel":2,"rareza":"raro","img":"fondos/fd_volcan.webp"},
+    {"id":"fd_piratas","nombre":"Bahía Pirata","precio":380,"reqNivel":4,"rareza":"epico","img":"fondos/fd_piratas.webp"},
+    {"id":"fd_concierto","nombre":"Concierto","precio":390,"reqNivel":4,"rareza":"epico","img":"fondos/fd_concierto.webp"},
+    {"id":"fd_arcade","nombre":"Arcade Retro","precio":400,"reqNivel":4,"rareza":"epico","img":"fondos/fd_arcade.webp"},
+    {"id":"fd_steampunk","nombre":"Steampunk","precio":600,"reqNivel":6,"rareza":"legendario","img":"fondos/fd_steampunk.webp"},
+    {"id":"fd_magia","nombre":"Academia de Magia","precio":610,"reqNivel":6,"rareza":"legendario","img":"fondos/fd_magia.webp"},
+    {"id":"fd_electrico","nombre":"Ciudad Eléctrica","precio":620,"reqNivel":6,"rareza":"legendario","img":"fondos/fd_electrico.webp"},
+    {"id":"fd_galaxia","nombre":"Galaxia","precio":940,"reqNivel":8,"rareza":"mitico","img":"fondos/fd_galaxia.webp"}
+  ]
+};
+
+// Base de las imágenes, relativa a este archivo (sirve desde index, pages/ y pages/games/)
+const TIENDA_BASE = (function () {
+  try { return new URL("../assets/tienda/", document.currentScript.src).href; } catch (e) { return "assets/tienda/"; }
+})();
+(function fusionarTiendaIlustrada() {
+  const T = window.TIENDA_ILUSTRADA, A = window.ACCESORIOS;
+  // Los ítems viejos (dibujos SVG / aros CSS) se dejan de vender, pero quien los compró los sigue teniendo.
+  for (const k of ["sombreros", "lentes", "bigotes", "marcos"]) {
+    A[k].forEach(it => { if (it.precio > 0) it.legacy = true; });
+    A[k] = [A[k][0], ...T[k], ...A[k].slice(1)];
+  }
+  A.caras    = [{ id: "c_none", nombre: "Nada", precio: 0, reqNivel: 1, rareza: "comun" }, ...T.caras];
+  A.cuellos  = [{ id: "k_none", nombre: "Nada", precio: 0, reqNivel: 1, rareza: "comun" }, ...T.cuellos];
+  A.espaldas = [{ id: "w_none", nombre: "Nada", precio: 0, reqNivel: 1, rareza: "comun" }, ...T.espaldas];
+  A.pins     = [{ id: "p_none", nombre: "Sin pin", precio: 0, reqNivel: 1, rareza: "comun" }, ...T.pins];
+  A.fondos   = T.fondos;
+})();
 const ACCESORIOS = window.ACCESORIOS;
+
+const _ACC_IDX = {};
+function itemDe(lista, id) {
+  const key = lista + ":" + id;
+  if (!(key in _ACC_IDX)) _ACC_IDX[key] = (ACCESORIOS[lista] || []).find(a => a.id === id) || null;
+  return _ACC_IDX[key];
+}
+function urlTienda(it) { return it && it.img ? TIENDA_BASE + it.img : ""; }
+
+// Capa de imagen de un accesorio ilustrado. def = colocación por defecto del slot.
+function capaImg(it, size, def, z, calib, offY, sc) {
+  const w = (it.w ?? def.w) * size;
+  const h = w * (it.ar || 1);
+  const cx = (it.x ?? def.x ?? 0.5) * size;
+  let top = it.yb != null ? it.yb * size - h : (it.y ?? def.y) * size - h / 2;
+  if (calib) top += offY;
+  const t = calib ? ` scale(${sc})` : "";
+  const sombra = size >= 40 ? "filter:drop-shadow(0 2px 3px rgba(0,0,0,0.45));" : "";
+  const una = x => `<img src="${urlTienda(it)}" alt="" draggable="false" style="position:absolute;left:${(x - w / 2).toFixed(1)}px;top:${top.toFixed(1)}px;width:${w.toFixed(1)}px;height:${h.toFixed(1)}px;transform:${t || "none"};pointer-events:none;max-width:none;max-height:none;z-index:${z};${sombra}">`;
+  return it.doble ? una(size * 0.26) + una(size * 0.74) : una(cx);
+}
 
 function renderAvatar(base, accesorios = {}, size = 44, fotoUrl = "") {
   if (base && typeof base === "object") {
@@ -196,29 +373,42 @@ function renderAvatar(base, accesorios = {}, size = 44, fotoUrl = "") {
   const svgLentes   = window.SVG_LENTES[acc.lentes] || "";
   const svgBoca     = window.SVG_BOCA[acc.bigote] || "";
   const svgMascota  = window.SVG_MASCOTAS[acc.mascota] || "";
-  const marcoAcc    = ACCESORIOS.marcos.find(a => a.id === acc.marco);
-  const efectoAcc   = ACCESORIOS.efectos.find(a => a.id === acc.efecto);
+  const marcoAcc    = itemDe("marcos", acc.marco);
+  const efectoAcc   = itemDe("efectos", acc.efecto);
+  const img = (lista, id) => { const it = itemDe(lista, id); return it && it.img ? it : null; };
+  const iSombrero = img("sombreros", acc.sombrero), iLentes = img("lentes", acc.lentes), iBoca = img("bigotes", acc.bigote);
+  const iCara = img("caras", acc.cara), iCuello = img("cuellos", acc.cuello), iEspalda = img("espaldas", acc.espalda), iPin = img("pins", acc.pin);
 
   const offY = Math.max(-25, Math.min(25, Number(acc.offsetY) || 0)) * (size / 80);
   const sc   = Math.max(0.75, Math.min(1.35, (Number(acc.scale) || 100) / 100));
 
   const auraStyle  = efectoAcc?.css || "";
-  const marcoStyle = marcoAcc?.css || "box-shadow:0 0 0 2px rgba(255,255,255,0.14);";
+  const marcoImg   = marcoAcc && marcoAcc.img;
+  const marcoStyle = marcoImg ? "" : (marcoAcc?.css || "box-shadow:0 0 0 2px rgba(255,255,255,0.14);");
   const innerContent = foto
     ? `<img src="${foto}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">`
     : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">${svgBase}</div>`;
+  const mk = size * 1.3;
 
   return `<div class="av-plato-wrap" style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;flex-shrink:0;vertical-align:middle;overflow:visible !important;">
-    ${auraStyle ? `<div class="av-aura-layer" style="position:absolute;inset:-4px;border-radius:50%;pointer-events:none;${auraStyle}"></div>` : ""}
-    <div class="av-frame-ring" style="position:relative;width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#131722;${marcoStyle}">
+    ${iEspalda ? capaImg(iEspalda, size, { w: 1.6, y: 0.5 }, 0, false) : ""}
+    ${auraStyle ? `<div class="av-aura-layer" style="position:absolute;inset:-4px;border-radius:50%;pointer-events:none;z-index:1;${auraStyle}"></div>` : ""}
+    <div class="av-frame-ring" style="position:relative;z-index:1;width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#131722;${marcoStyle}">
       <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;">
         ${innerContent}
       </div>
     </div>
-    ${svgSombrero ? `<div style="position:absolute;top:${Math.round(-size * 0.36 + offY)}px;left:50%;width:${Math.round(size * 0.95)}px;transform:translateX(-50%) scale(${sc});pointer-events:none;z-index:5;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.6))">${svgSombrero}</div>` : ""}
-    ${svgLentes ? `<div style="position:absolute;top:${Math.round(size * 0.18 + offY)}px;left:50%;width:${Math.round(size * 0.86)}px;transform:translateX(-50%) scale(${sc});pointer-events:none;z-index:4;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.55))">${svgLentes}</div>` : ""}
-    ${svgBoca ? `<div style="position:absolute;bottom:${Math.round(-size * 0.14 - offY * 0.5)}px;left:50%;width:${Math.round(size * 0.76)}px;transform:translateX(-50%) scale(${sc});pointer-events:none;z-index:4;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6))">${svgBoca}</div>` : ""}
-    ${svgMascota ? `<div class="av-pet-float" style="position:absolute;bottom:${Math.round(-size * 0.14)}px;right:${Math.round(-size * 0.24)}px;width:${Math.round(size * 0.52)}px;height:${Math.round(size * 0.52)}px;pointer-events:none;z-index:6;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.7))">${svgMascota}</div>` : ""}
+    ${marcoImg ? `<img src="${urlTienda(marcoAcc)}" alt="" draggable="false" style="position:absolute;left:${((size - mk) / 2).toFixed(1)}px;top:${((size - mk) / 2).toFixed(1)}px;width:${mk.toFixed(1)}px;height:${mk.toFixed(1)}px;max-width:none;max-height:none;pointer-events:none;z-index:2">` : ""}
+    ${iCara ? capaImg(iCara, size, { w: 0.3, y: 0.62 }, 3, true, offY, sc) : ""}
+    ${iBoca ? capaImg(iBoca, size, { w: 0.5, y: 0.66 }, 4, true, offY, sc) : ""}
+    ${iLentes ? capaImg(iLentes, size, { w: 0.8, y: 0.44 }, 5, true, offY, sc) : ""}
+    ${iCuello ? capaImg(iCuello, size, { w: 0.42, y: 0.97 }, 5, false) : ""}
+    ${iSombrero ? capaImg(iSombrero, size, { w: 0.9, y: 0.05 }, 6, true, offY, sc) : ""}
+    ${iPin ? capaImg(iPin, size, { w: 0.34, x: 0.13, y: 0.86 }, 7, false) : ""}
+    ${!iSombrero && svgSombrero ? `<div style="position:absolute;top:${Math.round(-size * 0.36 + offY)}px;left:50%;width:${Math.round(size * 0.95)}px;transform:translateX(-50%) scale(${sc});pointer-events:none;z-index:6;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.6))">${svgSombrero}</div>` : ""}
+    ${!iLentes && svgLentes ? `<div style="position:absolute;top:${Math.round(size * 0.18 + offY)}px;left:50%;width:${Math.round(size * 0.86)}px;transform:translateX(-50%) scale(${sc});pointer-events:none;z-index:5;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.55))">${svgLentes}</div>` : ""}
+    ${!iBoca && svgBoca ? `<div style="position:absolute;bottom:${Math.round(-size * 0.14 - offY * 0.5)}px;left:50%;width:${Math.round(size * 0.76)}px;transform:translateX(-50%) scale(${sc});pointer-events:none;z-index:4;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6))">${svgBoca}</div>` : ""}
+    ${svgMascota ? `<div class="av-pet-float" style="position:absolute;bottom:${Math.round(-size * 0.14)}px;right:${Math.round(-size * 0.24)}px;width:${Math.round(size * 0.52)}px;height:${Math.round(size * 0.52)}px;pointer-events:none;z-index:8;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.7))">${svgMascota}</div>` : ""}
   </div>`;
 }
 window.renderAvatar = renderAvatar;
@@ -230,6 +420,14 @@ function renderTituloBadge(accesorios = {}) {
   return `<span class="av-titulo-pill" style="display:inline-block;font-family:'Outfit',sans-serif;font-size:10px;font-weight:800;padding:2px 9px;border-radius:99px;background:rgba(15,23,42,0.75);border:1px solid ${t.color};color:${t.color};vertical-align:middle">${t.texto}</span>`;
 }
 window.renderTituloBadge = renderTituloBadge;
+
+// URL del fondo (banner) de perfil equipado, o "" si no tiene.
+function urlFondoPerfil(accesorios = {}) {
+  const it = itemDe("fondos", accesorios?.fondo || "fd_none");
+  return urlTienda(it);
+}
+window.urlFondoPerfil = urlFondoPerfil;
+window.urlItemTienda = urlTienda;
 
 function getChatBubbleCSS(accesorios = {}) {
   const id = accesorios?.burbuja || "chat_default";

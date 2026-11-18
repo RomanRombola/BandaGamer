@@ -11,11 +11,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<script src="../js/storage.js?v=14"></script>
-<script src="../js/games-data.js?v=14"></script>
-<script src="../js/social.js?v=14"></script>
-<script src="../js/notifs.js?v=14"></script>
-<script src="../js/avatar.js?v=14"></script>
+<script src="../js/storage.js?v=15"></script>
+<script src="../js/games-data.js?v=15"></script>
+<script src="../js/social.js?v=15"></script>
+<script src="../js/notifs.js?v=15"></script>
+<script src="../js/avatar.js?v=15"></script>
 <style>
 :root{
   --bg:#0a0a15;--surface:#111120;--surface2:#1a1a2e;
@@ -161,11 +161,15 @@ body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans
 .invite-game-card .online-tag{position:absolute;top:6px;right:6px;background:var(--secondary);color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;letter-spacing:0.5px;}
 .invite-game-card .emoji{font-size:26px;}
 </style>
+<link rel="manifest" href="../manifest.webmanifest">
+<script>if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));</script>
+<link rel="apple-touch-icon" href="../assets/logo/icon-192.png">
+<meta name="theme-color" content="#0d111a">
 </head>
 <body>
 <header class="header">
-  <a href="../?v=14" class="back-btn">← INICIO</a>
-  <a href="../?v=14" class="header-logo">
+  <a href="../?v=15" class="back-btn">← INICIO</a>
+  <a href="../?v=15" class="header-logo">
     <img src="../assets/logo/logo.svg" alt="AltoVicio">
     ALTOVICIO
   </a>
@@ -869,7 +873,7 @@ async function init() {
           <div style="font-size:48px;margin-bottom:16px">🔒</div>
           <div style="font-size:18px;font-weight:700;color:var(--primary);margin-bottom:8px">Necesitás iniciar sesión</div>
           <div style="font-size:14px;color:var(--muted);margin-bottom:20px">Las funciones sociales requieren una cuenta de Google</div>
-          <a href="../?v=14" style="background:rgba(255,102,0,0.15);border:1px solid rgba(255,102,0,0.4);color:var(--primary);padding:10px 24px;border-radius:10px;text-decoration:none;font-weight:700">
+          <a href="../?v=15" style="background:rgba(255,102,0,0.15);border:1px solid rgba(255,102,0,0.4);color:var(--primary);padding:10px 24px;border-radius:10px;text-decoration:none;font-weight:700">
             Ir al inicio a conectarme
           </a>
         </div>`;

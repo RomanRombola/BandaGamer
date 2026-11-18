@@ -11,7 +11,7 @@
     },
 
     "gameRooms":  { "$room": { ".read": true, ".write": true } },
-    "chessRooms": { "$room": { ".read": true, ".write": true } },
+    "chessRooms": { "$room": { ".read": "auth != null", ".write": "auth != null" } },
 
     "impost": {
       "$room": {

@@ -1,7 +1,7 @@
 # AltoVicio — Reglas para agentes de IA
 
 Este repo lo trabajan varias IAs a la vez (Claude Code, Google Antigravity, Gemini) y Román como director y beta tester.
-**Leé este archivo entero antes de tocar nada.**
+**Leé este archivo entero antes de tocar nada.** Las tareas repartidas entre los tres están en **`TAREAS.md`**.
 
 ## 1. Antes de empezar
 1. Traé lo último de GitHub (`git fetch` y partí de `origin/main` actualizado). Nunca trabajes sobre una copia vieja
@@ -17,9 +17,12 @@ Este repo lo trabajan varias IAs a la vez (Claude Code, Google Antigravity, Gemi
 ## 3. División del trabajo (evitar editar el mismo archivo a la vez)
 | Área | Responsable | Archivos |
 |---|---|---|
-| Lógica, Firebase, economía, salas online, Social | Claude Code | `js/*.js`, `firebase/`, `pages/social.html`, `pages/impostor/`, `pages/gartic/`, `pages/gartic-phone/` |
-| Arte de tienda, gráficos de juegos, portadas | Antigravity / Gemini | `pages/games/juego-local-N.html`, `assets/`, la parte de dibujos SVG de `js/avatar.js` |
-| 8 Ball Pool (en curso) | Antigravity | `pages/games/juego-local-41.html` |
+| Lógica, Firebase, economía, salas online, Social, app (PWA) | Claude Code | `js/*.js`, `firebase/`, `pages/social.html`, `pages/impostor/`, `pages/gartic/`, `pages/gartic-phone/`, `sw.js`, `manifest.webmanifest` |
+| Motor común de los juegos | Claude Code | `pages/games/kit/` (BG Kit) |
+| Tienda: catálogo, integración del arte, estudio de avatar | Claude Code | `assets/tienda/`, `window.TIENDA_ILUSTRADA` y `renderAvatar` en `js/avatar.js` |
+| Gráficos de juegos, portadas, arte nuevo | Antigravity / Gemini | `pages/games/juego-local-N.html`, `assets/` (salvo `assets/tienda/`), los dibujos SVG viejos de `js/avatar.js` |
+| 8 Ball Pool y juegos de acción (ver `TAREAS.md`) | Antigravity | `pages/games/juego-local-41.html` y los de su lista |
+| Rediseño de juegos de lógica y casuales (ver `TAREAS.md`) | Gemini | los de su lista; el Ajedrez HD (`juego-local-37.html`) es suyo en lo visual |
 
 Si necesitás tocar un archivo del área de otro agente, hacé el cambio mínimo y explicalo en el pull request.
 
@@ -41,9 +44,28 @@ Si necesitás tocar un archivo del área de otro agente, hacé el cambio mínimo
 - `pages/juego.html` — página de cada juego: carga el juego en un iframe, ranking por modo, amigos, chat rápido.
 - `pages/games/kit/bg-kit.js` — motor común de los juegos (BG Kit).
 
+### Tienda ilustrada (V15)
+- Arte en `assets/tienda/acc/`, `assets/tienda/marcos/` y `assets/tienda/fondos/`, en WebP con fondo transparente.
+- Catálogo en `window.TIENDA_ILUSTRADA` (`js/avatar.js`).
+  - Cada ítem tiene `id`, `nombre`, `precio`, `reqNivel`, `rareza`, `img` y su colocación relativa al tamaño del avatar: `w` (ancho), `x`/`y` (centro) o `yb` (borde de abajo), `ar` (alto/ancho de la imagen) y `doble` (un par simétrico, por ejemplo cachetes).
+  - Para calibrar un ítem, cambiá esos números y miralo en la tienda.
+- Slots de `usuario.accesorios`: `sombrero`, `lentes`, `cara`, `bigote` (boca), `cuello`, `espalda`, `pin`, `marco`, `fondo` (más `efecto`, `mascota`, `titulo`, `burbuja`, `emoji`).
+- Los marcos se normalizan: lienzo de 320×320 con el aro centrado y de radio 128 px. Así cualquier marco nuevo calza solo.
+- Los ítems con `legacy: true` no se venden más, pero quien los tiene los sigue viendo. Los ids no se reutilizan nunca, porque ya están guardados en las cuentas.
+- **Cómo pedir arte nuevo:** una lámina con un ítem por casilla y fondo liso (mejor PNG con transparencia), cada ítem de al menos 256 px.
+
 ### Comunicación juego ↔ portal (postMessage)
-- Juego → portal: `{type:"bg-hello"}`, `{type:"bg-score", score, mode, order}`, `{type:"bg-room", code}` (código de sala o `null` al salir).
-- Portal → juego: `{type:"bg-hello-ack", user, records}`.
+- Juego → portal: `{type:"bg-hello"}`, `{type:"bg-score", score, mode, order}`, `{type:"bg-room", code}` (código de sala o `null` al salir),
+  `{type:"bg-buy", item, price}` (comprar un cosmético propio del juego con VicioCoins).
+- Portal → juego: `{type:"bg-hello-ack", user, records, coins, items}` (`items` = cosméticos de ese juego que el jugador ya tiene),
+  `{type:"bg-buy-result", item, ok, error, coins, items}`.
+- Lo comprado se guarda en `usuario.items_juegos[juegoId]` (lo maneja `Storage.comprarItemJuego`). Ejemplo completo: el ajedrez (`juego-local-37.html`).
+- **Solo juegos propios.** No se agregan juegos externos de otros sitios: no dan premios, no siguen el estilo y complican la app de Play Store.
+
+### App (PWA)
+- `manifest.webmanifest` e íconos en `assets/logo/` (192, 512 y maskable).
+- `sw.js` usa "primero la red": siempre baja lo último y la copia guardada solo se usa sin internet.
+  Si agregás un archivo central nuevo, sumalo a `PRECARGA` y subí `CACHE` junto con el `?v=N`.
 
 ### Economía (V14)
 - Los premios los da **solo** `storage.js` (`premiarPartida`, `reclamarMision`, `reclamarBonusDiario`, `sumarXP`).

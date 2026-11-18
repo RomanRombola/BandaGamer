@@ -6,7 +6,11 @@
 <title>AltoVicio — Jugando</title>
 <link rel="icon" type="image/x-icon" href="../favicon.ico">
 <link rel="icon" type="image/svg+xml" href="../assets/logo/logo.svg">
-<link rel="stylesheet" href="../css/styles.css?v=14">
+<link rel="stylesheet" href="../css/styles.css?v=15">
+<link rel="manifest" href="../manifest.webmanifest">
+<script>if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));</script>
+<link rel="apple-touch-icon" href="../assets/logo/icon-192.png">
+<meta name="theme-color" content="#0d111a">
 </head>
 <body class="pagina-juego">
 
@@ -22,13 +26,13 @@
 
 <!-- === HEADER === -->
 <header>
-  <a id="logo-container" href="../?v=14" title="AltoVicio">
+  <a id="logo-container" href="../?v=15" title="AltoVicio">
     <div class="logo-icon"><svg viewBox="0 0 48 48" width="24" height="24"><rect x="4" y="12" width="40" height="24" rx="12" fill="#fff"/><circle cx="16" cy="24" r="5" fill="#ff6600"/><circle cx="31" cy="20" r="2.8" fill="#0f172a"/><circle cx="36" cy="26" r="2.8" fill="#ff2a5f"/></svg></div>
     <span class="logo-texto">ALTOVICIO</span>
   </a>
 
   <nav id="nav-menu">
-    <a href="../?v=14" class="nav-btn">Inicio</a>
+    <a href="../?v=15" class="nav-btn">Inicio</a>
     <a href="social.html" class="nav-btn">Social <span class="nav-badge" data-social-badge style="display:none">0</span></a>
   </nav>
 
@@ -60,7 +64,7 @@
     <div style="font-size:60px;margin-bottom:16px">❌</div>
     <h2 style="font-family:'Outfit',sans-serif;color:var(--color-primary);font-size:24px;margin-bottom:8px">JUEGO NO ENCONTRADO</h2>
     <p style="color:var(--color-muted);margin-bottom:20px">El ID del juego no existe o es inválido.</p>
-    <a href="../?v=14" class="btn-volver-inicio">← Volver al Inicio</a>
+    <a href="../?v=15" class="btn-volver-inicio">← Volver al Inicio</a>
   </div>
 
   <div id="juego-contenido" style="display:none">
@@ -88,7 +92,7 @@
           <span class="fallback-icon">⚠️</span>
           <span class="fallback-msg" id="fallback-msg">Este juego no pudo cargarse en el frame.</span>
           <a id="btn-nueva-pestana" href="#" target="_blank" rel="noopener" class="btn-nueva-pestana">Abrir en nueva pestaña →</a>
-          <a href="../?v=14" class="btn-volver-inicio" style="margin-top:8px">← Inicio</a>
+          <a href="../?v=15" class="btn-volver-inicio" style="margin-top:8px">← Inicio</a>
         </div>
         <div id="juego-emulador-container" style="display:none;width:100%;height:100%"></div>
       </div>
@@ -157,11 +161,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<script src="../js/games-data.js?v=14"></script>
-<script src="../js/storage.js?v=14"></script>
-<script src="../js/social.js?v=14"></script>
-<script src="../js/notifs.js?v=14"></script>
-<script src="../js/avatar.js?v=14"></script>
+<script src="../js/games-data.js?v=15"></script>
+<script src="../js/storage.js?v=15"></script>
+<script src="../js/social.js?v=15"></script>
+<script src="../js/notifs.js?v=15"></script>
+<script src="../js/avatar.js?v=15"></script>
 <script>
 // ── Página de juego ────────────────────────────────────────────────────────
 const NOMBRES_NIVEL = ["", "Novato", "Jugador", "Veterano", "Experto", "Élite", "Leyenda", "Maestro", "Campeón", "Gran Maestro", "Supremo"];
@@ -363,7 +367,18 @@ window.addEventListener("message", async (e) => {
       type: "bg-hello-ack",
       user: { uid: logueado ? u.uid : null, nombre: u.nombre || "Jugador", avatar: u.avatar || "😊", nivel: u.nivel || 1, fotoPerfil: u.fotoPerfil || "", accesorios: u.accesorios || {}, avatarHtml: window.renderAvatar ? window.renderAvatar(u.avatar || "😊", u.accesorios, 30, u.fotoPerfil) : "" },
       records: (u.records && u.records[juegoActual.id]) || {},
+      coins: u.monedas || 0,
+      items: (u.items_juegos && u.items_juegos[juegoActual.id]) || [],
     }, "*");
+  } else if (d.type === "bg-buy") {
+    // Cosméticos propios del juego: los cobra el portal (VicioCoins), nunca el juego
+    marcarActividad();
+    const item = String(d.item || "");
+    let r;
+    try { r = await Storage.comprarItemJuego(juegoActual.id, item, d.price); }
+    catch (err) { r = { ok: false, error: "No se pudo completar la compra" }; }
+    iframe.contentWindow.postMessage({ type: "bg-buy-result", item, ok: r.ok, error: r.error || null, coins: r.monedas, items: r.items || [] }, "*");
+    if (r.ok) $("perfil-monedas").textContent = (r.monedas || 0).toLocaleString();
   } else if (d.type === "bg-score") {
     marcarActividad();
     registrarPuntaje(d);

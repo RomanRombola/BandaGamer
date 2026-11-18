@@ -381,6 +381,23 @@ nav#nav-menu {
 .tienda-card:hover { transform: translateY(-4px); border-color: rgba(255, 255, 255, 0.16); }
 .tienda-card-equipado { border-color: var(--color-primary); background: rgba(255, 102, 0, 0.08); }
 .tienda-card-bloqueado { opacity: 0.55; }
+.tienda-av-prev { width: 100%; height: 112px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 2px 0; }
+.tienda-item-arte {
+  width: 100%; height: 112px; border-radius: 14px; margin: 2px 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.tienda-item-arte img { max-width: 76%; max-height: 82px; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.45)); transition: transform 0.2s ease; }
+.tienda-card:hover .tienda-item-arte img { transform: scale(1.08) rotate(-3deg); }
+.rareza-bg-comun      { background: radial-gradient(circle at 50% 38%, rgba(148,163,184,0.16), rgba(148,163,184,0.03) 70%); }
+.rareza-bg-raro       { background: radial-gradient(circle at 50% 38%, rgba(56,189,248,0.22), rgba(56,189,248,0.04) 70%); }
+.rareza-bg-epico      { background: radial-gradient(circle at 50% 38%, rgba(192,132,252,0.26), rgba(192,132,252,0.05) 70%); }
+.rareza-bg-legendario { background: radial-gradient(circle at 50% 38%, rgba(253,224,71,0.24), rgba(253,224,71,0.04) 70%); }
+.rareza-bg-mitico     { background: radial-gradient(circle at 50% 38%, rgba(255,102,0,0.28), rgba(0,180,255,0.08) 75%); }
+.tienda-fondo-prev {
+  width: 100%; aspect-ratio: 2 / 1; border-radius: 12px; margin: 6px 0 4px;
+  background: rgba(255,255,255,0.04) center / cover no-repeat;
+  display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px;
+}
 .tienda-avatar-nombre { font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; color: #fff; }
 
 .rareza-tag { font-family: 'Outfit', sans-serif; font-size: 9px; font-weight: 800; padding: 3px 9px; border-radius: 99px; text-transform: uppercase; }
@@ -418,6 +435,11 @@ nav#nav-menu {
   border-radius: 22px; padding: 26px; margin-bottom: 20px;
 }
 .perfil-datos { flex: 1; min-width: 200px; }
+.perfil-card-fondo { position: relative; overflow: hidden; isolation: isolate; }
+.perfil-card-fondo::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(90deg, rgba(20,27,41,0.55), rgba(20,27,41,0.92) 70%), var(--fondo-perfil) center / cover no-repeat;
+}
 .perfil-nombre-grande { font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 900; color: #fff; }
 .perfil-rango { font-size: 14px; color: var(--color-secondary); font-weight: 700; margin-bottom: 10px; }
 .perfil-xp-barra { height: 8px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; margin-bottom: 6px; }

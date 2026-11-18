@@ -1,5 +1,25 @@
 # AltoVicio — Changelog
 
+## 🛍️ V15 — Tienda ilustrada (estilo Plato)
+
+- **107 ítems nuevos dibujados**, a partir de las láminas de Román: 36 marcos, 13 fondos de perfil, 17 para la cabeza, 6 para los ojos, 7 para la cara, 3 para la boca, 6 para el cuello, 4 para la espalda (alas, espadas) y 15 pins.
+- **Categorías nuevas:** Fondos de perfil, Cara, Cuello, Espalda y Pins. El fondo se ve detrás de tu tarjeta de perfil, en el perfil público que ven los demás y en el estudio de la tienda.
+- **Tarjetas de la tienda estilo Plato:** el ítem dibujado grande sobre una baldosa del color de su rareza (los marcos, sobre tu avatar solo). "Probar en mi avatar" lleva la vista al estudio en el celular.
+- **Ítems viejos (SVG y aros CSS):** se dejan de vender; quien ya los compró los conserva y los puede seguir usando.
+- El arte está en `assets/tienda/` (`acc/`, `marcos/`, `fondos/`, WebP con fondo transparente) y el catálogo en `window.TIENDA_ILUSTRADA` dentro de `js/avatar.js`, con la posición de cada ítem sobre el avatar.
+- No hace falta tocar Firebase: los accesorios nuevos entran en el mismo campo `accesorios` del perfil.
+
+### También en V15
+- **Ajedrez HD** (diseño, IA y cosméticos de Gemini/Argon 4, integrado por Claude):
+  - piezas vectoriales y 4 niveles de IA de verdad distintos (profundidad y tiempo);
+  - reloj, pistas, barra de evaluación y cosméticos (piezas, tableros y fondos) que se compran con VicioCoins **a través del portal**;
+  - online con identidad: las jugadas se validan y se guardan en orden, así que si recargás volvés a la partida. Un tercero no puede entrar y el chat no permite inyectar código.
+- **Compras dentro de los juegos:** mensaje nuevo `bg-buy` → `Storage.comprarItemJuego` (el juego nunca toca las monedas).
+- **Fuera los 7 juegos externos** (Krunker, HexGL, Diep.io, 1v1.lol, Smash Karts, Narrow One, Shell Shockers): el catálogo queda con 48 juegos propios.
+- **BG Kit en celular:** la barra de arriba pasa a una sola fila compacta. Los juegos ganan mucho espacio (Space Shooter: del 32% al 70% de la pantalla; Piano Tiles: del 53% al 86%). Los juegos horizontales muestran un único aviso de "girá el celular".
+- **App instalable:** `manifest.webmanifest`, íconos de 512 px y maskable, y service worker que abre el portal y los juegos ya visitados sin conexión. Es el primer paso para Play Store.
+- **Reglas de Realtime Database:** `chessRooms` exige identidad. Hay que publicarlas en la consola **después** de aceptar el pull request.
+- `TAREAS.md`: reparto del trabajo entre Claude Code, Antigravity y Gemini.
 ## 🎱 V14.3 — Mejoras de UX y controles en 8 Ball Pool
 
 - **Mesa horizontal como vista principal**: en celular vertical aparece el aviso animado *"Girá el celular para jugar mejor"* (con botón rápido a horizontal) y al tocar *Jugar* / entrar a una sala online se intenta pasar a pantalla completa y bloquear la orientación horizontal (`requestFullscreen()` + `screen.orientation.lock('landscape')`). La vista vertical queda como respaldo.
