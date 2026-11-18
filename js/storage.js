@@ -42,7 +42,18 @@ let _auth, _db;
 if (FIREBASE_OK) {
   // Inicializar Firebase (evitar duplicados si ya lo inicializaron Gartic o Impostor)
   if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
-  _auth = firebase.auth();
+  // Las salas online (Impostor, Gartic) le crean una cuenta ANÓNIMA al invitado para poder
+  // entrar. Para el portal ese jugador sigue siendo invitado: su progreso vive en el
+  // navegador. Por eso toda la app ve la sesión a través de este filtro, que oculta las
+  // cuentas anónimas (solo cuenta el login con Google).
+  const real = firebase.auth();
+  const soloGoogle = u => (u && !u.isAnonymous) ? u : null;
+  _auth = {
+    get currentUser() { return soloGoogle(real.currentUser); },
+    onAuthStateChanged(cb) { return real.onAuthStateChanged(u => cb(soloGoogle(u))); },
+    signInWithPopup(p) { return real.signInWithPopup(p); },
+    signOut() { return real.signOut(); },
+  };
   _db   = firebase.firestore();
 } else {
   console.warn("[Storage] Firebase no está disponible: se usa solo el modo invitado.");

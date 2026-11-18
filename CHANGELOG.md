@@ -1,5 +1,16 @@
 # AltoVicio — Changelog
 
+## 🔐 V14.2 — Salas online cerradas (login anónimo)
+
+- Impostor, Dibujá y Adiviná y Gartic Phone identifican a cada jugador antes de entrar a una sala: con su cuenta de Google o, si es invitado, con una **cuenta anónima** invisible (no se le pide nada). Su id en la sala es el de esa cuenta.
+- **Reglas nuevas de Realtime Database** (`firebase/database.rules.json`): solo jugadores identificados pueden leer y escribir esas salas, y en Impostor **cada jugador solo puede leer su propia carta** (la palabra queda protegida de verdad, no solo escondida). El anfitrión puede leer la palabra para mostrar el resultado.
+- El portal ignora las cuentas anónimas: un invitado que jugó en una sala sigue siendo invitado, con su progreso. Social sigue siendo solo con Google.
+- Si alguien abre la misma sala en dos pestañas, se le avisa en vez de duplicarlo.
+- Pool (`gameRooms`) y Ajedrez (`chessRooms`) siguen abiertos: son del área de Antigravity.
+- **Orden de publicación:** primero se acepta el código (pull request) y recién después se publican las reglas de Realtime Database en la consola. Al revés, las salas dejan de andar hasta que llegue el código.
+
+---
+
 ## 🔒 V14.1 — Seguridad y salas online
 
 ### Seguridad

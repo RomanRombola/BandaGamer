@@ -27,8 +27,9 @@ const INVITE_TTL_MS      = 2 * 60 * 60 * 1000; // las invitaciones vencen a las 
 // Ahora sigue directamente a Firebase Auth.
 let _currentUid = null;
 if (_rtdb) firebase.auth().onAuthStateChanged(u => {
-  _currentUid = u ? u.uid : null;
-  if (!u) Social_goOffline();
+  const google = u && !u.isAnonymous ? u : null;   // las cuentas anónimas (salas) no usan lo social
+  _currentUid = google ? google.uid : null;
+  if (!google) Social_goOffline();
 });
 
 // ── Presencia online ──────────────────────────────────────────────────────

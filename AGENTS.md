@@ -60,5 +60,8 @@ Para iniciar sesión en el emulador de Auth sirve una credencial falsa:
 `firebase.auth.GoogleAuthProvider.credential(JSON.stringify({sub:"ana1", email:"ana1@test.com", email_verified:true}))`.
 
 ## 7. Seguridad (obligatorio)
+- Las salas de Impostor / Gartic / Gartic Phone exigen identidad: usan `asegurarIdentidad()` (Google o cuenta
+  anónima) y el id del jugador es el `uid`. `Storage.auth` y `Social` **ignoran las cuentas anónimas** a propósito.
+  Si agregás una sala nueva en Realtime Database, hacé lo mismo y agregá su regla en `firebase/database.rules.json`.
 - **Nunca insertes con `innerHTML` texto que venga de otro jugador** (nombres, chat, palabras, salas):
   pasalo por `esc()` / `escHtml()` o usá `textContent`. Las salas se pueden escribir sin cuenta.

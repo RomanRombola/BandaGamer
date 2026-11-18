@@ -8,6 +8,7 @@
 
 <!-- Firebase compat (no ES modules, funciona con onclick directamente) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <style>
@@ -439,16 +440,33 @@ function buildCats(){
 }
 
 // ── CREAR SALA ─────────────────────────────────────────────────────────────
+// ── Identidad del jugador en la sala ─────────────────────────────────────
+// Las reglas de la base solo dejan entrar a las salas a jugadores identificados. Si el
+// jugador no entró con Google, se le crea una cuenta anónima (invisible, sin pedirle nada).
+// Su id en la sala es el de esa cuenta: así Firebase puede darle a cada uno solo lo suyo.
+let _identidad=null;
+async function asegurarIdentidad(){
+  if(typeof firebase==="undefined"||!firebase.auth) return null;
+  if(_identidad) return _identidad;
+  const auth=firebase.auth();
+  await new Promise(r=>{const un=auth.onAuthStateChanged(()=>{un();r();});});
+  if(!auth.currentUser){ try{ await auth.signInAnonymously(); }catch(e){ console.warn("[Sala] sin identidad:",e.code||e.message); } }
+  _identidad=auth.currentUser;
+  return _identidad;
+}
+function idJugador(){ return (_identidad&&_identidad.uid)||genId(); }
+
 async function createRoom(){
   const name=document.getElementById("inp-name").value.trim();
   if(!name||name.length<2){toast("Ingresá tu nombre (mín. 2 caracteres)","⚠️");return;}
   if(!db){toast("Error de conexión","❌");return;}
+  await asegurarIdentidad();
 
   const btn=document.querySelector("#s-home .bp");
   if(btn){btn.disabled=true;btn.textContent="Creando...";}
 
   try{
-    myName=name; myId=genId(); isHost=true;
+    myName=name; myId=idJugador(); isHost=true;
     roomCode=genCode();
     await rref(`impost/${roomCode}`).set({
       host:myId, status:"lobby",
@@ -481,6 +499,7 @@ async function joinRoom(){
   if(!name||name.length<2){toast("Ingresá tu nombre","⚠️");return;}
   if(code.length!==4){toast("El código tiene 4 caracteres","⚠️");return;}
   if(!db){toast("Error de conexión con Firebase","❌");return;}
+  await asegurarIdentidad();
   const snap=await rref(`impost/${code}`).once("value");
   if(!snap.exists()){toast("Sala no encontrada","❌");return;}
   const room=snap.val();
@@ -488,7 +507,8 @@ async function joinRoom(){
   const players=room.players||{};
   if(Object.keys(players).length>=10){toast("Sala llena (máx. 10)","⚠️");return;}
   if(Object.values(players).some(p=>p.name.toLowerCase()===name.toLowerCase())){toast("Ese nombre ya está en uso","⚠️");return;}
-  myName=name; myId=genId(); isHost=false; roomCode=code;
+  if(players[idJugador()]){toast("Ya estás en esta sala (¿otra pestaña abierta?)","⚠️");return;}
+  myName=name; myId=idJugador(); isHost=false; roomCode=code;
   await rref(`impost/${roomCode}/players/${myId}`).set({name:myName,id:myId,isHost:false,eliminated:false,joinedAt:Date.now()});
   buildCats();
   document.getElementById("d-code").textContent=roomCode;
