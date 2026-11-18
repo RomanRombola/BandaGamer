@@ -363,7 +363,18 @@ window.addEventListener("message", async (e) => {
       type: "bg-hello-ack",
       user: { uid: logueado ? u.uid : null, nombre: u.nombre || "Jugador", avatar: u.avatar || "😊", nivel: u.nivel || 1, fotoPerfil: u.fotoPerfil || "", accesorios: u.accesorios || {}, avatarHtml: window.renderAvatar ? window.renderAvatar(u.avatar || "😊", u.accesorios, 30, u.fotoPerfil) : "" },
       records: (u.records && u.records[juegoActual.id]) || {},
+      coins: u.monedas || 0,
+      items: (u.items_juegos && u.items_juegos[juegoActual.id]) || [],
     }, "*");
+  } else if (d.type === "bg-buy") {
+    // Cosméticos propios del juego: los cobra el portal (VicioCoins), nunca el juego
+    marcarActividad();
+    const item = String(d.item || "");
+    let r;
+    try { r = await Storage.comprarItemJuego(juegoActual.id, item, d.price); }
+    catch (err) { r = { ok: false, error: "No se pudo completar la compra" }; }
+    iframe.contentWindow.postMessage({ type: "bg-buy-result", item, ok: r.ok, error: r.error || null, coins: r.monedas, items: r.items || [] }, "*");
+    if (r.ok) $("perfil-monedas").textContent = (r.monedas || 0).toLocaleString();
   } else if (d.type === "bg-score") {
     marcarActividad();
     registrarPuntaje(d);

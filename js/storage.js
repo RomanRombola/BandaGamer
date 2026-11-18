@@ -548,6 +548,27 @@ const Storage = (() => {
     return { xp, monedas, subioNivel, nuevoNivel: usuario.nivel, usuario };
   }
 
+  // Compra de un cosmético propio de un juego (tacos del pool, piezas del ajedrez...).
+  // El juego lo pide por postMessage {type:"bg-buy"}; acá se cobra en VicioCoins y se guarda en
+  // usuario.items_juegos[juegoId]. El juego nunca toca las monedas.
+  async function comprarItemJuego(juegoId, itemId, precio) {
+    precio = Math.round(Number(precio));
+    if (!/^[\w-]{1,40}$/.test(String(juegoId)) || !/^[\w-]{1,40}$/.test(String(itemId))) return { ok: false, error: "Ítem inválido" };
+    if (!Number.isFinite(precio) || precio < 0 || precio > 5000) return { ok: false, error: "Precio inválido" };
+    let error = null, ya = false;
+    const usuario = await actualizarUsuario(u => {
+      error = null; ya = false;
+      const todos = u.items_juegos = (u.items_juegos && typeof u.items_juegos === "object") ? u.items_juegos : {};
+      const lista = todos[juegoId] = Array.isArray(todos[juegoId]) ? todos[juegoId] : [];
+      if (lista.includes(itemId)) { ya = true; return; }
+      if (lista.length >= 200) { error = "Demasiados ítems"; return; }
+      if ((u.monedas || 0) < precio) { error = "No tenés suficientes VicioCoins"; return; }
+      u.monedas = (u.monedas || 0) - precio;
+      lista.push(itemId);
+    });
+    return { ok: !error, error, yaLoTenia: ya, monedas: usuario.monedas || 0, items: (usuario.items_juegos || {})[juegoId] || [] };
+  }
+
   async function sumarMonedas(cantidad) {
     cantidad = Number(cantidad);
     if (!Number.isFinite(cantidad) || cantidad === 0) return await getUsuario();
@@ -760,6 +781,7 @@ const Storage = (() => {
     reclamarBonusDiario,
     reclamarMision,
     premiarPartida,
+    comprarItemJuego,
     MISIONES,
     LIMITES_DIARIOS,
     FIREBASE_OK,
