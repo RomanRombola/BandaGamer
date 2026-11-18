@@ -121,7 +121,7 @@ function render() {
 }
 BG.input.on('action', drop).on('up', drop);
 view.canvas.addEventListener('pointerdown', e => { e.preventDefault(); drop(); });
-if (BG.thumb) { stack = []; hueBase = 200; for (let i = 0; i < 14; i++) stack.push({ x: Math.sin(i) * .2, z: Math.cos(i) * .2, w: BASE - i * .08, d: BASE - i * .06, y: i, hue: hue(i) }); cur = { ...stack[13], y: 14, x: 1.2, hue: hue(14) }; debris = [{ ...stack[13], y: 11, x: 2.4, w: .6, hue: hue(13) }]; score = 13; camY = -8 * BH; state = 'thumb'; update = () => {}; }
+if (BG.thumb && !BG.preview) { stack = []; hueBase = 200; for (let i = 0; i < 14; i++) stack.push({ x: Math.sin(i) * .2, z: Math.cos(i) * .2, w: BASE - i * .08, d: BASE - i * .06, y: i, hue: hue(i) }); cur = { ...stack[13], y: 14, x: 1.2, hue: hue(14) }; debris = [{ ...stack[13], y: 11, x: 2.4, w: .6, hue: hue(13) }]; score = 13; camY = -8 * BH; state = 'thumb'; update = () => {}; }
 else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>

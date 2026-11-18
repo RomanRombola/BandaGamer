@@ -24,7 +24,7 @@ const RUN = 118, ACC = 760, DEC = 950, AIR = .75, G = 1080, JUMP = -318, HOLD = 
 
 BG.init({
   id: 'quest8', title: '8-BIT QUEST', icon: '⚔️', accent: '#ff3d6e', accent2: '#ffd400', music: true,
-  post: { bloom: .25, vignette: .3, scan: .07, thumbFx: true },
+  post: { bloom: .25, vignette: .3, thumbFx: true },
   subtitle: 'Un plataformas como los de antes: 6 niveles, espada, bloques sorpresa, monedas y monstruos. Llegá a la bandera de cada nivel.',
   hud: [{ id: 'score', label: 'Puntos' }, { id: 'coins', label: 'Monedas', color: '#ffd400', value: '0' }, { id: 'lives', label: 'Vidas', color: '#ff3d6e', value: '×3' }],
   help: '<kbd>←</kbd><kbd>→</kbd> correr · <kbd>Espacio</kbd>/<kbd>↑</kbd> saltar (mantené = más alto) · <kbd>X</kbd> espada · <kbd>P</kbd> pausa',
@@ -481,7 +481,7 @@ const SONG = { bpm: 140, tracks: [
   { type: 'triangle', vol: .5, notes: 'C3 . G2 . C3 . G2 . G2 . D3 . G2 . D3 . C3 . G2 . E3 . C3 . F2 . C3 . F2 . C3 . G2 . D3 . G2 . D3 . C3 . G2 . C3 . G2 .' },
   { drum: true, vol: .4, notes: 'K . H . S . H . K K H . S . H .' },
 ] };
-if (BG.thumb) { loadLevel(0); state = 'thumb'; pl.x = 30.5 * T; pl.y = 9.6 * T; pl.ground = false; pl.atk = .12; camX = 22 * T; ents.push(Object.assign(makeEnemy('e', 38 * T, 12 * T), { dir: -1 })); items.push({ k: 'popcoin', x: 31 * T + 8, y: 7 * T, vy: 0, t: 0 }); grid[8][31] = 'u'; update = () => { t += 1 / 60; }; }
+if (BG.thumb && !BG.preview) { loadLevel(0); state = 'thumb'; pl.x = 30.5 * T; pl.y = 9.6 * T; pl.ground = false; pl.atk = .12; camX = 22 * T; ents.push(Object.assign(makeEnemy('e', 38 * T, 12 * T), { dir: -1 })); items.push({ k: 'popcoin', x: 31 * T + 8, y: 7 * T, vy: 0, t: 0 }); grid[8][31] = 'u'; update = () => { t += 1 / 60; }; }
 else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>

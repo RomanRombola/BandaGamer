@@ -596,6 +596,10 @@
       const prim = card.querySelector('.bg-btn.primary') || card.querySelector('.bg-btn');
       if (prim && !BG.isTouch) setTimeout(() => prim.focus({ preventScroll: true }), 30);
       if (o.onShow) o.onShow(card);
+      if (BG.preview && o.buttons && o.buttons.length) {
+        const b = o.buttons.find(x => x.primary && x.onClick) || o.buttons.find(x => x.onClick);
+        if (b) setTimeout(() => { if (UI.open) { UI.hide(); b.onClick(); } }, 60);
+      }
       return card;
     },
     hide() { const ov = document.getElementById('bg-overlay'); ov.classList.remove('on'); UI.open = false; Input.clear(); setTimeout(() => { if (!UI.open) ov.innerHTML = ''; }, 250); },
@@ -683,6 +687,7 @@
   // Guarda el puntaje si es récord y lo informa al portal (XP + ranking por juego).
   // o.order: 'desc' (más alto es mejor, por defecto) | 'asc' (menos es mejor: tiempos, movimientos)
   BG.submitScore = function (score, o = {}) {
+    if (BG.preview || BG.thumb) return { isRecord: false, first: false, prev: null, best: null };
     const mode = o.mode || 'default', order = o.order || BG.game.order || 'desc';
     score = Math.round(Number(score) || 0);
     const bests = BG.load('best', {}); const prev = bests[mode];
@@ -807,6 +812,10 @@
           const cx = rect.left + rect.width * (0.25 + 0.5 * Math.abs(Math.sin(stepAuto * 0.7)));
           const cy = rect.top + rect.height * (0.3 + 0.4 * Math.abs(Math.cos(stepAuto * 0.5)));
           BG.view.canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: cx, clientY: cy, pointerType: 'mouse', buttons: 1 }));
+          BG.view.canvas.dispatchEvent(new PointerEvent('pointerdown', { clientX: cx, clientY: cy, pointerType: 'mouse', button: 0, buttons: 1 }));
+          setTimeout(() => {
+            if (BG.view && BG.view.canvas) BG.view.canvas.dispatchEvent(new PointerEvent('pointerup', { clientX: cx, clientY: cy, pointerType: 'mouse', button: 0, buttons: 0 }));
+          }, 80);
         }
       }, 280);
     }

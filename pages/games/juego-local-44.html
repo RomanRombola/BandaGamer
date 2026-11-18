@@ -31,7 +31,7 @@ const BIOMES = [
 
 BG.init({
   id: 'retroracer', title: 'RETRO RACER', icon: '🏎️', accent: '#ff3d6e', accent2: '#ffd400', music: true,
-  post: { bloom: .4, vignette: .35, scan: .04, thumbFx: true },
+  post: { bloom: .4, vignette: .35, thumbFx: true },
   subtitle: 'Llegá a cada checkpoint antes de que se acabe el tiempo. Pasá autos, usá el nitro y no te salgas de la ruta.',
   hud: [{ id: 'score', label: 'Puntos' }, { id: 'time', label: 'Tiempo', color: '#ffd400', value: '60' }, { id: 'speed', label: 'km/h', color: '#2ef2ff', value: '0' }],
   help: '<kbd>↑</kbd> acelerar · <kbd>↓</kbd> frenar · <kbd>←</kbd><kbd>→</kbd> doblar · <kbd>Espacio</kbd> nitro · <kbd>P</kbd> pausa',
@@ -336,7 +336,7 @@ const SONG = { bpm: 138, tracks: [
   { drum: true, vol: .5, notes: 'K . H K S . H . K . H K S . H H' },
 ] };
 buildTrack();
-if (BG.thumb) { pos = SEG * 330; speed = MAX_SPEED * .9; playerX = .1; steer = -.5; nitroT = 1; state = 'thumb'; timeLeft = 42; update = () => { t += 1 / 60; }; }
+if (BG.thumb && !BG.preview) { pos = SEG * 330; speed = MAX_SPEED * .9; playerX = .1; steer = -.5; nitroT = 1; state = 'thumb'; timeLeft = 42; update = () => { t += 1 / 60; }; }
 else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>

@@ -179,7 +179,7 @@ view.canvas.addEventListener('pointerdown', e => {
 if (!BG.isTouch) view.canvas.style.cursor = 'none';
 BG.input.onKey((e, code, down) => { if (!down || e.repeat) return; KEYS.forEach((ks, i) => { if (ks.includes(code)) whack(i); }); });
 
-if (BG.thumb) { start(); BG.stop(); state = 'thumb'; [[1, 'mole', .9], [3, 'gold', 1], [5, 'helmet', 1], [7, 'bomb', .8]].forEach(([i, k, hh]) => { holes[i].kind = k; holes[i].h = hh; holes[i].state = 'up'; holes[i].hp = 2; }); score = 340; update = () => {}; }
+if (BG.thumb && !BG.preview) { start(); BG.stop(); state = 'thumb'; [[1, 'mole', .9], [3, 'gold', 1], [5, 'helmet', 1], [7, 'bomb', .8]].forEach(([i, k, hh]) => { holes[i].kind = k; holes[i].h = hh; holes[i].state = 'up'; holes[i].hp = 2; }); score = 340; update = () => {}; }
 else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>

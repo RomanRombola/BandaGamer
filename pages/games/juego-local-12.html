@@ -26,7 +26,7 @@ const POWERS = [
 ];
 
 BG.init({
-  post: { bloom: .7, vignette: .4, scan: .06, thumbFx: true },
+  post: { bloom: .7, vignette: .4, thumbFx: true },
   id: 'pong', title: 'PONG NEÓN', icon: '🏓', accent: '#2ef2ff', accent2: '#ff3dd0',
   subtitle: 'El clásico de 1972 con esteroides. Primero en hacer 7 puntos gana.',
   hud: [{ id: 'p1', label: 'Vos', color: '#2ef2ff' }, { id: 'p2', label: 'Rival', color: '#ff3dd0' }, { id: 'rally', label: 'Peloteo', color: '#ffd400' }],
@@ -315,7 +315,7 @@ const endT = e => { const s = touches.get(e.pointerId); touches.delete(e.pointer
 view.canvas.addEventListener('pointerup', endT); view.canvas.addEventListener('pointercancel', endT);
 
 // ── Arranque ──────────────────────────────────────────────────────────────
-if (BG.thumb) {
+if (BG.thumb && !BG.preview) {
   p1 = paddle(34, 1); p2 = paddle(W - 34, 2); p1.y = 260; p2.y = 160; s1 = 4; s2 = 3; state = 'play'; serveT = 0;
   balls = [{ x: 470, y: 210, vx: 500, vy: -200, alive: true }];
   for (let i = 0; i < 18; i++) trail.push({ x: 470 - i * 14, y: 210 + i * 5.6, a: 1 - i / 18, c: '#2ef2ff' });

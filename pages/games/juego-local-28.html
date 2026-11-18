@@ -221,7 +221,7 @@ view.canvas.addEventListener('pointerdown', e => {
 });
 view.canvas.addEventListener('pointerup', () => { if (BG.isTouch && aiming) { aiming = false; shoot(); } });
 
-if (BG.thumb) { level = 3; setupLevel(); score = 4200; aim = -1.1; update = () => {}; }
+if (BG.thumb && !BG.preview) { level = 3; setupLevel(); score = 4200; aim = -1.1; update = () => {}; }
 else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>

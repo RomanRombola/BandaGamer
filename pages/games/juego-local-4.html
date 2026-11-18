@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Space Shooter</title>
+<title>Nova Striker</title>
 <link rel="stylesheet" href="kit/bg-kit.css">
 </head>
 <body>
 <script src="kit/bg-kit.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  SPACE SHOOTER — AltoVicio
+//  NOVA STRIKER — AltoVicio
 //  Shoot'em up vertical: 5 niveles de arma (dispersión, drones, misiles guiados)
 //  5 tipos de enemigos + JEFE cada 5 oleadas con 3 fases de ataque
 //  Bombas que limpian la pantalla · rozar balas suma puntos · cadena de combos
@@ -25,7 +25,7 @@ const EN = {
   tank: { hp: 34, pts: 700, r: 32, col: '#c04dff' },
 };
 BG.init({
-  id: 'spaceshooter', title: 'SPACE SHOOTER', icon: '🚀', accent: '#39ff88', accent2: '#2ef2ff', music: true,
+  id: 'spaceshooter', title: 'NOVA STRIKER', icon: '🚀', accent: '#39ff88', accent2: '#2ef2ff', music: true,
   post: { bloom: .6, vignette: .45, thumbFx: true },
   subtitle: 'Mejorá tu arma, esquivá la lluvia de balas y derrotá a los jefes.',
   hud: [{ id: 'score', label: 'Puntos' }, { id: 'wave', label: 'Oleada', color: '#ffd400' }, { id: 'lives', label: 'Vidas', color: '#ff3d6e', value: '▲▲▲' }, { id: 'bombs', label: 'Bombas', color: '#ff9a1f', value: '●●●' }],
@@ -489,7 +489,7 @@ const SONG = { bpm: 148, tracks: [
   { type: 'triangle', vol: .55, notes: 'A2 A2 A3 A2 A2 A3 A2 A3 A2 A2 A3 A2 A2 A3 A2 A3 A2 A2 A3 A2 A2 A3 A2 A3 A2 A2 A3 A2 A2 A3 A2 A3 F2 F2 F3 F2 F2 F3 F2 F3 F2 F2 F3 F2 F2 F3 F2 F3 G2 G2 G3 G2 G2 G3 G2 G3 G2 G2 G3 G2 G2 G3 G2 G3' },
   { drum: true, vol: .55, notes: 'K . H . S . H . K K H . S . H H' },
 ] };
-if (BG.thumb) {
+if (BG.thumb && !BG.preview) {
   pl = newPlayer(); pl.lvl = 4; pl.inv = 0; pl.y = H - 150; wave = 5; pb = []; eb = []; items = [{ x: 330, y: 400, k: 'P', t: 0 }];
   enemies = []; addEnemy('turret', 120, 240); addEnemy('drone', 360, 300); addEnemy('drone', 300, 340); addEnemy('swarm', 200, 380, { side: 1 }); addEnemy('tank', 260, 140);
   for (let i = 0; i < 6; i++) pb.push({ x: pl.x + (i % 3 - 1) * 14, y: pl.y - 40 - i * 40, vx: 0, vy: 0, kind: 'laser' });

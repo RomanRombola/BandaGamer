@@ -259,7 +259,7 @@ const SONG = { bpm: 126, tracks: [
   { type: 'triangle', vol: .55, notes: 'C3 . G2 . C3 . G2 . D3 . A2 . D3 . A2 . E3 . B2 . E3 . B2 . G2 . D3 . G2 . D3 .' },
   { drum: true, vol: .5, notes: 'K . H . S . H . K . H K S . H .' },
 ] };
-if (BG.thumb) {
+if (BG.thumb && !BG.preview) {
   ad = { x: 250, vx: 60, face: 1, belly: .55, dash: 0, dashCD: 0, chew: .2, mood: 'happy', moodT: 9, hit: 0, arms: .2, walk: 1 }; level = 3; hunger = 70; power = { star: 3 };
   items = [{ kind: 'food', e: '🍕', x: 260, y: 470, rot: 0 }, { kind: 'trash', e: '💩', x: 120, y: 300, rot: .3 }, { kind: 'food', e: '🍔', x: 380, y: 220, rot: .2 }, { kind: 'special', k: 'chili', e: '🌶️', x: 180, y: 160, rot: 0 }, { kind: 'food', e: '🍩', x: 420, y: 420, rot: .5 }];
   state = 'thumb'; update = () => {};

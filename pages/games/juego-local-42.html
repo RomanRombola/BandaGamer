@@ -269,7 +269,7 @@ const SONG = { bpm: 92, tracks: [
   { type: 'sine', vol: .45, notes: 'A2 - - - - - - - F2 - - - - - - - C3 - - - - - - - G2 - - - - - - - A2 - - - - - - - F2 - - - - - - - G2 - - - - - - - E2 - - - - - - -' },
   { drum: true, vol: .25, notes: 'K . . . H . . . K . . . H . H .' },
 ] };
-if (BG.thumb) { parse(LEVELS[Math.min(16, LEVELS.length - 1)].m); state = 'thumb'; boxes.forEach((b, i) => { if (i === 0) { const k = [...goals][0]; b.x = b.fx = k % cols; b.y = b.fy = (k / cols) | 0; } }); cur = 16; update = () => { t += 1 / 60; }; }
+if (BG.thumb && !BG.preview) { parse(LEVELS[Math.min(16, LEVELS.length - 1)].m); state = 'thumb'; boxes.forEach((b, i) => { if (i === 0) { const k = [...goals][0]; b.x = b.fx = k % cols; b.y = b.fy = (k / cols) | 0; } }); cur = 16; update = () => { t += 1 / 60; }; }
 else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>

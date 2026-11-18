@@ -143,7 +143,7 @@ view.canvas.addEventListener('pointerdown', e => {
 });
 BG.input.onKey((e, code, down) => { if (!down || e.repeat || BG.ui.open) return; PADS.forEach((p, i) => { if (code === p.key || p.alt.includes(code)) pressPad(i); }); });
 
-if (BG.thumb) { state = 'input'; level = 12; seq = Array(12).fill(0); pos = 7; lit = 1; litT = 99; update = () => {}; }
+if (BG.thumb && !BG.preview) { state = 'input'; level = 12; seq = Array(12).fill(0); pos = 7; lit = 1; litT = 99; update = () => {}; }
 else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>

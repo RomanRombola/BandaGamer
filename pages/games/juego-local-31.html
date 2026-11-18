@@ -443,7 +443,7 @@ const SONG = { bpm: 96, tracks: [
   { type: 'sine', vol: .5, notes: 'D2 - - - - - - - D2 - - - - - - - Bb1 - - - - - - - A1 - - - - - - - D2 - - - - - - - D2 - - - - - - - Bb1 - - - - - - - A1 - - - - - - -' },
   { drum: true, vol: .3, notes: 'K . . . H . . . K . K . H . . .' },
 ] };
-if (BG.thumb) {
+if (BG.thumb && !BG.preview) {
   level = 5; genMaze(8, .35); explored = new Uint8Array(S * S); crumbs = new Uint8Array(S * S); fogMem.width = S; fogMem.height = S;
   pl = { x: 7, y: 7, px: 7, py: 7, dir: 'right', prog: 0, from: [7, 7], inv: 0, last: 'right' }; grid[idx(7, 7)] = 0;
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if ((x - 7) ** 2 + (y - 7) ** 2 < 70) explored[idx(x, y)] = 1;

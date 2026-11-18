@@ -542,7 +542,7 @@ if (BG.thumb) {
   [[3, 3, 'canon'], [6, 2, 'laser'], [11, 2, 'tesla'], [7, 5, 'mortero'], [12, 6, 'hielo']].forEach(([cx, cy, k]) => towers.push({ k, cx, cy, x: (cx + .5) * CS, y: (cy + .5) * CS, lvl: 1, cd: 0, ang: 1, spent: 0, kills: 0 }));
   for (let i = 0; i < 9; i++) { spawnEnemy(['normal', 'rapido', 'tanque', 'regen', 'jefe'][i % 5]); enemies[i].d = 120 + i * 70; const p = posAt(enemies[i].d); enemies[i].x = p.x; enemies[i].y = p.y; enemies[i].ang = p.ang; enemies[i].hp *= .6; }
   beams = [{ x1: towers[2].x, y1: towers[2].y, x2: enemies[5].x, y2: enemies[5].y, c: '#ffd400', t: 99, zig: true }];
-  state = 'thumb'; update = () => { t += 1 / 60; };
+  if (BG.preview) { beams[0].t = .2; state = 'play'; waveActive = true; BG.start(); } else { state = 'thumb'; update = () => { t += 1 / 60; }; }
 } else BG.ready.then(showMenu);
 BG.loop(dt => update(dt), render);
 </script>

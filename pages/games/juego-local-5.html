@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Endless Runner</title>
+<title>Fit Runner</title>
 <link rel="stylesheet" href="kit/bg-kit.css">
 </head>
 <body>
 <script src="kit/bg-kit.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  ENDLESS RUNNER — AltoVicio
+//  FIT RUNNER — AltoVicio
 //  El gordo corre: saltá la comida chatarra gigante, agachate ante los bichos y
 //  no te caigas en los pozos. La comida sana lo hace adelgazar: cuanto más flaco,
 //  más alto salta, gana DOBLE SALTO y multiplica los puntos. La chatarra que flota
@@ -38,7 +38,7 @@ const STARS = D.stars(80, W, 300, 21);
 const hash = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
 
 BG.init({
-  id: 'endlessrunner', title: 'ENDLESS RUNNER', icon: '🏃', accent: '#ff7a1a', accent2: '#39ff88', music: true,
+  id: 'endlessrunner', title: 'FIT RUNNER', icon: '🏃', accent: '#ff7a1a', accent2: '#39ff88', music: true,
   post: { bloom: .38, vignette: .3, thumbFx: true },
   subtitle: 'Saltá la comida chatarra, agachate ante los bichos y no te caigas en los pozos. Comé sano para adelgazar: más flaco = salto más alto, doble salto y más puntos.',
   hud: [{ id: 'score', label: 'Puntos' }, { id: 'dist', label: 'Metros', color: '#2ef2ff' }, { id: 'state', label: 'Estado', color: '#ffd400', value: 'GORDÍSIMO' }],
@@ -444,7 +444,7 @@ const SONG = { bpm: 150, tracks: [
   { type: 'triangle', vol: .5, notes: 'A2 . A3 . A2 . A3 . F2 . F3 . F2 . F3 . C3 . C4 . C3 . C4 . G2 . G3 . G2 . G3 . A2 . A3 . A2 . A3 . F2 . F3 . F2 . F3 . C3 . C4 . C3 . C4 . G2 . G3 . G2 . G3 .' },
   { drum: true, vol: .5, notes: 'K . H . S . H . K . K . S . H H' },
 ] };
-if (BG.thumb) {
+if (BG.thumb && !BG.preview) {
   state = 'thumb'; scroll = 1200; weight = 55; stIdx = 2; pl.vis = .55; pl.ground = false; pl.y = GROUND - 120; pl.run = 2;
   obs = [{ type: 'food', x: 240, w: 46, h: 96, n: 2, e: '🍔', size: 52 }, { type: 'bug', x: 640, y: GROUND - 74, r: 15, e: '🐝', mode: 'still', ph: 0 }, { type: 'food', x: 880, w: 46, h: 48, n: 1, e: '🍩', size: 52 }];
   for (let i = -2; i <= 2; i++) picks.push({ x: 420 + i * 44, y: GROUND - 150 - (4 - i * i) * 15, kind: 'health', e: HEALTHY[i + 2], ph: i });
