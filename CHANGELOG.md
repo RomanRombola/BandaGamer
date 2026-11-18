@@ -9,6 +9,18 @@
 - El arte está en `assets/tienda/` (`acc/`, `marcos/`, `fondos/`, WebP con fondo transparente) y el catálogo en `window.TIENDA_ILUSTRADA` dentro de `js/avatar.js`, con la posición de cada ítem sobre el avatar.
 - No hace falta tocar Firebase: los accesorios nuevos entran en el mismo campo `accesorios` del perfil.
 
+### También en V15
+- **Ajedrez HD** (diseño, IA y cosméticos de Gemini/Argon 4, integrado por Claude):
+  - piezas vectoriales y 4 niveles de IA de verdad distintos (profundidad y tiempo);
+  - reloj, pistas, barra de evaluación y cosméticos (piezas, tableros y fondos) que se compran con VicioCoins **a través del portal**;
+  - online con identidad: las jugadas se validan y se guardan en orden, así que si recargás volvés a la partida. Un tercero no puede entrar y el chat no permite inyectar código.
+- **Compras dentro de los juegos:** mensaje nuevo `bg-buy` → `Storage.comprarItemJuego` (el juego nunca toca las monedas).
+- **Fuera los 7 juegos externos** (Krunker, HexGL, Diep.io, 1v1.lol, Smash Karts, Narrow One, Shell Shockers): el catálogo queda con 48 juegos propios.
+- **BG Kit en celular:** la barra de arriba pasa a una sola fila compacta. Los juegos ganan mucho espacio (Space Shooter: del 32% al 70% de la pantalla; Piano Tiles: del 53% al 86%). Los juegos horizontales muestran un único aviso de "girá el celular".
+- **App instalable:** `manifest.webmanifest`, íconos de 512 px y maskable, y service worker que abre el portal y los juegos ya visitados sin conexión. Es el primer paso para Play Store.
+- **Reglas de Realtime Database:** `chessRooms` exige identidad. Hay que publicarlas en la consola **después** de aceptar el pull request.
+- `TAREAS.md`: reparto del trabajo entre Claude Code, Antigravity y Gemini.
+
 ---
 
 ## 🔐 V14.2 — Salas online cerradas (login anónimo)
