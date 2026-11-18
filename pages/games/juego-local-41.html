@@ -31,22 +31,22 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:n
 .pcard.right.turn{border-color:var(--pink);box-shadow:0 0 0 3px rgba(255,95,162,.15),0 6px 20px rgba(255,95,162,.18)}
 .pcard:not(.turn){opacity:.78}
 .avw{position:relative;width:44px;height:44px;flex-shrink:0}
-.avw svg.ring{position:absolute;inset:0;transform:rotate(-90deg)}
+.avw svg.ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
 .av{position:absolute;inset:4px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:20px;
   background:linear-gradient(135deg,#4f5bd5,#7b4fb5);box-shadow:inset 0 -3px 6px rgba(0,0,0,.3)}
 .pcard.right .av{background:linear-gradient(135deg,#e060c0,#d03060)}
 .av img{width:100%;height:100%;object-fit:cover}
-.pinfo{min-width:0;display:flex;flex-direction:column;gap:2px}
-.pname{font-size:14px;font-weight:800;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pballs{display:flex;gap:2px;flex-wrap:nowrap}
+.pinfo{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.pname{font-size:14px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pballs{display:flex;gap:2.5px;flex-wrap:nowrap;align-items:center;min-height:14px}
 .pcard.right .pballs{flex-direction:row-reverse}
 .mb{width:13px;height:13px;border-radius:50%;flex-shrink:0;position:relative;box-shadow:inset -1.5px -2px 3px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.4)}
 .mb.empty{background:rgba(0,0,0,.35)!important;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
 .mb.next{outline:2px solid var(--gold);outline-offset:1px;animation:pulse 1s infinite}
 @keyframes pulse{50%{outline-color:transparent}}
 .vsbox{display:flex;flex-direction:column;align-items:center;flex-shrink:0;line-height:1}
-.vs{font-size:17px;font-weight:800;color:var(--mut);letter-spacing:1px}
-.vsmode{font-size:9.5px;color:var(--mut);opacity:.8;white-space:nowrap;margin-top:2px}
+.vs{font-size:16px;font-weight:800;color:var(--mut);letter-spacing:1px}
+.vsmode{font-size:9px;color:var(--mut);opacity:.8;white-space:nowrap;margin-top:2px}
 .spinbtn{width:42px;height:42px;border-radius:50%;padding:0;background:radial-gradient(circle at 35% 30%,#fff,#d9d9e3 55%,#9d9db2);border:2px solid rgba(255,255,255,.35);position:relative;box-shadow:0 3px 10px rgba(0,0,0,.4)}
 .spinbtn i{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--red);left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 0 6px rgba(255,77,106,.8);transition:left .12s,top .12s}
 .bubble{position:absolute;top:100%;left:20px;margin-top:6px;background:#fff;color:#222;font-size:22px;padding:2px 10px;border-radius:14px;
@@ -54,25 +54,82 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:n
 .pcard.right .bubble{left:auto;right:20px}
 .bubble.show{opacity:1;transform:none}
 
+/* HUD compacto en pantallas verticales / angostas: nombre arriba y bolitas abajo sin salirse */
+@media (max-width:650px), (orientation:portrait){
+  #hud{gap:4px;padding:6px 5px 2px;min-height:58px}
+  .hbtn{width:30px;height:30px;border-radius:9px;font-size:15px}
+  .spinbtn{width:32px;height:32px}
+  .vsbox .vs{font-size:11px;letter-spacing:0}
+  .vsbox .vsmode{display:none}
+  .pcard{display:grid;grid-template-columns:24px minmax(0,1fr);grid-template-rows:auto auto;column-gap:4px;row-gap:3px;align-items:center;padding:4px 6px;border-radius:14px}
+  .pcard.right{grid-template-columns:minmax(0,1fr) 24px}
+  .pinfo{display:contents}
+  .avw{width:24px;height:24px;grid-row:1;grid-column:1}
+  .pcard.right .avw{grid-column:2}
+  .av{inset:2.5px;font-size:12px}
+  .pname{grid-row:1;grid-column:2;font-size:11.5px;line-height:1.15;letter-spacing:-.2px}
+  .pcard.right .pname{grid-column:1;text-align:right}
+  .pballs{grid-row:2;grid-column:1 / -1;gap:2.5px;min-height:11px;justify-content:flex-start}
+  .pcard.right .pballs{justify-content:flex-start}
+  .mb{width:10.5px;height:10.5px}
+}
+
 /* ── Escenario ───────────────────────────────────────── */
-#stage{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;gap:6px;padding:4px 8px 10px}
-.side{flex:0 0 44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+#stage{flex:1 1 auto;min-height:0;display:flex;align-items:stretch;gap:4px;padding:2px 6px 8px}
+.side{flex:0 0 42px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;position:relative}
+#fineCol{flex:0 0 38px}
 #tableWrap{flex:1;min-width:0;position:relative}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
-.ptrack{position:relative;width:38px;height:min(64%,330px);min-height:150px;border-radius:19px;background:linear-gradient(#120e28,#1d1740);
-  border:1.5px solid rgba(255,255,255,.12);box-shadow:inset 0 4px 12px rgba(0,0,0,.6);overflow:hidden;cursor:ns-resize;touch-action:none}
-.pfill{position:absolute;left:0;right:0;top:0;height:0;background:linear-gradient(#3ee08f,#ffc93c 55%,#ff4d6a);opacity:.9;transition:height .03s}
-.pcuewrap{position:absolute;left:50%;top:6px;bottom:6px;width:10px;transform:translateX(-50%);pointer-events:none}
-.pcue{position:absolute;left:0;width:10px;height:200%;top:-100%;border-radius:5px;transition:transform .03s}
-.plbl{font-size:10px;font-weight:800;color:var(--mut);letter-spacing:.5px;writing-mode:vertical-rl;transform:rotate(180deg)}
-.parrow{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:16px;color:rgba(255,255,255,.35);animation:bob 1.4s infinite;pointer-events:none}
-@keyframes bob{50%{transform:translateY(5px)}}
-.ptrack.dis{opacity:.4;cursor:default}
-.fwheel{position:relative;width:30px;height:min(52%,260px);min-height:120px;border-radius:15px;overflow:hidden;cursor:ns-resize;touch-action:none;
-  background:linear-gradient(90deg,#0b0820,#2b2558 50%,#0b0820);border:1.5px solid rgba(255,255,255,.12)}
-.fwheel::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.22) 0 2px,transparent 2px 9px);background-position-y:var(--off,0px)}
-.fwheel::after{content:'';position:absolute;inset:0;background:linear-gradient(#0b0820,transparent 30%,transparent 70%,#0b0820)}
-.fwheel.dis{opacity:.4}
+
+/* Barra de fuerza con taco real */
+.ptrack{position:relative;width:36px;height:min(66%,320px);min-height:148px;border-radius:18px;
+  background:linear-gradient(180deg,#100c24 0%,#1a1438 100%);
+  border:1.5px solid rgba(255,255,255,.15);box-shadow:inset 0 4px 12px rgba(0,0,0,.7),0 4px 14px rgba(0,0,0,.35);
+  overflow:hidden;cursor:ns-resize;touch-action:none}
+.ptrack::before{content:'';position:absolute;top:14px;bottom:14px;left:3px;width:4px;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.28) 0 1.5px,transparent 1.5px 12px);pointer-events:none;z-index:2}
+.ptrack::after{content:'';position:absolute;top:14px;bottom:14px;right:3px;width:4px;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.28) 0 1.5px,transparent 1.5px 12px);pointer-events:none;z-index:2}
+.pball{position:absolute;top:5px;left:50%;transform:translateX(-50%);width:11px;height:11px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#fff,#cfd2e6 65%,#8e92b2);box-shadow:0 1px 4px rgba(0,0,0,.6);z-index:3;pointer-events:none}
+.pfill{position:absolute;left:0;right:0;top:16px;height:0;
+  background:linear-gradient(180deg,rgba(62,224,143,.55),rgba(255,201,60,.65) 55%,rgba(255,77,106,.8));transition:height .03s;pointer-events:none}
+.pcuewrap{position:absolute;left:0;right:0;top:16px;bottom:6px;pointer-events:none;z-index:3;overflow:hidden}
+#pcue{position:absolute;left:50%;top:0;width:22px;height:100%;transform:translateX(-50%);transition:transform .03s}
+.plbl{font-size:9px;font-weight:800;color:var(--mut);letter-spacing:.4px;text-align:center;line-height:1.1}
+.parrow{position:absolute;left:0;right:0;bottom:5px;text-align:center;font-size:13px;color:rgba(255,255,255,.45);animation:bob 1.4s infinite;pointer-events:none;z-index:4}
+@keyframes bob{50%{transform:translateY(4px)}}
+.ptrack.dis{opacity:.38;cursor:default}
+
+/* Rueda de ajuste fino (más fina, chica y clara) */
+.fwheel{position:relative;width:18px;height:min(34%,134px);min-height:84px;border-radius:9px;overflow:hidden;cursor:ns-resize;touch-action:none;
+  background:linear-gradient(90deg,#09071a,#262050 50%,#09071a);border:1.5px solid rgba(61,212,245,.32);
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.7),0 2px 10px rgba(0,0,0,.35)}
+.fwheel::before{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,rgba(61,212,245,.45) 0 1.5px,transparent 1.5px 6px);background-position-y:var(--off,0px)}
+.fwheel::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#09071a 0%,transparent 28%,transparent 72%,#09071a 100%)}
+.fnotch{position:absolute;left:2px;right:2px;top:50%;height:1.5px;margin-top:-.75px;background:var(--cyan);box-shadow:0 0 6px var(--cyan);z-index:2;pointer-events:none;opacity:.85}
+.farr{font-size:10px;line-height:1;color:var(--cyan);opacity:.8;font-weight:800;user-select:none}
+.fwheel.dis{opacity:.35;border-color:rgba(255,255,255,.12)}
+#fineTip{position:absolute;right:42px;top:50%;transform:translateY(-50%);background:rgba(15,12,36,.94);border:1.5px solid var(--cyan);
+  color:#fff;font-size:11px;font-weight:700;line-height:1.25;padding:6px 10px;border-radius:12px;width:148px;text-align:left;
+  box-shadow:0 6px 20px rgba(0,0,0,.5);z-index:12;pointer-events:none;opacity:0;transition:opacity .25s}
+#fineTip.show{opacity:1}
+#fineTip::after{content:'';position:absolute;right:-6px;top:50%;margin-top:-5px;border:5px solid transparent;border-left-color:var(--cyan);border-right:0}
+
+/* Aviso de girar el celular */
+#rotateNotice{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:70;display:none;align-items:center;gap:10px;
+  width:min(94vw,390px);padding:9px 12px;border-radius:18px;
+  background:linear-gradient(135deg,rgba(28,22,64,.96),rgba(14,11,34,.96));border:1.5px solid rgba(61,212,245,.45);
+  box-shadow:0 10px 28px rgba(0,0,0,.6);backdrop-filter:blur(8px)}
+#rotateNotice.show{display:flex}
+.rotico{width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--cyan);animation:rotPhone 2.4s ease-in-out infinite}
+@keyframes rotPhone{0%,15%{transform:rotate(0deg)}55%,85%{transform:rotate(-90deg)}100%{transform:rotate(0deg)}}
+.rottxt{flex:1;min-width:0;text-align:left;line-height:1.2}
+.rottxt b{display:block;font-size:12.5px;color:#fff}
+.rottxt span{font-size:10.5px;color:var(--mut)}
+.rotbtn{padding:6px 10px;border-radius:11px;background:linear-gradient(180deg,#45dcfb,#139ccc);color:#fff;font-size:11.5px;font-weight:800;white-space:nowrap;flex-shrink:0}
+.rotclose{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.08);color:var(--mut);font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
 #toast{position:absolute;left:50%;top:9%;transform:translate(-50%,-10px);pointer-events:none;z-index:5;opacity:0;
   background:rgba(12,9,30,.82);border:1.5px solid rgba(255,255,255,.15);backdrop-filter:blur(6px);padding:7px 18px;border-radius:999px;
@@ -217,8 +274,9 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:n
   <main id="stage">
     <div class="side" id="powerCol">
       <div class="ptrack" id="ptrack">
+        <div class="pball"></div>
         <div class="pfill" id="pfill"></div>
-        <div class="pcuewrap"><div class="pcue" id="pcue"></div></div>
+        <div class="pcuewrap"><canvas id="pcue"></canvas></div>
         <div class="parrow">⌄</div>
       </div>
       <div class="plbl">FUERZA</div>
@@ -229,8 +287,11 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:n
       <div id="waitTag"></div>
     </div>
     <div class="side" id="fineCol">
-      <div class="fwheel" id="fwheel"></div>
-      <div class="plbl">AJUSTE</div>
+      <div class="farr">▲</div>
+      <div class="fwheel" id="fwheel"><i class="fnotch"></i></div>
+      <div class="farr">▼</div>
+      <div class="plbl">AJUSTE<br>FINO ↕</div>
+      <div id="fineTip">↕ Arrastrá para ajustar la puntería con precisión</div>
     </div>
   </main>
 </div>
@@ -238,6 +299,21 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:n
 <div id="emoteBar">
   <div class="eopts" id="eopts"></div>
   <button class="hbtn" id="btnEmote" style="width:46px;height:46px;border-radius:50%;font-size:22px">💬</button>
+</div>
+
+<div id="rotateNotice">
+  <div class="rotico">
+    <svg viewBox="0 0 28 28" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="3" width="12" height="22" rx="2.5"/>
+      <line x1="13" y1="21.5" x2="15" y2="21.5"/>
+    </svg>
+  </div>
+  <div class="rottxt">
+    <b>Girá el celular para jugar mejor</b>
+    <span>La mesa horizontal es la vista principal</span>
+  </div>
+  <button class="rotbtn" id="btnRotateLock">Horizontal</button>
+  <button class="rotclose" id="btnRotateClose" title="Cerrar">✕</button>
 </div>
 
 <!-- MENÚ PRINCIPAL -->
@@ -317,7 +393,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:n
     <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
       <button class="btn" id="btnResume">▶ Seguir jugando</button>
       <button class="btn ghost" id="btnSound">🔊 Sonido: Sí</button>
-      <button class="btn ghost" id="btnGuide">📏 Guía larga: Sí</button>
+      <button class="btn ghost" id="btnGuide">📏 Guía larga: No</button>
       <button class="btn pink" id="btnQuit">🏳 Abandonar partida</button>
     </div>
   </div>
@@ -844,7 +920,7 @@ const Profile = {
       if (!d.eq[t] || !CATALOG[t].some(i => i.id === d.eq[t])) d.eq[t] = free;
     }
     if (typeof d.sound !== 'boolean') d.sound = true;
-    if (typeof d.guide !== 'boolean') d.guide = true;
+    if (typeof d.guideLong !== 'boolean') d.guideLong = false;
     d.coins = Math.max(0, Math.floor(+d.coins || 0));
     this.save();
   },
@@ -1263,28 +1339,36 @@ function cuePattern(g, sk, x0, x1, time) {
 // Dibuja el taco con la punta en (tx,ty) apuntando en dirección `ang`
 function drawCue(g, sk, tx, ty, ang, time, glowScale) {
   g.save(); g.translate(tx, ty); g.rotate(ang + Math.PI);
+  const hw = x => 0.27 + 0.35 * x / CUE_LEN;
   const sec = (x0, x1, fill) => { cueSilhouette(g, x0, x1); g.fillStyle = fill; g.fill(); };
   if (sk.glow && glowScale) { g.save(); g.shadowColor = sk.glow; g.shadowBlur = glowScale; cueSilhouette(g, 30, CUE_LEN); g.fillStyle = sk.butt[0]; g.fill(); g.restore(); }
-  const shg = g.createLinearGradient(1.3, 0, 33, 0); shg.addColorStop(0, sk.shaft[0]); shg.addColorStop(1, sk.shaft[1]);
-  sec(0, 0.4, sk.tip); sec(0.4, 1.3, sk.ferrule); sec(1.3, 33, shg);
-  sec(33, 33.9, sk.joint);
-  const fg = g.createLinearGradient(33.9, 0, 45, 0); fg.addColorStop(0, sk.fore[0]); fg.addColorStop(1, sk.fore[1]);
-  sec(33.9, 45, fg); cuePattern(g, sk, 33.9, 45, time);
+  // punta redondeada de tiza + suela de cuero + virola blanca
+  g.beginPath(); g.arc(0.22, 0, hw(0.22), Math.PI * 0.5, Math.PI * 1.5); g.closePath(); g.fillStyle = sk.tip; g.fill();
+  sec(0.2, 0.5, sk.tip);
+  sec(0.5, 0.72, '#b58453');
+  sec(0.72, 1.75, sk.ferrule);
+  const shg = g.createLinearGradient(1.75, 0, 33, 0); shg.addColorStop(0, sk.shaft[0]); shg.addColorStop(1, sk.shaft[1]);
+  sec(1.75, 33, shg);
+  sec(32.85, 33.05, '#181818'); sec(33.05, 33.95, sk.joint); sec(33.95, 34.12, '#181818');
+  const fg = g.createLinearGradient(34.12, 0, 45, 0); fg.addColorStop(0, sk.fore[0]); fg.addColorStop(1, sk.fore[1]);
+  sec(34.12, 45, fg); cuePattern(g, sk, 34.12, 45, time);
   sec(45, 45.5, sk.ring);
   sec(45.5, 52.5, sk.wrap);
-  g.save(); cueSilhouette(g, 45.5, 52.5); g.clip(); g.strokeStyle = 'rgba(255,255,255,.08)'; g.lineWidth = 0.06;
+  g.save(); cueSilhouette(g, 45.5, 52.5); g.clip(); g.strokeStyle = 'rgba(255,255,255,.11)'; g.lineWidth = 0.06;
   for (let x = 45; x < 53; x += 0.3) { g.beginPath(); g.moveTo(x, -0.7); g.lineTo(x + 0.5, 0.7); g.stroke(); } g.restore();
   sec(52.5, 53, sk.ring);
-  const bg = g.createLinearGradient(53, 0, 57.6, 0); bg.addColorStop(0, sk.butt[0]); bg.addColorStop(1, sk.butt[1]);
-  sec(53, 57.6, bg); cuePattern(g, sk, 53, 57.6, time + 1);
-  sec(57.6, CUE_LEN, '#111');
+  const bg = g.createLinearGradient(53, 0, 57.3, 0); bg.addColorStop(0, sk.butt[0]); bg.addColorStop(1, sk.butt[1]);
+  sec(53, 57.3, bg); cuePattern(g, sk, 53, 57.3, time + 1);
+  // culata de goma redondeada
+  sec(57.3, 57.7, '#151515');
+  g.beginPath(); g.arc(57.65, 0, hw(57.65), -Math.PI * 0.5, Math.PI * 0.5); g.closePath(); g.fillStyle = '#101010'; g.fill();
   // volumen cilíndrico
-  const chunks = [[0, 15], [15, 33], [33, 45.5], [45.5, CUE_LEN]];
+  const chunks = [[0.2, 15], [15, 33], [33, 45.5], [45.5, 57.7]];
   for (const [a, b] of chunks) {
-    const w = 0.27 + 0.35 * ((a + b) / 2) / CUE_LEN;
+    const w = hw((a + b) / 2);
     const cg = g.createLinearGradient(0, -w, 0, w);
-    cg.addColorStop(0, 'rgba(0,0,0,.5)'); cg.addColorStop(0.22, 'rgba(255,255,255,.42)'); cg.addColorStop(0.4, 'rgba(255,255,255,.06)');
-    cg.addColorStop(0.75, 'rgba(0,0,0,.12)'); cg.addColorStop(1, 'rgba(0,0,0,.55)');
+    cg.addColorStop(0, 'rgba(0,0,0,.52)'); cg.addColorStop(0.22, 'rgba(255,255,255,.45)'); cg.addColorStop(0.4, 'rgba(255,255,255,.06)');
+    cg.addColorStop(0.75, 'rgba(0,0,0,.14)'); cg.addColorStop(1, 'rgba(0,0,0,.58)');
     cueSilhouette(g, a, b); g.fillStyle = cg; g.fill();
   }
   g.restore();
@@ -1358,6 +1442,14 @@ function beginTurn(fresh) {
   autoAim(); CPU.reset(); updateSpinUI(); updatePowerUI(); updateHUD();
   $('waitTag').style.display = 'none';
   if (fresh) toast(G.turn === G.me ? '🎱 ¡Rompé! Ubicá la blanca y tirá' : `🎱 Rompe ${G.names[G.turn]}`, 'info', 2200);
+  if (G.turn === G.me && !Profile.d.fineHintShown) {
+    const tip = $('fineTip');
+    if (tip) {
+      tip.classList.add('show');
+      clearTimeout(tip._t);
+      tip._t = setTimeout(() => tip.classList.remove('show'), 4800);
+    }
+  }
 }
 function autoAim() {
   const cb = G.balls[0]; if (!cb) return;
@@ -1664,44 +1756,61 @@ function legalForAim(n) {
 function drawGuide(g) {
   const cb = G.balls[0], a = G.aim.angle, dx = Math.cos(a), dy = Math.sin(a);
   const hit = PE.castRay(G.balls, cb.x, cb.y, dx, dy, cb);
-  const long = Profile.d.guide;
-  const t = Math.min(hit.t, 260), gx = cb.x + dx * t, gy = cb.y + dy * t;
+  const useLong = !isOnline() && !!Profile.d.guideLong;
+  const maxT = useLong ? 92 : 25; // ~1/4 de la mesa por defecto (L = 100)
+  const hitBallWithin = !!(hit.type === 'ball' && hit.t <= maxT);
+  const showGhost = hitBallWithin || (useLong && !!(hit.type && hit.t <= maxT));
+  const t = Math.min(hit.t, maxT), gx = cb.x + dx * t, gy = cb.y + dy * t;
   g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
   const line = (x0, y0, x1, y1, w, col) => { g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.strokeStyle = col; g.lineWidth = w; g.stroke(); };
-  const legal = hit.type !== 'ball' || legalForAim(hit.ball.n);
-  const col = legal ? 'rgba(255,255,255,.92)' : 'rgba(255,80,100,.95)';
+  const legal = !hitBallWithin || legalForAim(hit.ball.n);
+  const rgb = legal ? '255,255,255' : '255,80,100';
+  const col = `rgba(${rgb},.92)`;
   if (t > R) {
-    line(cb.x + dx * R, cb.y + dy * R, gx - dx * R * 0.98, gy - dy * R * 0.98, 0.34, 'rgba(0,0,0,.28)');
-    line(cb.x + dx * R, cb.y + dy * R, gx - dx * R * 0.98, gy - dy * R * 0.98, 0.15, col);
+    const sx = cb.x + dx * R, sy = cb.y + dy * R;
+    const endPad = showGhost ? R * 0.98 : 0;
+    const ex = gx - dx * endPad, ey = gy - dy * endPad;
+    const shGrad = g.createLinearGradient(sx, sy, ex, ey);
+    shGrad.addColorStop(0, 'rgba(0,0,0,.3)');
+    shGrad.addColorStop(1, showGhost ? 'rgba(0,0,0,.18)' : 'rgba(0,0,0,0)');
+    line(sx, sy, ex, ey, 0.34, shGrad);
+    const lnGrad = g.createLinearGradient(sx, sy, ex, ey);
+    lnGrad.addColorStop(0, `rgba(${rgb},.95)`);
+    lnGrad.addColorStop(0.65, `rgba(${rgb},${showGhost ? '.82' : '.48'})`);
+    lnGrad.addColorStop(1, `rgba(${rgb},${showGhost ? '.62' : '0'})`);
+    line(sx, sy, ex, ey, 0.15, lnGrad);
   }
-  if (hit.type) {
+  if (showGhost) {
     g.beginPath(); g.arc(gx, gy, R, 0, Math.PI * 2);
     g.fillStyle = legal ? 'rgba(255,255,255,.14)' : 'rgba(255,60,90,.18)'; g.fill();
     g.lineWidth = 0.14; g.strokeStyle = col; g.stroke();
   }
-  if (hit.type === 'ball') {
+  if (hitBallWithin) {
     const b = hit.ball;
     if (!legal) {
       const k = R * 0.5; line(gx - k, gy - k, gx + k, gy + k, 0.18, col); line(gx - k, gy + k, gx + k, gy - k, 0.18, col);
     } else {
       let nx = b.x - gx, ny = b.y - gy; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
       const full = Math.max(0, dx * nx + dy * ny);
-      const lo = (long ? 7 + 22 * full : 3 + 9 * full);
-      line(b.x + nx * R, b.y + ny * R, b.x + nx * (R + lo), b.y + ny * (R + lo), 0.34, 'rgba(0,0,0,.25)');
-      line(b.x + nx * R, b.y + ny * R, b.x + nx * (R + lo), b.y + ny * (R + lo), 0.15, 'rgba(255,255,255,.9)');
+      const lo = useLong ? (6 + 16 * full) : (2.4 + 5.6 * full);
+      const ox0 = b.x + nx * R, oy0 = b.y + ny * R, ox1 = b.x + nx * (R + lo), oy1 = b.y + ny * (R + lo);
+      const og = g.createLinearGradient(ox0, oy0, ox1, oy1);
+      og.addColorStop(0, 'rgba(255,255,255,.92)'); og.addColorStop(1, 'rgba(255,255,255,.08)');
+      line(ox0, oy0, ox1, oy1, 0.32, 'rgba(0,0,0,.22)');
+      line(ox0, oy0, ox1, oy1, 0.15, og);
       let tx = dx - full * nx, ty = dy - full * ny; const tl = Math.hypot(tx, ty);
       if (tl > 0.04) {
         tx /= tl; ty /= tl;
-        const lt = (long ? 4 + 14 * (1 - full) : 2 + 6 * (1 - full));
-        g.setLineDash([0.6, 0.5]);
-        line(gx, gy, gx + tx * lt, gy + ty * lt, 0.13, 'rgba(160,225,255,.85)');
+        const lt = useLong ? (3.5 + 10 * (1 - full)) : (1.8 + 4.2 * (1 - full));
+        g.setLineDash([0.55, 0.45]);
+        line(gx, gy, gx + tx * lt, gy + ty * lt, 0.13, 'rgba(160,225,255,.82)');
         g.setLineDash([]);
       }
     }
-  } else if (hit.type === 'cush' && long) {
+  } else if (showGhost && hit.type === 'cush' && useLong) {
     const dn = dx * hit.nx + dy * hit.ny, rx = dx - 2 * dn * hit.nx, ry = dy - 2 * dn * hit.ny;
     g.setLineDash([0.7, 0.6]);
-    line(gx, gy, gx + rx * 9, gy + ry * 9, 0.13, 'rgba(255,255,255,.6)');
+    line(gx, gy, gx + rx * 7, gy + ry * 7, 0.13, 'rgba(255,255,255,.55)');
     g.setLineDash([]);
   }
   g.restore();
@@ -1822,32 +1931,48 @@ ptrack.addEventListener('pointermove', e => {
 const pEnd = e => { if (!pDrag || e.pointerId !== pDrag.id) return; pDrag = null; if (e.type === 'pointerup') playerShoot(); else { G.aim.power = 0; updatePowerUI(); } };
 ptrack.addEventListener('pointerup', pEnd); ptrack.addEventListener('pointercancel', pEnd);
 function updatePowerUI() {
-  const mine = G.turn === G.me && G.phase === 'aim';
-  const pw = mine ? G.aim.power : 0;
+  const mineAim = G.turn === G.me && G.phase === 'aim';
+  const mineStrike = G.turn === G.me && G.phase === 'strike';
+  let pw = mineAim ? G.aim.power : 0;
+  if (mineStrike) pw = G.strikePow * Math.max(0, 1 - G.strikeT / 0.08);
   $('pfill').style.height = (pw * 100) + '%';
   const h = ptrack.getBoundingClientRect().height || 200;
-  $('pcue').style.transform = `translateY(${pw * h * 0.8}px)`;
-  ptrack.classList.toggle('dis', !mine);
-  $('fwheel').classList.toggle('dis', !mine);
+  $('pcue').style.transform = `translate(-50%, ${(pw * h * 0.56).toFixed(1)}px)`;
+  ptrack.classList.toggle('dis', !mineAim);
+  $('fwheel').classList.toggle('dis', !mineAim);
 }
 function styleMiniCue() {
   const sk = Profile.cue();
-  $('pcue').style.background = `linear-gradient(${sk.tip} 0 2%, ${sk.ferrule} 2% 5%, ${sk.shaft[0]} 5%, ${sk.shaft[1]} 52%, ${sk.joint} 52% 54%, ${sk.fore[0]} 54%, ${sk.fore[1]} 74%, ${sk.ring} 74% 75%, ${sk.wrap} 75% 88%, ${sk.butt[0]} 88%, ${sk.butt[1]} 100%)`;
-  $('pcue').style.boxShadow = sk.glow ? `0 0 8px ${sk.glow}` : 'none';
+  const c = $('pcue'); if (!c || !c.getContext) return;
+  const W = 48, H = 420;
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, W, H);
+  const sy = (H - 12) / CUE_LEN, sx = 15.5;
+  g.save();
+  g.setTransform(sx, 0, 0, sy, W / 2, 4);
+  drawCue(g, sk, 0, 0, -Math.PI / 2, 0.5, 0);
+  g.restore();
+  c.style.filter = sk.glow ? `drop-shadow(0 0 5px ${sk.glow})` : 'drop-shadow(0 2px 3px rgba(0,0,0,.55))';
 }
-// Rueda de ajuste fino
+// Rueda de ajuste fino (sensibilidad reducida ~4.5x: dy * 0.00025 por píxel)
 const fwheel = $('fwheel');
 let fDrag = null, wheelOff = 0;
 fwheel.addEventListener('pointerdown', e => {
   if (!canControl()) return; e.preventDefault();
   try { fwheel.setPointerCapture(e.pointerId); } catch (er) {}
   fDrag = { id: e.pointerId, y: e.clientY };
+  const tip = $('fineTip'); if (tip) tip.classList.remove('show');
+  if (!Profile.d.fineHintShown) {
+    Profile.d.fineHintShown = true; Profile.save();
+    toast('↕ Arrastrá para ajustar la puntería con precisión', 'info', 2200);
+  }
 });
 fwheel.addEventListener('pointermove', e => {
   if (!fDrag || e.pointerId !== fDrag.id || !canControl()) return;
   const dy = e.clientY - fDrag.y; fDrag.y = e.clientY;
-  G.aim.angle += dy * 0.0011 * (V.portrait ? -1 : 1);
-  wheelOff += dy; fwheel.style.setProperty('--off', wheelOff + 'px');
+  G.aim.angle += dy * 0.00025 * (V.portrait ? -1 : 1);
+  wheelOff += dy * 0.5; fwheel.style.setProperty('--off', wheelOff + 'px');
 });
 const fEnd = e => { if (fDrag && e.pointerId === fDrag.id) fDrag = null; };
 fwheel.addEventListener('pointerup', fEnd); fwheel.addEventListener('pointercancel', fEnd);
@@ -1969,12 +2094,36 @@ function startCPU(breaker) {
   ['ovMenu', 'ovResult', 'ovPause'].forEach(hide);
   newGame((Math.random() * 1e9) | 0, breaker || 0);
 }
-$('btnCpu').onclick = () => { Sfx.ui(); startCPU(0); };
-$('btnHost').onclick = () => { Sfx.ui(); Net.host(); };
+// ── Orientación horizontal principal y aviso de giro ──
+let rotateDismissed = false;
+async function tryLandscapeFullscreen() {
+  try {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch (e) {}
+  try {
+    if (screen.orientation && screen.orientation.lock) {
+      await screen.orientation.lock('landscape');
+    }
+  } catch (e) {}
+  updateRotateNotice();
+}
+function updateRotateNotice() {
+  const el = $('rotateNotice'); if (!el) return;
+  const isVert = window.innerHeight > window.innerWidth * 1.05;
+  if (!isVert) rotateDismissed = false;
+  el.classList.toggle('show', isVert && !rotateDismissed);
+}
+$('btnRotateLock').onclick = () => { Sfx.ui(); tryLandscapeFullscreen(); };
+$('btnRotateClose').onclick = () => { rotateDismissed = true; updateRotateNotice(); };
+
+$('btnCpu').onclick = () => { Sfx.ui(); tryLandscapeFullscreen(); startCPU(0); };
+$('btnHost').onclick = () => { Sfx.ui(); tryLandscapeFullscreen(); Net.host(); };
 $('btnJoin').onclick = () => { Sfx.ui(); hide('ovMenu'); show('ovJoin'); $('joinStatus').textContent = ''; setTimeout(() => $('joinInput').focus(), 50); };
 $('btnCancelHost').onclick = () => { Net.cancelRoom(); hide('ovHost'); show('ovMenu'); };
 $('btnCancelJoin').onclick = () => { Net.cleanup(); hide('ovJoin'); show('ovMenu'); };
-$('btnDoJoin').onclick = () => Net.join(($('joinInput').value || '').trim().toUpperCase());
+$('btnDoJoin').onclick = () => { tryLandscapeFullscreen(); Net.join(($('joinInput').value || '').trim().toUpperCase()); };
 $('joinInput').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') $('btnDoJoin').click(); });
 $('btnCopy').onclick = () => Net.copyLink();
 $('btnShop').onclick = () => { Sfx.ui(); hide('ovMenu'); renderShop(); show('ovShop'); };
@@ -1982,11 +2131,16 @@ $('btnShopBack').onclick = () => { hide('ovShop'); setCoins(); show('ovMenu'); }
 
 // ── Pausa ──
 function openPause() { if (G.mode === 'none') return; refreshPauseBtns(); show('ovPause'); }
-function refreshPauseBtns() { $('btnSound').textContent = `🔊 Sonido: ${Profile.d.sound ? 'Sí' : 'No'}`; $('btnGuide').textContent = `📏 Guía larga: ${Profile.d.guide ? 'Sí' : 'No'}`; }
+function refreshPauseBtns() {
+  $('btnSound').textContent = `🔊 Sonido: ${Profile.d.sound ? 'Sí' : 'No'}`;
+  const online = isOnline();
+  $('btnGuide').textContent = online ? '📏 Guía larga: No (online)' : `📏 Guía larga: ${Profile.d.guideLong ? 'Sí' : 'No'}`;
+  $('btnGuide').disabled = online;
+}
 $('btnPause').onclick = () => { Sfx.ui(); if (G.mode === 'none') return; openPause(); };
 $('btnResume').onclick = () => hide('ovPause');
 $('btnSound').onclick = () => { Profile.d.sound = !Profile.d.sound; Profile.save(); refreshPauseBtns(); Sfx.ui(); };
-$('btnGuide').onclick = () => { Profile.d.guide = !Profile.d.guide; Profile.save(); refreshPauseBtns(); };
+$('btnGuide').onclick = () => { if (isOnline()) return; Profile.d.guideLong = !Profile.d.guideLong; Profile.save(); refreshPauseBtns(); Sfx.ui(); };
 $('btnQuit').onclick = () => {
   hide('ovPause');
   if (G.phase === 'over') { toMenu(); return; }
@@ -2305,6 +2459,7 @@ function loop(ts) {
   for (let i = G.anims.length - 1; i >= 0; i--) { G.anims[i].t += dt * 3.6; if (G.anims[i].t >= 1) G.anims.splice(i, 1); }
   if (G.phase === 'strike') {
     G.strikeT += dt;
+    updatePowerUI();
     if (G.strikeT >= 0.08) fire();
   } else if (G.phase === 'roll') {
     stepRoll(dt);
@@ -2328,9 +2483,9 @@ function loop(ts) {
   requestAnimationFrame(loop);
 }
 
-window.addEventListener('resize', () => { V.cw = 0; layout(); updatePowerUI(); });
+window.addEventListener('resize', () => { V.cw = 0; layout(); updatePowerUI(); updateRotateNotice(); });
 G.balls = PE.rack(7);
-setCoins(); styleMiniCue(); applyMyIdentity(); updateHUD(); tryAutoJoin();
+setCoins(); styleMiniCue(); applyMyIdentity(); updateHUD(); updateRotateNotice(); tryAutoJoin();
 requestAnimationFrame(loop);
 </script>
 </body>
