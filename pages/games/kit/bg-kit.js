@@ -315,6 +315,30 @@
   // ── Canvas escalado (nítido en cualquier tamaño / pantalla retina) ────────
   // Se dibuja siempre en coordenadas lógicas W×H. Opción flex:{min,max} para que el
   // alto lógico se adapte al espacio disponible (aspecto entre min y max = H/W).
+  // Si el juego es bastante más ancho que alto y el celular está vertical, sugerir girarlo (una vez por sesión)
+  let _girarVisto = false, _girarTimer = null;
+  function avisoGirar(aspecto) {
+    const vertical = global.innerHeight > global.innerWidth * 1.15;
+    let el = document.getElementById('bg-girar');
+    if (!vertical || aspecto < 1.25 || BG.thumb || !BG.isTouch) { if (el) el.classList.remove('on'); return; }
+    if (_girarVisto) return;
+    _girarVisto = true;
+    let visto = false; try { visto = !!sessionStorage.getItem('bg_rot_tip'); sessionStorage.setItem('bg_rot_tip', '1'); } catch (e) { }
+    if (!visto) setTimeout(mostrarGirar, 1200);
+  }
+  function mostrarGirar() {
+    let el = document.getElementById('bg-girar');
+    if (!el) {
+      el = U.el('div', { id: 'bg-girar' }, '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg><span>Girá el celular para verlo más grande</span>');
+      const x = U.el('button', { 'aria-label': 'Cerrar' }, '✕');
+      x.addEventListener('click', () => el.classList.remove('on'));
+      el.appendChild(x);
+      (BG.stage || document.body).appendChild(el);
+    }
+    requestAnimationFrame(() => el.classList.add('on'));
+    clearTimeout(_girarTimer); _girarTimer = setTimeout(() => el.classList.remove('on'), 6500);
+  }
+
   BG.canvas = function (W, H, opts = {}) {
     const stage = BG.stage;
     const c = document.createElement('canvas');
@@ -341,6 +365,7 @@
       view.scale = c.width / view.W;
       view.begin();
       if (view.onResize) view.onResize(view.W, view.H);
+      avisoGirar(view.W / view.H);
     }
     view.begin = () => { ctx.setTransform(view.scale, 0, 0, view.scale, 0, 0); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; };
     view.toLocal = (cx, cy) => { const b = c.getBoundingClientRect(); return { x: (cx - b.left) / b.width * view.W, y: (cy - b.top) / b.height * view.H }; };
@@ -348,11 +373,6 @@
     if (global.ResizeObserver) new ResizeObserver(fit).observe(stage); else global.addEventListener('resize', fit);
     fit();
     BG.view = view;
-    // Juegos apaisados en un celular vertical: sugerir girar la pantalla (una vez por sesión)
-    if (BG.isTouch && !BG.thumb && W / H > 1.25) setTimeout(() => {
-      let seen = false; try { seen = !!sessionStorage.getItem('bg_rot_tip'); sessionStorage.setItem('bg_rot_tip', '1'); } catch (e) { }
-      if (!seen && global.innerHeight > global.innerWidth * 1.1 && BG.ui) BG.ui.toast('📱↻ Girá el celular para jugar más grande', '#8b8ba3');
-    }, 1800);
     return view;
   };
 

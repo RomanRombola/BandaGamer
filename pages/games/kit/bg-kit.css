@@ -99,4 +99,29 @@ body.bg-touch-on #bg-touch { display: flex; }
 .bg-label { font-size: 11px; color: var(--bg-muted); font-weight: 800; margin: 8px 0 6px; text-transform: uppercase; }
 #bg-toasts { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 6px; z-index: 60; pointer-events: none; }
 .bg-toast { padding: 8px 16px; border-radius: 99px; background: #151d2e; border: 1px solid var(--bg-accent); color: #fff; font-family: var(--bg-font-d); font-size: 12px; font-weight: 800; }
-body.bg-thumb #bg-top, body.bg-thumb #bg-touch, body.bg-thumb #bg-overlay, body.bg-thumb #bg-toasts { display: none !important; }
+body.bg-thumb #bg-top, body.bg-thumb #bg-touch, body.bg-thumb #bg-overlay, body.bg-thumb #bg-toasts, body.bg-thumb #bg-girar { display: none !important; }
+
+/* ── Celular (V15): barra de arriba en una sola fila, compacta y deslizable ── */
+@media (max-width: 640px) {
+  #bg-top { gap: 8px; padding: 6px 8px; min-height: 44px; }
+  #bg-title { display: none; }
+  #bg-hud { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; gap: 6px; mask-image: linear-gradient(90deg, #000 88%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); }
+  #bg-hud::-webkit-scrollbar { display: none; }
+  .bg-pill { flex-direction: row; align-items: baseline; gap: 5px; min-width: 0; flex-shrink: 0; padding: 4px 9px; border-radius: 10px; }
+  .bg-pill b { font-size: 14px; }
+  .bg-pill span { font-size: 9px; }
+  .bg-ibtn { width: 32px; height: 32px; font-size: 13px; }
+  #bg-touch { padding: 8px 12px; }
+}
+/* Aviso "girá el celular" para juegos más anchos que altos */
+#bg-girar {
+  position: absolute; left: 50%; bottom: 14px; transform: translate(-50%, 20px); opacity: 0;
+  display: flex; align-items: center; gap: 10px; z-index: 40; max-width: calc(100% - 24px);
+  padding: 10px 12px 10px 14px; border-radius: 16px; background: #151d2e; border: 1px solid rgba(0,180,255,0.45);
+  color: #fff; font-family: var(--bg-font-d); font-size: 13px; font-weight: 800; box-shadow: 0 12px 30px rgba(0,0,0,0.55);
+  transition: opacity .25s ease, transform .25s ease; pointer-events: none;
+}
+#bg-girar.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#bg-girar svg { flex-shrink: 0; animation: bg-girar 2.2s ease-in-out infinite; }
+#bg-girar button { margin-left: 4px; width: 26px; height: 26px; border-radius: 8px; border: none; background: rgba(255,255,255,0.1); color: #fff; font-size: 13px; cursor: pointer; }
+@keyframes bg-girar { 0%, 30% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
