@@ -18,7 +18,8 @@ Este repo lo trabajan varias IAs a la vez (Claude Code, Google Antigravity, Gemi
 | Área | Responsable | Archivos |
 |---|---|---|
 | Lógica, Firebase, economía, salas online, Social | Claude Code | `js/*.js`, `firebase/`, `pages/social.html`, `pages/impostor/`, `pages/gartic/`, `pages/gartic-phone/` |
-| Arte de tienda, gráficos de juegos, portadas | Antigravity / Gemini | `pages/games/juego-local-N.html`, `assets/`, la parte de dibujos SVG de `js/avatar.js` |
+| Tienda: catálogo, integración del arte, estudio de avatar | Claude Code | `assets/tienda/`, `window.TIENDA_ILUSTRADA` y `renderAvatar` en `js/avatar.js` |
+| Gráficos de juegos, portadas, arte nuevo | Antigravity / Gemini | `pages/games/juego-local-N.html`, `assets/` (salvo `assets/tienda/`), los dibujos SVG viejos de `js/avatar.js` |
 | 8 Ball Pool (en curso) | Antigravity | `pages/games/juego-local-41.html` |
 
 Si necesitás tocar un archivo del área de otro agente, hacé el cambio mínimo y explicalo en el pull request.
@@ -40,6 +41,16 @@ Si necesitás tocar un archivo del área de otro agente, hacé el cambio mínimo
 - `js/social.js` + `js/notifs.js` — amigos, chat, grupos, presencia, notificaciones.
 - `pages/juego.html` — página de cada juego: carga el juego en un iframe, ranking por modo, amigos, chat rápido.
 - `pages/games/kit/bg-kit.js` — motor común de los juegos (BG Kit).
+
+### Tienda ilustrada (V15)
+- Arte en `assets/tienda/acc/`, `assets/tienda/marcos/` y `assets/tienda/fondos/`, en WebP con fondo transparente.
+- Catálogo en `window.TIENDA_ILUSTRADA` (`js/avatar.js`).
+  - Cada ítem tiene `id`, `nombre`, `precio`, `reqNivel`, `rareza`, `img` y su colocación relativa al tamaño del avatar: `w` (ancho), `x`/`y` (centro) o `yb` (borde de abajo), `ar` (alto/ancho de la imagen) y `doble` (un par simétrico, por ejemplo cachetes).
+  - Para calibrar un ítem, cambiá esos números y miralo en la tienda.
+- Slots de `usuario.accesorios`: `sombrero`, `lentes`, `cara`, `bigote` (boca), `cuello`, `espalda`, `pin`, `marco`, `fondo` (más `efecto`, `mascota`, `titulo`, `burbuja`, `emoji`).
+- Los marcos se normalizan: lienzo de 320×320 con el aro centrado y de radio 128 px. Así cualquier marco nuevo calza solo.
+- Los ítems con `legacy: true` no se venden más, pero quien los tiene los sigue viendo. Los ids no se reutilizan nunca, porque ya están guardados en las cuentas.
+- **Cómo pedir arte nuevo:** una lámina con un ítem por casilla y fondo liso (mejor PNG con transparencia), cada ítem de al menos 256 px.
 
 ### Comunicación juego ↔ portal (postMessage)
 - Juego → portal: `{type:"bg-hello"}`, `{type:"bg-score", score, mode, order}`, `{type:"bg-room", code}` (código de sala o `null` al salir).

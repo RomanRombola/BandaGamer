@@ -1,5 +1,16 @@
 # AltoVicio — Changelog
 
+## 🛍️ V15 — Tienda ilustrada (estilo Plato)
+
+- **107 ítems nuevos dibujados**, a partir de las láminas de Román: 36 marcos, 13 fondos de perfil, 17 para la cabeza, 6 para los ojos, 7 para la cara, 3 para la boca, 6 para el cuello, 4 para la espalda (alas, espadas) y 15 pins.
+- **Categorías nuevas:** Fondos de perfil, Cara, Cuello, Espalda y Pins. El fondo se ve detrás de tu tarjeta de perfil, en el perfil público que ven los demás y en el estudio de la tienda.
+- **Tarjetas de la tienda estilo Plato:** el ítem dibujado grande sobre una baldosa del color de su rareza (los marcos, sobre tu avatar solo). "Probar en mi avatar" lleva la vista al estudio en el celular.
+- **Ítems viejos (SVG y aros CSS):** se dejan de vender; quien ya los compró los conserva y los puede seguir usando.
+- El arte está en `assets/tienda/` (`acc/`, `marcos/`, `fondos/`, WebP con fondo transparente) y el catálogo en `window.TIENDA_ILUSTRADA` dentro de `js/avatar.js`, con la posición de cada ítem sobre el avatar.
+- No hace falta tocar Firebase: los accesorios nuevos entran en el mismo campo `accesorios` del perfil.
+
+---
+
 ## 🔐 V14.2 — Salas online cerradas (login anónimo)
 
 - Impostor, Dibujá y Adiviná y Gartic Phone identifican a cada jugador antes de entrar a una sala: con su cuenta de Google o, si es invitado, con una **cuenta anónima** invisible (no se le pide nada). Su id en la sala es el de esa cuenta.

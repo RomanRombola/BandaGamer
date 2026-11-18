@@ -537,9 +537,10 @@ async function verPerfilUsuario(uid) {
     modal = document.createElement("div");
     modal.id = "modal-perfil-usuario";
     modal.style.cssText = "position:fixed;inset:0;background:rgba(10,14,24,0.82);backdrop-filter:blur(8px);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px";
-    modal.innerHTML = `<div style="background:#141b29;border:1px solid rgba(255,255,255,0.1);border-radius:22px;padding:26px;max-width:350px;width:100%;position:relative;text-align:center">
+    modal.innerHTML = `<div style="background:#141b29;border:1px solid rgba(255,255,255,0.1);border-radius:22px;padding:26px;max-width:350px;width:100%;position:relative;text-align:center;overflow:hidden">
+      <div id="mpf-fondo" style="position:absolute;left:0;right:0;top:0;height:120px;background-size:cover;background-position:center;display:none"></div>
       <button onclick="document.getElementById('modal-perfil-usuario').remove()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.06);border:none;color:#94a3b8;padding:6px 10px;border-radius:10px;cursor:pointer">✕</button>
-      <div id="mpf-avatar" style="margin-bottom:14px;display:flex;justify-content:center"></div>
+      <div id="mpf-avatar" style="margin:22px 0 14px;display:flex;justify-content:center;position:relative"></div>
       <div id="mpf-nombre" style="font-family:'Outfit',sans-serif;font-size:21px;font-weight:800;margin-bottom:4px">Cargando...</div>
       <div id="mpf-rango" style="font-size:13px;color:#00b4ff;margin-bottom:16px"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
@@ -566,6 +567,9 @@ async function verPerfilUsuario(uid) {
     const p = await Storage.getPerfilPublico(uid);
     if (!p) { modal.querySelector("#mpf-nombre").textContent = "Usuario no encontrado"; return; }
     modal.querySelector("#mpf-avatar").innerHTML = renderAvatar(p.avatar || "e_smile", p.accesorios, 84, p.fotoPerfil);
+    const fondo = urlFondoPerfil(p.accesorios), fEl = modal.querySelector("#mpf-fondo");
+    fEl.style.display = fondo ? "block" : "none";
+    if (fondo) fEl.style.backgroundImage = `linear-gradient(180deg,rgba(20,27,41,0) 40%,#141b29),url('${fondo}')`;
     modal.querySelector("#mpf-nombre").textContent = p.nombre || "Usuario";
     modal.querySelector("#mpf-rango").innerHTML = esc(NOMBRES_NIVEL[p.nivel] || "") + " " + renderTituloBadge(p.accesorios);
     modal.querySelector("#mpf-xp").textContent = (p.xp || 0).toLocaleString();
@@ -589,8 +593,9 @@ async function renderizarPerfil() {
   const logrosCount = (u.logros || []).length;
   const esInvitado = u.esInvitado || !u.uid;
 
+  const fondoPerfil = urlFondoPerfil(u.accesorios);
   contenedor.innerHTML = `
-    <div class="perfil-card">
+    <div class="perfil-card ${fondoPerfil ? "perfil-card-fondo" : ""}" style="${fondoPerfil ? `--fondo-perfil:url('${fondoPerfil}')` : ""}">
       <div class="perfil-avatar-grande" title="Cambiar foto de perfil" onclick="document.getElementById('foto-input').click()" style="cursor:pointer;position:relative;padding:8px">
         ${renderAvatar(u.avatar || "e_smile", u.accesorios, 92, u.fotoPerfil)}
         <div style="position:absolute;bottom:2px;right:2px;background:#ff6600;color:#fff;border-radius:99px;padding:3px 8px;font-size:10px;font-weight:800;z-index:10">FOTO</div>
@@ -674,11 +679,16 @@ let _previewOverride = null;
 
 const CATEGORIAS_TIENDA = [
   { key: "todos",    plural: "todos",     label: "Todo el Catálogo" },
-  { key: "marco",    plural: "marcos",    label: "Marcos HD" },
+  { key: "marco",    plural: "marcos",    label: "Marcos" },
+  { key: "fondo",    plural: "fondos",    label: "Fondos de perfil" },
+  { key: "sombrero", plural: "sombreros", label: "Cabeza" },
+  { key: "lentes",   plural: "lentes",    label: "Ojos" },
+  { key: "cara",     plural: "caras",     label: "Cara" },
+  { key: "bigote",   plural: "bigotes",   label: "Boca" },
+  { key: "cuello",   plural: "cuellos",   label: "Cuello" },
+  { key: "espalda",  plural: "espaldas",  label: "Espalda" },
+  { key: "pin",      plural: "pins",      label: "Pins" },
   { key: "efecto",   plural: "efectos",   label: "Auras" },
-  { key: "sombrero", plural: "sombreros", label: "Sombreros y Cascos" },
-  { key: "lentes",   plural: "lentes",    label: "Lentes y Visores" },
-  { key: "bigote",   plural: "bigotes",   label: "Boca y Mate" },
   { key: "mascota",  plural: "mascotas",  label: "Mascotas" },
   { key: "titulo",   plural: "titulos",   label: "Títulos" },
   { key: "burbuja",  plural: "burbujas",  label: "Burbujas de Chat" },
@@ -710,7 +720,8 @@ async function renderizarTienda() {
     : CATEGORIAS_TIENDA.filter(c => c.key === _catTiendaActiva);
 
   const seccionesHtml = catsAMostrar.map(cat => {
-    const items = ACCESORIOS[cat.plural] || [];
+    // Los ítems viejos que ya no se venden solo aparecen si los tenés
+    const items = (ACCESORIOS[cat.plural] || []).filter(it => !it.legacy || comprados.includes(it.id));
     const equipadoId = baseEquip[cat.key] || (items[0] && items[0].id);
     const cards = items.map(item => {
       const poseido  = item.precio === 0 || comprados.includes(item.id);
@@ -725,8 +736,18 @@ async function renderizarTienda() {
         previewHtml = `<div style="min-height:58px;display:flex;align-items:center;justify-content:center">${item.texto ? renderTituloBadge(mockAcc) : '<span style="color:#64748b;font-size:12px">Ninguno</span>'}</div>`;
       } else if (cat.key === "burbuja") {
         previewHtml = `<div style="min-height:58px;display:flex;align-items:center;justify-content:center"><div style="padding:6px 12px;border-radius:12px;font-size:11px;${item.css}">¡Hola amigos!</div></div>`;
+      } else if (cat.key === "fondo") {
+        const f = urlFondoPerfil(mockAcc);
+        previewHtml = `<div class="tienda-fondo-prev" style="${f ? `background-image:url('${f}')` : ""}">${f ? "" : '<span>Sin fondo</span>'}</div>`;
+      } else if (item.img && cat.key !== "marco") {
+        // Ítem ilustrado: se muestra el dibujo grande (estilo Plato); "Probar" lo pone en tu avatar
+        previewHtml = `<div class="tienda-item-arte rareza-bg-${rar}"><img src="${urlItemTienda(item)}" alt="" loading="lazy" decoding="async"></div>`;
+      } else if (cat.key === "marco" || ["sombrero", "lentes", "cara", "bigote", "cuello", "espalda", "pin"].includes(cat.key)) {
+        // Marcos (y la opción "nada"): solo tu avatar con ese ítem, sin el resto del look
+        const limpio = { ...ACCESORIOS_DEFAULT, emoji: baseEquip.emoji, [cat.key]: item.id };
+        previewHtml = `<div class="tienda-av-prev rareza-bg-${rar}">${renderAvatar(u.avatar || "e_smile", limpio, cat.key === "marco" ? 70 : 62, u.fotoPerfil)}</div>`;
       } else {
-        previewHtml = `<div style="margin:8px 0">${renderAvatar(u.avatar || "e_smile", mockAcc, 58, u.fotoPerfil)}</div>`;
+        previewHtml = `<div class="tienda-av-prev">${renderAvatar(u.avatar || "e_smile", mockAcc, 62, u.fotoPerfil)}</div>`;
       }
 
       let btnAccion = "";
@@ -756,9 +777,9 @@ async function renderizarTienda() {
 
   contenedor.innerHTML = `
     <div class="plato-studio">
-      <div class="plato-stage-box">
+      <div class="plato-stage-box" style="${urlFondoPerfil(lookActual) ? `background-image:linear-gradient(180deg,rgba(13,17,26,0.15),rgba(13,17,26,0.88)),url('${urlFondoPerfil(lookActual)}');background-size:cover;background-position:center` : ""}">
         <div style="font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;color:var(--color-accent)">TU AVATAR EN VIVO</div>
-        <div id="studio-avatar-stage" style="padding:14px 0">
+        <div id="studio-avatar-stage" style="padding:46px 30px 22px">
           ${renderAvatar(u.avatar || "e_smile", lookActual, 96, u.fotoPerfil)}
         </div>
         <div style="font-family:'Outfit',sans-serif;font-weight:900;font-size:16px;color:#fff">${esc(u.nombre || "Jugador")}</div>
@@ -769,7 +790,7 @@ async function renderizarTienda() {
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
           <div>
             <div style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;color:#fff">Estudio de Personalización HD</div>
-            <div style="font-size:13px;color:var(--color-muted)">Todos los accesorios son ilustraciones vectoriales que se adaptan sobre tu foto de perfil o avatar.</div>
+            <div style="font-size:13px;color:var(--color-muted)">Probá cualquier ítem sobre tu foto o avatar antes de comprarlo. Lo que equipás lo ven tus amigos y el ranking.</div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="av-btn-glow bonus" style="padding:8px 14px;font-size:12px" onclick="resetearAccesorios()">Restaurar por defecto</button>
@@ -804,7 +825,10 @@ function cambiarCatTienda(catKey) {
 function probarEnEstudio(catKey, itemId) {
   _previewOverride = { ...(_previewOverride || {}), [catKey]: itemId };
   UISfx.equip();
-  renderizarTienda();
+  renderizarTienda().then(() => {
+    // En el celular el estudio queda arriba: llevar la vista hasta el avatar
+    if (window.innerWidth < 860) document.getElementById("studio-avatar-stage")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
 }
 
 async function resetearAccesorios() {
@@ -843,6 +867,7 @@ async function comprarAccesorio(id, catKey) {
     mostrarToast("Accesorio inválido", "❌");
     return;
   }
+  if (item.legacy) { mostrarToast("Ese ítem ya no está a la venta", "❌"); return; }
   let error = null;
   try {
     await Storage.actualizarUsuario(u => {
