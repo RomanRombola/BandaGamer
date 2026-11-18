@@ -3,172 +3,921 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Ahorcado</title>
+<title>Ahorcado HD — AltoVicio</title>
 <link rel="stylesheet" href="kit/bg-kit.css">
 <style>
-#wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 640px; height: 100%; padding: 8px; justify-content: space-between; }
-#top { display: flex; align-items: center; gap: 10px; width: 100%; justify-content: center; }
-#cat { font-family: 'Orbitron', sans-serif; font-size: 12px; letter-spacing: 2px; color: #ff9a1f; padding: 6px 12px; border-radius: 999px; background: rgba(255,154,31,.12); border: 1px solid rgba(255,154,31,.35); }
-#hintBtn { padding: 6px 12px; font-size: 11px; }
-#hint { min-height: 22px; color: #c9c9e6; font-weight: 600; font-size: 15px; text-align: center; }
-canvas#gallows { width: min(300px, 60vw); aspect-ratio: 1; }
-#word { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; min-height: 56px; }
-.lt { width: clamp(28px, 7vw, 42px); height: clamp(40px, 9vw, 54px); border-bottom: 3px solid rgba(255,255,255,.4); display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(18px, 5vw, 28px); color: #fff; }
-.lt.sp { border: none; width: 16px; }
-.lt.show { animation: drop .3s ease; border-color: #39ff88; }
-.lt.miss { color: #ff3d6e; border-color: #ff3d6e; }
-@keyframes drop { from { transform: translateY(-14px); opacity: 0; } }
-#kb { display: flex; flex-direction: column; gap: 6px; width: 100%; }
-.kr { display: flex; gap: 5px; justify-content: center; }
-.k { flex: 1; max-width: 46px; height: 48px; border: none; border-radius: 8px; background: #34345a; color: #fff; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 17px; cursor: pointer; transition: transform .08s, background .2s; }
-.k:active { transform: scale(.92); }
-.k.ok { background: linear-gradient(135deg, #22c55e, #15803d); }
-.k.no { background: #24243a; color: #5a5a7a; }
+  #ah-shop-btn {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    z-index: 30;
+    background: linear-gradient(135deg, var(--bg-accent), var(--bg-accent2));
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 6px 11px;
+    font-family: var(--bg-font-d);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  body.bg-thumb #ah-shop-btn { display: none !important; }
+  .cos-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 6px 0 12px; }
+  .cos-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid var(--bg-line);
+    border-radius: 12px;
+    padding: 10px 8px;
+    color: var(--bg-text);
+    font-family: var(--bg-font-d);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cos-btn.sel { border-color: var(--bg-accent); background: rgba(255, 102, 0, 0.18); }
+  .cos-btn small { display: block; font-size: 10px; margin-top: 3px; font-weight: 600; color: var(--bg-accent2); }
+  .cos-btn.sel small { color: var(--bg-good); }
+  .cos-aviso { font-size: 12px; color: var(--bg-accent2); min-height: 16px; margin-bottom: 6px; font-weight: 700; }
 </style>
 </head>
 <body>
-<div id="bg-stage">
-  <div id="wrap">
-    <div id="top"><span id="cat">—</span><button class="bg-btn" id="hintBtn">💡 PISTA</button></div>
-    <div id="hint"></div>
-    <canvas id="gallows" width="300" height="300"></canvas>
-    <div id="word"></div>
-    <div id="kb"></div>
-  </div>
-</div>
 <script src="kit/bg-kit.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  AHORCADO — AltoVicio
-//  8 categorías con pistas · racha de palabras = puntaje · modo 2 jugadores
-//  (uno escribe la palabra secreta, el otro adivina) · tildes no importan
+//  G1 · AHORCADO HD — AltoVicio
+//  Diseño adaptable vertical (390x844 ocupa toda la pantalla) y horizontal
+//  Escenario ilustrado + personaje animado por cada error + cosméticos bg-buy
 // ═══════════════════════════════════════════════════════════════════════════
-const { util: U, sfx: SFX } = BG;
-const CATS = {
-  'ANIMALES': 'PERRO|Ladra y mueve la cola;GATO|Maúlla y caza ratones;ELEFANTE|Tiene trompa;JIRAFA|Cuello larguísimo;PINGUINO|Ave que no vuela y vive en el frío;TIBURON|Pez de dientes filosos;MARIPOSA|Antes fue oruga;COCODRILO|Reptil de gran mandíbula;DELFIN|Mamífero marino muy inteligente;CANGURO|Salta y lleva a su cría en una bolsa;MURCIELAGO|Mamífero que vuela de noche;TORTUGA|Lleva la casa a cuestas;CAMALEON|Cambia de color;HORMIGA|Pequeña y trabajadora;CARPINCHO|Roedor gigante de los esteros;YAGUARETE|El felino más grande de América;HORNERO|Pájaro que hace su nido de barro;GUANACO|Pariente de la llama;PULPO|Ocho brazos;BUHO|Ave nocturna que gira la cabeza',
-  'PAÍSES': 'ARGENTINA|Tierra del tango y el dulce de leche;BRASIL|El país más grande de Sudamérica;URUGUAY|Banda Oriental;CHILE|País largo y angosto;MEXICO|Tacos y mariachis;ESPAÑA|Flamenco y paella;ITALIA|Pizza y el Coliseo;FRANCIA|Torre Eiffel;JAPON|País del sol naciente;EGIPTO|Pirámides y faraones;CANADA|Hoja de arce en la bandera;AUSTRALIA|País-continente de los canguros;ALEMANIA|Su capital es Berlín;PERU|Machu Picchu;COLOMBIA|Café y cumbia;PORTUGAL|Su capital es Lisboa;GRECIA|Cuna de los Juegos Olímpicos;INDIA|El Taj Mahal;MARRUECOS|Su capital es Rabat;NORUEGA|Fiordos y auroras boreales',
-  'COMIDA': 'EMPANADA|Masa rellena al horno o frita;MILANESA|Carne empanada, a la napolitana también;ASADO|Domingo de parrilla;ALFAJOR|Dos tapitas y dulce de leche;CHOCOLATE|Se hace con cacao;HAMBURGUESA|Medallón entre dos panes;FIDEOS|Pasta larga o corta;ÑOQUIS|Se comen el 29;PIZZA|Muzzarella y salsa;HELADO|Postre frío;MEDIALUNA|Factura con forma de luna;CHORIPAN|Clásico de cancha;LOCRO|Guiso patrio del 25 de mayo;TORTILLA|De papas, con o sin cebolla;SUSHI|Arroz y pescado crudo;ENSALADA|Lechuga, tomate y algo más;PANQUEQUE|Fino, con dulce de leche;FLAN|Postre con caramelo;MANDARINA|Cítrico pequeño y fácil de pelar;SANDIA|Fruta grande, roja por dentro',
-  'PROFESIONES': 'MEDICO|Cura a los enfermos;BOMBERO|Apaga incendios;ABOGADO|Defiende en un juicio;ARQUITECTO|Diseña edificios;PANADERO|Hace el pan de cada día;ASTRONAUTA|Viaja al espacio;CARPINTERO|Trabaja la madera;PERIODISTA|Informa las noticias;VETERINARIO|Médico de animales;PROGRAMADOR|Escribe código;PILOTO|Maneja aviones;COCINERO|Trabaja en la cocina;MAESTRA|Enseña en la escuela;ELECTRICISTA|Arregla cables y enchufes;FOTOGRAFO|Saca fotos;PLOMERO|Arregla caños;JARDINERO|Cuida las plantas;ENFERMERA|Ayuda al médico;MUSICO|Toca un instrumento;CIENTIFICO|Investiga en un laboratorio',
-  'DEPORTES': 'FUTBOL|Once contra once;BASQUET|Se encesta en un aro;TENIS|Raqueta y red;NATACION|Se practica en una pileta;VOLEY|Pelota por arriba de la red;RUGBY|Pelota ovalada y tackles;HOCKEY|Palo y bocha;BOXEO|Guantes y ring;CICLISMO|En bicicleta;ATLETISMO|Correr, saltar y lanzar;AJEDREZ|Deporte mental de 64 casillas;GOLF|Hoyos y palos;ESGRIMA|Combate con espadas;SURF|Se monta una ola;PATINAJE|Sobre ruedas o hielo;HANDBALL|Se juega con la mano;ESCALADA|Subir paredes de roca;KARATE|Arte marcial japonés;POLO|Se juega a caballo;REMO|Se impulsa un bote',
-  'OBJETOS': 'PARAGUAS|Te protege de la lluvia;TELEFONO|Sirve para llamar;LAMPARA|Da luz;TIJERA|Corta papel;MOCHILA|Se lleva en la espalda;RELOJ|Marca la hora;ESPEJO|Refleja tu imagen;CUCHARA|Para tomar la sopa;COMPUTADORA|Tiene teclado y pantalla;AURICULARES|Para escuchar música;BICICLETA|Dos ruedas y pedales;LINTERNA|Luz portátil;ALMOHADA|Para apoyar la cabeza;BILLETERA|Guarda la plata;CANDADO|Cierra con llave;ESCOBA|Para barrer;GUITARRA|Seis cuerdas;TERMO|Mantiene el agua caliente para el mate;CALCULADORA|Hace cuentas;SOMBRERO|Se usa en la cabeza',
-  'NATURALEZA': 'VOLCAN|Montaña que escupe lava;CASCADA|Agua que cae desde lo alto;DESIERTO|Arena y poco agua;GLACIAR|Río de hielo;ARCOIRIS|Siete colores en el cielo;TORMENTA|Truenos y relámpagos;SELVA|Bosque tropical espeso;MONTAÑA|Gran elevación de tierra;OCEANO|Inmensa masa de agua salada;HURACAN|Viento violento que gira;ISLA|Rodeada de agua;CUEVA|Hueco en la roca;PLAYA|Arena y mar;RELAMPAGO|Luz de una tormenta;NEBLINA|Nube a ras del suelo;LAGUNA|Lago chico;AURORA|Luces en el cielo polar;ECLIPSE|La luna tapa al sol;CONSTELACION|Grupo de estrellas;TERREMOTO|La tierra tiembla',
-  'VIDEOJUEGOS': 'CONSOLA|Aparato para jugar;JOYSTICK|Palanca de control;NIVEL|Etapa de un juego;JEFE|Enemigo final;PUNTAJE|Los puntos que hiciste;VIDAS|Si se terminan, perdiste;RANKING|Tabla de los mejores;LOGRO|Trofeo por hacer algo difícil;AVATAR|Tu personaje;PIXEL|Puntito de la pantalla;MULTIJUGADOR|Para jugar con otros;PARTIDA|Una sesión de juego;POWERUP|Te da poderes por un rato;ESTRATEGIA|Género de pensar jugadas;PLATAFORMAS|Género de saltar y correr;TETRIS|Encajá las piezas;LABERINTO|Hay que encontrar la salida;MONEDAS|Se juntan para comprar cosas;TIENDA|Donde comprás accesorios;ALTOVICIO|¡Este portal!',
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const MAX_ERR = 6;
+
+const MODOS = {
+  classic: { id: 'classic', nombre: 'Clásico',      desc: 'Sumá puntos resolviendo palabras con hasta 6 errores' },
+  streak:  { id: 'streak',  nombre: 'Racha',        desc: '¿Cuántas palabras seguidas podés acertar sin caer?' },
+  timed:   { id: 'timed',   nombre: 'Contrarreloj', desc: '90 segundos iniciales + bonus por cada palabra' }
 };
-const norm = s => s.toUpperCase().replace(/Ñ/g, '#').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/#/g, 'Ñ');
-const BANK = Object.fromEntries(Object.entries(CATS).map(([k, v]) => [k, v.split(';').map(x => { const [w, h] = x.split('|'); return { w: norm(w), h }; })]));
-const MAXERR = 6;
+
+const BANCO = [
+  { cat: 'Animales', w: [
+    ['CAPIBARA','El roedor más grande y tranquilo de Sudamérica'],['ORNITORRINCO','Mamífero semiacuático con pico de pato'],
+    ['YAGUARETE','El gran felino manchado de la selva misionera'],['AJOLOTE','Anfibio mexicano famoso por regenerarse'],
+    ['CAMALEON','Reptil que cambia de color y mueve sus ojos por separado'],['FLAMENCO','Ave rosada que se para en una sola pata'],
+    ['PINGUINO','Ave marina que nada como un torpedo en aguas heladas'],['GUEPARDO','El felino más veloz de la sabana'],
+    ['MURCIELAGO','Único mamífero capaz de volar'],['TIBURON','Gran depredador cartilaginoso de los océanos'],
+    ['ELEFANTE','El mamífero terrestre de mayor peso'],['RINOCERONTE','Gigante blindado con cuerno en el morro'],
+    ['COLIBRI','Ave diminuta que puede volar hacia atrás'],['ESCORPION','Arácnido con pinzas y aguijón en la cola'],
+    ['CANGURO','Salta por Australia llevando a su cría'],['DELFIN','Cetáceo muy inteligente que se comunica con chasquidos'],
+    ['PULPO','Molusco de ocho brazos y tres corazones'],['TORTUGA','Reptil longevo protegido por un caparazón']
+  ]},
+  { cat: 'Geografía', w: [
+    ['ARGENTINA','Tierra del mate, el asado y la cordillera'],['BARILOCHE','Ciudad patagónica de lagos, nieve y chocolate'],
+    ['USHUAIA','La ciudad más austral del mundo en Tierra del Fuego'],['ISLANDIA','Isla nórdica de volcanes, glaciares y auroras'],
+    ['JAPON','Archipiélago asiático del sol naciente'],['EGIPTO','País africano de los faraones y el río Nilo'],
+    ['MENDOZA','Provincia al pie del cerro Aconcagua'],['NORUEGA','País escandinavo famoso por sus profundos fiordos'],
+    ['AUSTRALIA','País continente rodeado por el Índico y el Pacífico'],['MARRUECOS','Reino del norte de África famoso por sus zocos'],
+    ['ESTAMBUL','Gran ciudad histórica dividida entre Europa y Asia'],['VENECIA','Ciudad italiana construida sobre una laguna'],
+    ['GRECIA','Cuna de la filosofía y los Juegos Olímpicos'],['CATARATAS','Maravilla natural del río Iguazú en Misiones'],
+    ['PATAGONIA','Región austral de estepas, glaciares y dinosaurios'],['CORDOBA','Provincia del centro argentino famosa por sus sierras']
+  ]},
+  { cat: 'Gastronomía', w: [
+    ['MILANESA','Clásico empanado argentino al plato o a la napolitana'],['EMPANADA','Masa rellena cerrada con repulgue'],
+    ['ALFAJOR','Dos galletas unidas con dulce de leche y bañadas en chocolate'],['CHORIPAN','Sándwich criollo infaltable en el asado'],
+    ['PROVOLETA','Rodaja de queso provolone dorada a la parrilla'],['TIRAMISU','Postre italiano con vainillas, café y mascarpone'],
+    ['GUACAMOLE','Salsa cremosa preparada con palta, limón y cilantro'],['CEVICHE','Pescado fresco marinado en jugo de cítricos'],
+    ['SORRENTINOS','Pasta rellena redonda de gran tamaño'],['PASTELITO','Masa hojaldrada criolla frita rellena de membrillo'],
+    ['LOCRO','Guiso tradicional patrio de maíz blanco y zapallo'],['FOCACCIA','Pan italiano esponjoso con aceite de oliva y romero'],
+    ['CROISSANT','Medialuna francesa de masa hojaldrada'],['PAELLA','Arroz español cocinado con azafrán'],
+    ['CHURROS','Masa frita estriada ideal para acompañar con chocolate'],['PANQUEQUE','Crepe enrollado y relleno con dulce de leche']
+  ]},
+  { cat: 'Videojuegos', w: [
+    ['MINECRAFT','Mundo abierto de bloques para construir y explorar'],['ROBLOX','Plataforma con miles de mundos creados por jugadores'],
+    ['FORTNITE','Batalla campal de cien jugadores con construcción'],['TERRARIA','Aventura 2D de excavación, construcción y jefes'],
+    ['VALORANT','Shooter táctico cinco contra cinco con agentes'],['CYBERPUNK','Aventura futurista en las calles de Night City'],
+    ['SUBNAUTICA','Supervivencia en las profundidades de un océano alienígena'],['ARKANOID','Clásico de romper bloques rebotando una esfera'],
+    ['TETRIS','Encajar piezas geométricas que caen sin dejar huecos'],['CELESTE','Plataformas de precisión escalando una montaña nevada'],
+    ['PORTAL','Resolver cámaras de prueba con una pistola de portales'],['BALATRO','Juego de cartas roguelike basado en manos de póker'],
+    ['FACTORIO','Construir y automatizar fábricas en un planeta hostil'],['UNDERTALE','Juego de rol donde podés perdonar a los enemigos']
+  ]},
+  { cat: 'Ciencia y Espacio', w: [
+    ['SUPERNOVA','Explosión estelar capaz de iluminar una galaxia entera'],['NEBULOSA','Nube gigantesca de gas y polvo donde nacen estrellas'],
+    ['ASTEROIDE','Cuerpo rocoso que orbita alrededor del Sol'],['TELESCOPIO','Instrumento óptico para observar astros lejanos'],
+    ['GRAVEDAD','Fuerza que mantiene a los planetas en su órbita'],['SATURNO','Gigante gaseoso famoso por sus brillantes anillos'],
+    ['ECLIPSE','Alineación en la que un astro oculta la luz de otro'],['ELECTRON','Partícula con carga eléctrica negativa'],
+    ['MAGNETISMO','Fuerza de atracción o repulsión de los imanes'],['ALGORITMO','Secuencia lógica de pasos para resolver un problema'],
+    ['CINEMATICA','Rama de la física que estudia el movimiento'],['EXOPLANETA','Planeta que gira alrededor de otra estrella'],
+    ['OXIGENO','Elemento químico vital que respiramos'],['NEURONA','Célula encargada de transmitir impulsos nerviosos']
+  ]},
+  { cat: 'Cine y Series', w: [
+    ['GLADIADOR','General romano que lucha en el Coliseo'],['INTERESTELAR','Viaje a través de un agujero de gusano espacial'],
+    ['MATRIX','Realidad simulada donde elegís entre dos píldoras'],['AVATAR','Aventura en la luna selvática de Pandora'],
+    ['TITANIC','Transatlántico famoso por su viaje inaugural'],['TERMINATOR','Cyborg enviado desde el futuro'],
+    ['SHREK','Ogro verde que vive tranquilo en su pantano'],['ENCANTO','Familia colombiana con dones mágicos en su casa'],
+    ['PARASITOS','Comedia negra coreana ganadora del Óscar'],['MANDALORIANO','Cazarrecompensas con armadura de beskar'],
+    ['SHERLOCK','El detective más famoso de la calle Baker'],['FUTURAMA','Repartidor congelado que despierta en el año 3000'],
+    ['SIMPSONS','La familia amarilla de Springfield'],['HERCULES','Héroe mitológico de fuerza sobrehumana']
+  ]},
+  { cat: 'Deportes', w: [
+    ['FUTBOL','Once contra once buscando el gol'],['BASQUET','Deporte de aro, tablero y triples'],
+    ['VOLEIBOL','Se juega golpeando el balón por encima de una red'],['TENIS','Duelo de raquetas sobre polvo de ladrillo o césped'],
+    ['NATACION','Competencia de velocidad en pileta olímpica'],['CICLISMO','Deporte de ruta, montaña o velódromo en dos ruedas'],
+    ['ATLETISMO','Conjunto de pruebas de pista, salto y lanzamiento'],['ESGRIMA','Combate deportivo con florete, espada o sable'],
+    ['ARQUERIA','Puntería con arco y flechas hacia una diana'],['GIMNASIA','Acrobacias en suelo, anillas y barras'],
+    ['RUGBY','Deporte de pelota ovalada, tackles y tries'],['TAEKWONDO','Arte marcial coreano famoso por sus patadas'],
+    ['TRIATLON','Prueba que combina natación, ciclismo y carrera'],['MARATON','Carrera de resistencia de 42 kilómetros']
+  ]},
+  { cat: 'Tecnología', w: [
+    ['SERVIDOR','Computadora que provee datos a una red'],['PROCESADOR','El cerebro electrónico de la computadora'],
+    ['TECLADO','Periférico lleno de teclas para escribir y jugar'],['AURICULARES','Dispositivo para escuchar audio en privado'],
+    ['MICROSCOPIO','Lente de gran aumento para laboratorio'],['BRUJULA','Instrumento con aguja imantada que marca el norte'],
+    ['SATELITE','Artefacto puesto en órbita alrededor de la Tierra'],['ROUTER','Dispositivo que distribuye la conexión Wi-Fi'],
+    ['JOYSTICK','Mando con palancas y botones para videojuegos'],['IMPRESORA','Periférico que pasa documentos al papel'],
+    ['TRANSISTOR','Componente semiconductor clave en la electrónica'],['NAVEGADOR','Programa para recorrer páginas en internet']
+  ]}
+];
+
+const CATALOGO_COSM = {
+  personaje: [
+    { id: 'ah_bot',    nombre: 'Androide Astro',  precio: 0,   c1: '#38bdf8', c2: '#0284c7', acc: '#ff6600' },
+    { id: 'ah_knight', nombre: 'Caballero Solar', precio: 100, c1: '#fde047', c2: '#d97706', acc: '#ff2a5f' },
+    { id: 'ah_ninja',  nombre: 'Shinobi Sombra',  precio: 180, c1: '#a855f7', c2: '#4c1d95', acc: '#10b981' },
+    { id: 'ah_diver',  nombre: 'Buzo Abisal',     precio: 240, c1: '#34d399', c2: '#065f46', acc: '#ffb800' }
+  ],
+  escenario: [
+    { id: 'sc_bosque',  nombre: 'Bosque Nocturno', precio: 0,   sky1: '#0f172a', sky2: '#1e293b', ground: '#14532d', wood: '#92400e', accent: '#38bdf8' },
+    { id: 'sc_volcan',  nombre: 'Forja Volcánica', precio: 120, sky1: '#1c0d14', sky2: '#3b1518', ground: '#451a03', wood: '#78350f', accent: '#ff6600' },
+    { id: 'sc_espacio', nombre: 'Base Orbital',    precio: 200, sky1: '#070b19', sky2: '#1a103c', ground: '#1e293b', wood: '#475569', accent: '#00b4ff' }
+  ]
+};
+const DEF_COSM = { personaje: 'ah_bot', escenario: 'sc_bosque' };
+let cosmEquip = Object.assign({}, DEF_COSM, BG.load('cosm', {}));
+let portalCoins = 0, portalItems = [], portalConectado = false, compraPendiente = null;
+
+const FILAS_TECLADO = [
+  ['Q','W','E','R','T','Y','U','I','O','P'],
+  ['A','S','D','F','G','H','J','K','L','Ñ'],
+  ['Z','X','C','V','B','N','M']
+];
 
 BG.init({
-  id: 'ahorcado', title: 'AHORCADO', icon: '🪢', accent: '#ff9a1f', accent2: '#ff3d6e', scroll: true, pausable: false, muteKey: false,
-  subtitle: 'Adiviná la palabra antes de completar el dibujo. Cada palabra seguida suma a tu racha.',
-  hud: [{ id: 'score', label: 'Puntos' }, { id: 'streak', label: 'Racha', color: '#39ff88' }, { id: 'lives', label: 'Vidas', color: '#ff3d6e', value: '6' }],
-  help: 'Escribí letras con el teclado o tocá las teclas. La Ñ cuenta como letra. La pista cuesta 1 vida.',
+  id: 'ahorcado',
+  title: 'AHORCADO HD',
+  icon: '🔤',
+  accent: '#ff6600',
+  accent2: '#00b4ff',
+  music: true,
+  subtitle: 'Escenario ilustrado, pistas y 3 modos de juego.',
+  hud: [
+    { id: 'score',  label: 'Puntos', color: '#ff6600' },
+    { id: 'streak', label: 'Racha',  color: '#10b981' },
+    { id: 'lives',  label: 'Vidas',  color: '#00b4ff', value: '6/6' },
+    { id: 'best',   label: 'Récord', color: '#ffb800' }
+  ],
+  help: 'Pulsá las letras en pantalla o en tu <kbd>TECLADO</kbd> · <kbd>1</kbd> revelar letra · <kbd>P</kbd> pausa',
+  helpTouch: 'Tocá las letras del teclado o el botón de Pista para revelar una letra.',
+  onRestart: () => iniciarPartida(modo),
+  onMenu: () => mostrarMenu()
 });
-const gc = document.getElementById('gallows'), g = gc.getContext('2d');
-let cat = 'MEZCLA', word, hint, guessed, errors, score = 0, streak = 0, over = false, twoP = false, hintUsed = false, used = new Set(), anim = 0;
 
-function pickWord() {
-  const pool = cat === 'MEZCLA' ? Object.entries(BANK).flatMap(([k, a]) => a.map(o => ({ ...o, k }))) : BANK[cat].map(o => ({ ...o, k: cat }));
-  let free = pool.filter(o => !used.has(o.w)); if (!free.length) { used.clear(); free = pool; }
-  const o = U.pick(free); used.add(o.w); return o;
+// Resolución adaptable: vertical en celulares (390x844) para llenar la pantalla y horizontal en escritorio
+const esVerticalInicial = window.innerHeight > window.innerWidth * 1.05;
+const view = BG.canvas(esVerticalInicial ? 460 : 900, esVerticalInicial ? 740 : 540, { pad: 6 });
+const ctx = view.ctx;
+
+function actualizarOrientacionCanvas() {
+  if (!BG.stage) return;
+  const r = BG.stage.getBoundingClientRect();
+  const vert = r.height > r.width * 1.05;
+  const targetW = vert ? 460 : 900;
+  const targetH = vert ? 740 : 540;
+  if (view.W !== targetW || view.H !== targetH) {
+    view.W = targetW;
+    view.H = targetH;
+    view.fit();
+  }
 }
-function newWord(custom) {
-  if (custom) { word = custom.w; hint = custom.h || ''; document.getElementById('cat').textContent = '2 JUGADORES'; }
-  else { const o = pickWord(); word = o.w; hint = o.h; document.getElementById('cat').textContent = o.k; }
-  guessed = new Set(); errors = 0; over = false; hintUsed = false;
-  document.getElementById('hint').textContent = '';
-  document.getElementById('hintBtn').disabled = !hint;
-  buildKb(); paintWord(); draw(); hud(); BG.start();
+window.addEventListener('resize', actualizarOrientacionCanvas);
+setTimeout(actualizarOrientacionCanvas, 30);
+
+const shopBtn = U.el('button', { id: 'ah-shop-btn' }, 'Personalizar');
+shopBtn.addEventListener('click', () => abrirModalPersonalizar());
+BG.stage.appendChild(shopBtn);
+
+// ── Sincronización de cosméticos con el Portal (bg-hello-ack / bg-buy-result) ──
+function itemCat(catKey, id) { return CATALOGO_COSM[catKey].find(x => x.id === id); }
+function loTengo(catKey, id) { const it = itemCat(catKey, id); return !!it && (it.precio === 0 || portalItems.includes(id)); }
+function validarCosm() {
+  for (const k of Object.keys(DEF_COSM)) if (!loTengo(k, cosmEquip[k])) cosmEquip[k] = DEF_COSM[k];
 }
-function hud() { BG.hud.set('score', score); BG.hud.set('streak', streak); BG.hud.set('lives', String(MAXERR - errors)); }
-function buildKb() {
-  const kb = document.getElementById('kb'); kb.innerHTML = '';
-  ['QWERTYUIOP', 'ASDFGHJKLÑ', 'ZXCVBNM'].forEach(r => { const row = document.createElement('div'); row.className = 'kr'; [...r].forEach(ch => { const b = document.createElement('button'); b.className = 'k'; b.textContent = ch; b.dataset.k = ch; b.onclick = () => guess(ch); row.appendChild(b); }); kb.appendChild(row); });
-}
-function paintWord(reveal) {
-  const el = document.getElementById('word'); el.innerHTML = '';
-  [...word].forEach(ch => {
-    const d = document.createElement('div');
-    if (ch === ' ') { d.className = 'lt sp'; el.appendChild(d); return; }
-    const known = guessed.has(ch) || !/[A-ZÑ]/.test(ch);
-    d.className = 'lt' + (known ? ' show' : '') + (reveal && !known ? ' miss' : '');
-    d.textContent = known || reveal ? ch : '';
-    el.appendChild(d);
+
+window.addEventListener('message', e => {
+  if (e.source !== window.parent) return;
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+  if (d.type === 'bg-hello-ack') {
+    portalConectado = true;
+    portalCoins = Number(d.coins) || 0;
+    portalItems = Array.isArray(d.items) ? d.items.map(String) : [];
+    validarCosm();
+  } else if (d.type === 'bg-buy-result') {
+    portalCoins = Number(d.coins) || portalCoins;
+    if (Array.isArray(d.items)) portalItems = d.items.map(String);
+    const pend = compraPendiente;
+    compraPendiente = null;
+    if (d.ok && pend && pend.id === d.item) {
+      cosmEquip[pend.catKey] = pend.id;
+      BG.save('cosm', cosmEquip);
+      SFX.play('power');
+      abrirModalPersonalizar();
+    } else if (!d.ok) {
+      SFX.play('error');
+      const av = document.getElementById('ah-cos-aviso');
+      if (av) av.textContent = d.error || 'No se pudo completar la compra';
+    }
+  }
+});
+
+function abrirModalPersonalizar() {
+  const estabaJugando = (estado === 'play' && !BG.paused);
+  if (estabaJugando) BG.paused = true;
+
+  const renderGrupo = (titulo, catKey) => {
+    const btns = CATALOGO_COSM[catKey].map(it => {
+      const owned = loTengo(catKey, it.id);
+      const sel = cosmEquip[catKey] === it.id;
+      const lbl = sel ? '✓ Equipado' : (owned ? 'Equipar' : `${it.precio} VicioCoins`);
+      return `<button class="cos-btn ${sel ? 'sel' : ''}" data-cat="${catKey}" data-id="${it.id}">
+        ${U.esc(it.nombre)}<small>${U.esc(lbl)}</small>
+      </button>`;
+    }).join('');
+    return `<div class="bg-label">${U.esc(titulo)}</div><div class="cos-grid">${btns}</div>`;
+  };
+
+  const html = `
+    <div style="font-size:12px;color:var(--bg-muted);margin-bottom:4px">
+      Tus VicioCoins: <b style="color:var(--bg-accent2)">${U.fmt(portalCoins)}</b>
+    </div>
+    <div class="cos-aviso" id="ah-cos-aviso">${portalConectado ? '' : 'Abrí el juego desde AltoVicio para usar tus VicioCoins.'}</div>
+    ${renderGrupo('Personaje', 'personaje')}
+    ${renderGrupo('Escenario Ilustrado', 'escenario')}
+  `;
+
+  BG.ui.show({
+    title: 'PERSONALIZAR',
+    sub: 'Cambiá el personaje y el escenario ilustrado.',
+    html,
+    buttons: [{
+      label: estabaJugando ? '▶ CONTINUAR PARTIDA' : '← VOLVER AL MENÚ',
+      primary: true,
+      onClick: () => { if (estabaJugando) { BG.paused = false; BG.ui.hide(); } else mostrarMenu(); }
+    }],
+    onShow: card => {
+      card.querySelectorAll('.cos-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const catKey = b.dataset.cat, id = b.dataset.id;
+          const it = itemCat(catKey, id);
+          if (!it) return;
+          if (loTengo(catKey, id)) {
+            cosmEquip[catKey] = id;
+            BG.save('cosm', cosmEquip);
+            SFX.play('select');
+            abrirModalPersonalizar();
+            return;
+          }
+          const av = card.querySelector('#ah-cos-aviso');
+          if (!portalConectado) { if (av) av.textContent = 'Conectate desde el portal AltoVicio para comprar.'; return; }
+          if (portalCoins < it.precio) { if (av) av.textContent = 'No tenés suficientes VicioCoins.'; SFX.play('error'); return; }
+          if (av) av.textContent = 'Comprando…';
+          compraPendiente = { catKey, id };
+          BG.portal.send('bg-buy', { item: id, price: it.precio });
+        });
+      });
+    }
   });
 }
-function guess(ch) {
-  if (over || guessed.has(ch) || BG.ui.open) return;
-  guessed.add(ch);
-  const k = document.querySelector(`.k[data-k="${ch}"]`);
-  if (word.includes(ch)) { if (k) k.classList.add('ok'); SFX.play('coin'); paintWord(); if ([...word].every(c => !/[A-ZÑ]/.test(c) || guessed.has(c))) win(); }
-  else { if (k) k.classList.add('no'); errors++; anim = 1; SFX.play('error'); draw(); hud(); if (errors >= MAXERR) lose(); }
+
+// ── Estado y Mecánicas del Juego ──────────────────────────────────────────
+let modo = BG.load('modo', 'classic');
+let catActiva = 'Todas';
+let estado = 'menu';
+let palabra = '', pista = '', categoria = '';
+let usadas = new Set(), errores = 0, puntaje = 0, racha = 0, mejorRacha = 0, resueltas = 0;
+let tiempo = 90, t = 0, errorAnimT = 0, winAnimT = 0, transicionT = 0;
+let keyRects = [], hintRect = null, hoverLetra = null;
+let historialPalabras = new Set();
+const estrellas = D.stars(45, 900, 740, 19);
+
+function sortearPalabra() {
+  const lista = [];
+  BANCO.forEach(g => {
+    if (catActiva === 'Todas' || catActiva === g.cat) {
+      g.w.forEach(([pal, pis]) => lista.push({ pal, pis, cat: g.cat }));
+    }
+  });
+  if (historialPalabras.size >= lista.length) historialPalabras.clear();
+  let item = U.pick(lista);
+  for (let i = 0; i < 30; i++) {
+    if (!historialPalabras.has(item.pal)) break;
+    item = U.pick(lista);
+  }
+  historialPalabras.add(item.pal);
+  palabra = item.pal;
+  pista = item.pis;
+  categoria = item.cat;
+  usadas.clear();
+  errores = 0;
+  errorAnimT = 0;
+  winAnimT = 0;
+  sincronizarHUD();
 }
-function win() {
-  over = true;
-  const pts = twoP ? 0 : (10 + (MAXERR - errors) * 5 + word.replace(/ /g, '').length * 2) * (1 + Math.floor(streak / 3));
-  score += pts; streak++; hud();
-  SFX.play('win'); celebrate();
-  setTimeout(() => BG.ui.show({ icon: '🎉', title: '¡BIEN!', tone: 'good', sub: `La palabra era <b>${word}</b>`, score: twoP ? null : pts, scoreLabel: 'PUNTOS GANADOS',
-    stats: twoP ? null : [{ label: 'Racha', value: streak }, { label: 'Total', value: U.fmt(score) }],
-    buttons: twoP ? [{ label: '✍ OTRA PALABRA SECRETA', primary: true, onClick: askSecret }, { label: '☰ MENÚ', onClick: showMenu }] : [{ label: '▶ SIGUIENTE PALABRA', primary: true, onClick: () => { BG.ui.hide(); newWord(); } }] }), 700);
+
+function sincronizarHUD() {
+  const vidas = Math.max(0, MAX_ERR - errores);
+  BG.hud.set('score', modo === 'streak' ? racha : puntaje);
+  BG.hud.set('streak', racha);
+  BG.hud.set('lives', modo === 'timed' ? U.fmtTime(tiempo) : `${vidas}/${MAX_ERR}`);
+  BG.hud.set('best', BG.getBest(modo) || 0);
 }
-function lose() {
-  over = true; paintWord(true); SFX.play('lose'); BG.stop();
-  const r = !twoP && score > 0 ? BG.submitScore(score) : null;
-  setTimeout(() => BG.ui.gameOver({ icon: '🪢', title: '¡AHORCADO!', sub: `La palabra era <b>${word}</b>`, score: twoP ? null : score, scoreLabel: 'PUNTOS DE LA RACHA',
-    isRecord: r && (r.isRecord || r.first), stats: twoP ? null : [{ label: 'Palabras', value: streak }, { label: 'Récord', value: U.fmt(BG.getBest() || score) }],
-    retryLabel: twoP ? '✍ OTRA PALABRA SECRETA' : '↻ NUEVA RACHA', onRetry: () => { if (twoP) askSecret(); else { score = 0; streak = 0; BG.ui.hide(); newWord(); } }, onMenu: showMenu }), 900);
-  streak = 0;
+
+function iniciarPartida(m) {
+  modo = m || modo;
+  BG.save('modo', modo);
+  puntaje = 0; racha = 0; mejorRacha = 0; resueltas = 0;
+  tiempo = 90; transicionT = 0;
+  sortearPalabra();
+  FX.clear();
+  estado = 'play';
+  BG.start();
+  if (!BG.music.playing) BG.music.play(SONG);
 }
-function celebrate() { const ws = document.querySelectorAll('.lt'); ws.forEach((d, i) => setTimeout(() => d.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-12px)' }, { transform: 'translateY(0)' }], { duration: 300 }), i * 60)); }
-function askSecret() {
-  twoP = true;
-  BG.ui.show({ icon: '✍', title: 'PALABRA SECRETA', sub: 'Jugador 1: escribí una palabra (o frase corta) sin que mire el otro.',
-    html: `<input id="sec" type="password" maxlength="24" autocomplete="off" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font-size:18px;font-family:Orbitron,sans-serif;letter-spacing:3px;margin-bottom:8px">
-      <input id="pis" type="text" maxlength="60" placeholder="Pista (opcional)" autocomplete="off" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font-size:15px;margin-bottom:10px">`,
-    buttons: [{ label: '▶ ¡QUE ADIVINE!', primary: true, onClick: () => {
-      const w = norm(document.getElementById('sec').value.trim()).replace(/[^A-ZÑ ]/g, '').replace(/\s+/g, ' ');
-      if (w.replace(/ /g, '').length < 3) { BG.ui.toast('Mínimo 3 letras', '#ff3d6e'); return; }
-      BG.ui.hide(); newWord({ w, h: document.getElementById('pis').value.trim() });
-    } }, { label: '☰ MENÚ', onClick: showMenu }],
-    onShow: c => setTimeout(() => c.querySelector('#sec').focus(), 60) });
+
+function mostrarMenu() {
+  estado = 'menu';
+  BG.stop();
+  BG.music.stop();
+  const cats = ['Todas', ...BANCO.map(g => g.cat)];
+  BG.ui.show({
+    title: 'AHORCADO HD',
+    sub: BG.game.subtitle,
+    buttons: Object.values(MODOS).map(m => {
+      const rec = BG.getBest(m.id);
+      return {
+        label: m.nombre.toUpperCase(),
+        small: `${m.desc} · ${rec ? 'Récord: ' + U.fmt(rec) : 'Sin récord'}`,
+        primary: m.id === modo,
+        onClick: () => { BG.ui.hide(); iniciarPartida(m.id); }
+      };
+    }),
+    html: '<div class="bg-label">Categoría de Palabras</div><div class="bg-seg" id="ah-cat-seg"></div>',
+    help: BG.isTouch ? BG.game.helpTouch : BG.game.help,
+    onShow: card => {
+      const seg = card.querySelector('#ah-cat-seg');
+      cats.forEach(c => {
+        const btn = U.el('button', { class: 'bg-btn' + (c === catActiva ? ' sel' : ''), style: 'padding:6px 10px;font-size:11px;min-width:auto;flex:0 1 auto' }, U.esc(c));
+        btn.addEventListener('click', () => {
+          catActiva = c;
+          seg.querySelectorAll('.bg-btn').forEach(x => x.classList.toggle('sel', x === btn));
+          SFX.play('tick');
+        });
+        seg.appendChild(btn);
+      });
+    }
+  });
 }
-function showMenu() {
-  twoP = false;
-  const cats = ['MEZCLA', ...Object.keys(BANK)];
-  BG.ui.show({ icon: '🪢', title: 'AHORCADO', sub: BG.game.subtitle,
-    html: `<div class="bg-label">Categoría</div><div class="bg-seg" style="flex-wrap:wrap">${cats.map(c => `<button class="bg-btn ${c === cat ? 'sel' : ''}" data-cat="${c}" style="min-width:110px;font-size:11px;padding:9px">${c}</button>`).join('')}</div>`,
-    buttons: [{ label: '▶ JUGAR', primary: true, onClick: () => { BG.ui.hide(); score = 0; streak = 0; newWord(); } }, { label: '👥 2 JUGADORES', small: 'Uno elige la palabra, el otro adivina', onClick: askSecret }],
-    stats: BG.getBest() ? [{ label: 'Récord', value: U.fmt(BG.getBest()) }] : null, help: BG.game.help,
-    onShow: c => c.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { cat = b.dataset.cat; c.querySelectorAll('[data-cat]').forEach(x => x.classList.toggle('sel', x === b)); SFX.play('tick'); }) });
+
+function intentarLetra(l) {
+  if (estado !== 'play' || transicionT > 0) return;
+  l = String(l || '').toUpperCase();
+  if (!/^[A-ZÑ]$/.test(l) || usadas.has(l)) return;
+
+  usadas.add(l);
+  const kr = keyRects.find(k => k.l === l);
+  const fxX = kr ? kr.x + kr.w / 2 : view.W / 2;
+  const fxY = kr ? kr.y + kr.h / 2 : view.H * 0.7;
+
+  if (palabra.includes(l)) {
+    let cant = 0;
+    for (const c of palabra) if (c === l) cant++;
+    const ganados = cant * (20 + racha * 4);
+    puntaje += ganados;
+    if (modo === 'timed') tiempo = Math.min(120, tiempo + 2);
+    SFX.play('coin');
+    FX.burst(fxX, fxY, { n: 14, color: ['#10b981', '#38bdf8', '#fff'], speed: 160, life: 0.45 });
+    FX.text(fxX, fxY - 16, `+${ganados}`, { color: '#10b981', size: 15 });
+
+    if ([...palabra].every(c => usadas.has(c))) {
+      racha++;
+      mejorRacha = Math.max(mejorRacha, racha);
+      resueltas++;
+      const bonus = (MAX_ERR - errores) * 25;
+      puntaje += 100 + bonus;
+      if (modo === 'timed') tiempo = Math.min(120, tiempo + 12);
+      winAnimT = 1.1;
+      transicionT = 1.15;
+      SFX.play('win');
+      FX.burst(view.W / 2, view.H * 0.35, { n: 32, color: ['#ffb800', '#10b981', '#00b4ff'], speed: 220, life: 0.7 });
+    }
+  } else {
+    errores++;
+    errorAnimT = 0.65;
+    if (modo === 'timed') tiempo = Math.max(0, tiempo - 4);
+    SFX.play('hurt');
+    FX.shake(7, 0.28);
+    FX.burst(fxX, fxY, { n: 10, color: ['#ff2a5f', '#ff6600'], speed: 130, life: 0.35 });
+
+    if (errores >= MAX_ERR) {
+      if (modo === 'timed' && tiempo > 6) {
+        BG.ui.toast('¡Palabra fallada! -8s', '#ff2a5f');
+        tiempo = Math.max(0, tiempo - 8);
+        racha = 0;
+        transicionT = 1.1;
+      } else {
+        finDePartida();
+      }
+    }
+  }
+  sincronizarHUD();
 }
-document.getElementById('hintBtn').onclick = () => {
-  if (over || hintUsed || !hint) return;
-  hintUsed = true; document.getElementById('hint').textContent = '💡 ' + hint;
-  if (!twoP) { errors++; anim = 1; draw(); hud(); SFX.play('swap'); if (errors >= MAXERR) lose(); }
+
+function usarPistaLetra() {
+  if (estado !== 'play' || transicionT > 0) return;
+  const ocultas = [...palabra].filter(c => !usadas.has(c));
+  if (ocultas.length <= 1) {
+    BG.ui.toast('¡Solo queda la última letra!', '#ffb800');
+    return;
+  }
+  if (modo === 'classic' && puntaje < 30) {
+    SFX.play('error');
+    BG.ui.toast('Necesitás 30 puntos para revelar una letra', '#ff2a5f');
+    return;
+  }
+  if (modo === 'classic') puntaje = Math.max(0, puntaje - 30);
+  const letra = U.pick(ocultas);
+  SFX.play('power');
+  intentarLetra(letra);
+}
+
+function finDePartida() {
+  estado = 'over';
+  BG.stop();
+  BG.music.stop();
+  SFX.play(resueltas >= 3 ? 'win' : 'lose');
+  const scoreFinal = modo === 'streak' ? mejorRacha : puntaje;
+  const r = BG.submitScore(scoreFinal, { mode: modo, won: resueltas > 0 });
+
+  setTimeout(() => {
+    BG.ui.gameOver({
+      win: resueltas >= 3,
+      title: resueltas >= 3 ? '¡GRAN PARTIDA!' : '¡ATRAPADO!',
+      sub: `La palabra era: ${palabra} (${categoria})`,
+      score: scoreFinal,
+      scoreLabel: modo === 'streak' ? 'MEJOR RACHA' : 'PUNTOS',
+      isRecord: r.isRecord || r.first,
+      stats: [
+        { label: 'Palabras', value: resueltas },
+        { label: 'Mejor Racha', value: mejorRacha },
+        { label: 'Récord', value: U.fmt(BG.getBest(modo) || scoreFinal) }
+      ],
+      onRetry: () => iniciarPartida(modo),
+      onMenu: () => mostrarMenu()
+    });
+  }, 850);
+}
+
+// ── Controles ─────────────────────────────────────────────────────────────
+BG.input.onKey((e, code, down) => {
+  if (!down || estado !== 'play' || BG.paused || BG.ui.open) return;
+  if (e.key === '1') { usarPistaLetra(); return; }
+  const l = (e.key || '').toUpperCase();
+  if (/^[A-ZÑ]$/.test(l)) intentarLetra(l);
+});
+
+view.canvas.addEventListener('pointermove', e => {
+  const p = view.toLocal(e.clientX, e.clientY);
+  hoverLetra = null;
+  for (const k of keyRects) {
+    if (p.x >= k.x && p.x <= k.x + k.w && p.y >= k.y && p.y <= k.y + k.h) {
+      hoverLetra = k.l;
+      break;
+    }
+  }
+});
+
+view.canvas.addEventListener('pointerdown', e => {
+  if (estado !== 'play') return;
+  const p = view.toLocal(e.clientX, e.clientY);
+  if (hintRect && p.x >= hintRect.x && p.x <= hintRect.x + hintRect.w && p.y >= hintRect.y && p.y <= hintRect.y + hintRect.h) {
+    usarPistaLetra();
+    return;
+  }
+  for (const k of keyRects) {
+    if (p.x >= k.x && p.x <= k.x + k.w && p.y >= k.y && p.y <= k.y + k.h) {
+      intentarLetra(k.l);
+      return;
+    }
+  }
+});
+
+function update(dt) {
+  t += dt;
+  if (errorAnimT > 0) errorAnimT = Math.max(0, errorAnimT - dt);
+  if (winAnimT > 0) winAnimT = Math.max(0, winAnimT - dt);
+  if (estado !== 'play') return;
+
+  if (transicionT > 0) {
+    transicionT -= dt;
+    if (transicionT <= 0) { transicionT = 0; sortearPalabra(); }
+    return;
+  }
+  if (modo === 'timed') {
+    tiempo -= dt;
+    if (Math.floor(tiempo) !== Math.floor(tiempo + dt)) sincronizarHUD();
+    if (tiempo <= 0) { tiempo = 0; finDePartida(); }
+  }
+}
+
+// ── Dibujo del Escenario Ilustrado y Personaje Animado ────────────────────
+function dibujarEscenaIlustrada(x, y, w, h, sc, per) {
+  ctx.save();
+  D.rr(ctx, x, y, w, h, 20);
+  ctx.clip();
+
+  // Cielo con gradiente
+  const gSky = ctx.createLinearGradient(x, y, x, y + h);
+  gSky.addColorStop(0, sc.sky1);
+  gSky.addColorStop(1, sc.sky2);
+  ctx.fillStyle = gSky;
+  ctx.fillRect(x, y, w, h);
+
+  // Estrellas animadas
+  ctx.fillStyle = '#ffffff';
+  for (let i = 0; i < 24; i++) {
+    const st = estrellas[i];
+    const sx = x + ((st.x / 900) * w);
+    const sy = y + ((st.y / 740) * (h * 0.72));
+    ctx.globalAlpha = 0.25 + 0.45 * Math.sin(t * 2 + st.tw);
+    ctx.beginPath();
+    ctx.arc(sx, sy, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Luna / Planeta de fondo
+  const moonX = x + w * 0.82, moonY = y + h * 0.22, moonR = Math.min(w, h) * 0.11;
+  D.glowCircle(ctx, moonX, moonY, moonR, sc.accent + '44', 24);
+  ctx.fillStyle = '#f8fafc';
+  ctx.beginPath(); ctx.arc(moonX, moonY, moonR * 0.75, 0, Math.PI * 2); ctx.fill();
+
+  // Colinas y suelo ilustrado
+  const floorY = y + h * 0.82;
+  ctx.fillStyle = sc.ground;
+  ctx.beginPath();
+  ctx.moveTo(x, floorY);
+  ctx.quadraticCurveTo(x + w * 0.28, floorY - 22, x + w * 0.55, floorY - 6);
+  ctx.quadraticCurveTo(x + w * 0.8, floorY + 8, x + w, floorY - 10);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.closePath();
+  ctx.fill();
+
+  // Estructura / Pórtico ilustrado con vetas de madera y remaches
+  const scale = Math.min(w / 280, h / 270);
+  const baseX = x + w * 0.5, baseY = floorY + 4;
+  ctx.save();
+  ctx.translate(baseX, baseY);
+  ctx.scale(scale, scale);
+
+  // Base de piedra
+  ctx.fillStyle = '#334155';
+  D.rr(ctx, -95, -14, 190, 16, 6);
+  ctx.fill();
+
+  // Poste vertical y travesaño superior
+  ctx.fillStyle = sc.wood;
+  ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+  ctx.lineWidth = 2;
+  D.rr(ctx, -78, -215, 18, 205, 5); ctx.fill(); ctx.stroke();
+  D.rr(ctx, -84, -222, 128, 16, 5); ctx.fill(); ctx.stroke();
+  // Escuadra diagonal
+  ctx.beginPath();
+  ctx.moveTo(-60, -175); ctx.lineTo(-28, -206); ctx.lineTo(-16, -206); ctx.lineTo(-60, -162);
+  ctx.closePath(); ctx.fill();
+
+  // Cuerda / Haz tensor con balanceo cuando hay error
+  const swing = Math.sin(t * 4) * 0.03 + (errorAnimT > 0 ? Math.sin(t * 32) * 0.18 * errorAnimT : 0);
+  ctx.save();
+  ctx.translate(22, -206);
+  ctx.rotate(swing);
+
+  ctx.strokeStyle = sc.accent;
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, 34);
+  ctx.stroke();
+
+  // Personaje ilustrado articulado: se va construyendo / activando parte por parte con animación
+  const bounce = winAnimT > 0 ? -Math.abs(Math.sin(t * 14)) * 12 : 0;
+  ctx.translate(0, 56 + bounce);
+
+  const dibujarParte = (num, fn) => {
+    const activa = errores >= num;
+    ctx.save();
+    ctx.globalAlpha = activa ? 1 : 0.14;
+    if (activa && errores === num && errorAnimT > 0) {
+      const s = 1 + errorAnimT * 0.35;
+      ctx.scale(s, s);
+    }
+    fn(activa);
+    ctx.restore();
+  };
+
+  // 3 y 4: Brazos articulados
+  dibujarParte(3, () => {
+    ctx.save();
+    ctx.translate(-16, 28);
+    ctx.rotate(0.35 + Math.sin(t * 3) * 0.08);
+    ctx.fillStyle = per.c2;
+    D.rr(ctx, -26, -6, 28, 12, 6); ctx.fill();
+    ctx.fillStyle = per.acc;
+    ctx.beginPath(); ctx.arc(-26, 0, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  });
+  dibujarParte(4, () => {
+    ctx.save();
+    ctx.translate(16, 28);
+    ctx.rotate(-0.35 - Math.sin(t * 3) * 0.08);
+    ctx.fillStyle = per.c2;
+    D.rr(ctx, -2, -6, 28, 12, 6); ctx.fill();
+    ctx.fillStyle = per.acc;
+    ctx.beginPath(); ctx.arc(26, 0, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  });
+
+  // 5 y 6: Piernas con botas
+  dibujarParte(5, () => {
+    ctx.save();
+    ctx.translate(-9, 72);
+    ctx.rotate(0.12 + Math.sin(t * 4) * 0.06);
+    ctx.fillStyle = per.c2;
+    D.rr(ctx, -7, 0, 13, 34, 6); ctx.fill();
+    ctx.fillStyle = per.acc;
+    D.rr(ctx, -10, 28, 16, 9, 4); ctx.fill();
+    ctx.restore();
+  });
+  dibujarParte(6, () => {
+    ctx.save();
+    ctx.translate(9, 72);
+    ctx.rotate(-0.12 - Math.sin(t * 4) * 0.06);
+    ctx.fillStyle = per.c2;
+    D.rr(ctx, -6, 0, 13, 34, 6); ctx.fill();
+    ctx.fillStyle = per.acc;
+    D.rr(ctx, -6, 28, 16, 9, 4); ctx.fill();
+    ctx.restore();
+  });
+
+  // 2: Torso con armadura y núcleo luminoso
+  dibujarParte(2, () => {
+    const gT = ctx.createLinearGradient(-20, 20, 20, 75);
+    gT.addColorStop(0, per.c1);
+    gT.addColorStop(1, per.c2);
+    ctx.fillStyle = gT;
+    D.rr(ctx, -19, 20, 38, 54, 13);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff44';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    D.glowCircle(ctx, 0, 44, 7, per.acc, 12);
+  });
+
+  // 1: Cabeza con expresiones dinámicas según errores
+  dibujarParte(1, () => {
+    const gH = ctx.createLinearGradient(-22, -22, 22, 22);
+    gH.addColorStop(0, per.c1);
+    gH.addColorStop(1, per.c2);
+    ctx.fillStyle = gH;
+    ctx.beginPath(); ctx.arc(0, 0, 23, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#ffffff55'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Visor oscuro
+    ctx.fillStyle = '#0f172a';
+    D.rr(ctx, -16, -9, 32, 16, 7);
+    ctx.fill();
+
+    // Ojos expresivos
+    if (errores >= MAX_ERR) {
+      // Ojos X al perder
+      ctx.strokeStyle = '#ff2a5f'; ctx.lineWidth = 2.5;
+      for (const ox of [-7, 7]) {
+        ctx.beginPath();
+        ctx.moveTo(ox - 3.5, -4); ctx.lineTo(ox + 3.5, 3);
+        ctx.moveTo(ox + 3.5, -4); ctx.lineTo(ox - 3.5, 3);
+        ctx.stroke();
+      }
+    } else if (errorAnimT > 0 || errores >= 4) {
+      // Ojos de preocupación
+      ctx.fillStyle = '#ffb800';
+      ctx.beginPath();
+      ctx.arc(-7, -1, 3.5, 0, Math.PI * 2);
+      ctx.arc(7, -1, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Ojos normales brillantes
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(-7, -1, 3.2, 0, Math.PI * 2);
+      ctx.arc(7, -1, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  ctx.restore();
+  ctx.restore();
+
+  // Marco exterior de la escena
+  D.rr(ctx, x, y, w, h, 20);
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function render() {
+  const W = view.W, H = view.H;
+  const vert = H > W;
+  const sc  = CATALOGO_COSM.escenario.find(x => x.id === cosmEquip.escenario) || CATALOGO_COSM.escenario[0];
+  const per = CATALOGO_COSM.personaje.find(x => x.id === cosmEquip.personaje) || CATALOGO_COSM.personaje[0];
+
+  ctx.fillStyle = '#0b0f19';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  FX.applyShake(ctx);
+
+  // Coordenadas adaptables según orientación (Vertical 390x844 vs Horizontal escritorio)
+  const sceneRect = vert
+    ? { x: 14, y: 12, w: W - 28, h: 255 }
+    : { x: 18, y: 18, w: 310, h: H - 36 };
+  const panelX = vert ? 14 : 346;
+  const panelW = vert ? W - 28 : W - 364;
+  const centerX = panelX + panelW / 2;
+
+  dibujarEscenaIlustrada(sceneRect.x, sceneRect.y, sceneRect.w, sceneRect.h, sc, per);
+
+  // Bloque de Categoría, Pista y Botón de Revelar Letra
+  const infoY = vert ? 278 : 18;
+  const infoH = vert ? 76 : 86;
+  D.rr(ctx, panelX, infoY, panelW, infoH, 16);
+  ctx.fillStyle = 'rgba(20, 28, 46, 0.92)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.09)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  D.text(ctx, (categoria || 'GENERAL').toUpperCase(), panelX + 16, infoY + 23, {
+    size: 12, weight: 800, color: sc.accent, align: 'left'
+  });
+  D.text(ctx, pista || 'Adiviná la palabra secreta', panelX + 16, infoY + (vert ? 52 : 56), {
+    size: vert ? 12.5 : 14, weight: 600, color: '#e2e8f0', align: 'left', family: 'body'
+  });
+
+  const hbW = vert ? 96 : 122, hbH = 32;
+  const hbX = panelX + panelW - hbW - 12, hbY = infoY + 10;
+  hintRect = { x: hbX, y: hbY, w: hbW, h: hbH };
+  D.rr(ctx, hbX, hbY, hbW, hbH, 9);
+  ctx.fillStyle = 'rgba(0, 180, 255, 0.16)';
+  ctx.fill();
+  ctx.strokeStyle = '#00b4ff';
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+  D.text(ctx, modo === 'classic' ? 'PISTA (-30)' : 'PISTA', hbX + hbW / 2, hbY + hbH / 2 + 1, {
+    size: 10.5, weight: 800, color: '#38bdf8'
+  });
+
+  // Casillas de la palabra secreta
+  const len = Math.max(1, palabra.length);
+  const gap = len > 10 ? 5 : 7;
+  const maxBoxW = vert ? 42 : 50;
+  const boxW = Math.min(maxBoxW, Math.floor((panelW - (len - 1) * gap - 12) / len));
+  const boxH = Math.round(boxW * 1.22);
+  const totalW = len * boxW + (len - 1) * gap;
+  const startX = centerX - totalW / 2;
+  const wordY = vert ? 372 : 148;
+
+  for (let i = 0; i < len; i++) {
+    const ch = palabra[i];
+    const rev = usadas.has(ch) || estado === 'over';
+    const bx = startX + i * (boxW + gap);
+    D.rr(ctx, bx, wordY, boxW, boxH, 10);
+    if (rev) {
+      ctx.fillStyle = usadas.has(ch) ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 42, 95, 0.22)';
+      ctx.fill();
+      ctx.strokeStyle = usadas.has(ch) ? '#10b981' : '#ff2a5f';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      D.text(ctx, ch, bx + boxW / 2, wordY + boxH / 2 + 1, {
+        size: Math.round(boxW * 0.56), weight: 900, color: '#fff'
+      });
+    } else {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+  }
+
+  // Teclado táctil grande (ocupa todo el ancho disponible en celular)
+  keyRects = [];
+  const kbY = vert ? 455 : 265;
+  const kGap = vert ? 5 : 7;
+  const kW = Math.floor((panelW - 9 * kGap - 8) / 10);
+  const kH = vert ? 72 : 56;
+
+  FILAS_TECLADO.forEach((fila, rIdx) => {
+    const rowW = fila.length * kW + (fila.length - 1) * kGap;
+    const rx = centerX - rowW / 2;
+    const ry = kbY + rIdx * (kH + kGap);
+
+    fila.forEach((l, cIdx) => {
+      const kx = rx + cIdx * (kW + kGap);
+      keyRects.push({ l, x: kx, y: ry, w: kW, h: kH });
+
+      const ya = usadas.has(l);
+      const ok = ya && palabra.includes(l);
+      const bad = ya && !palabra.includes(l);
+
+      D.rr(ctx, kx, ry, kW, kH, 10);
+      if (ok) {
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.26)';
+        ctx.strokeStyle = '#10b981';
+      } else if (bad) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.5)';
+        ctx.strokeStyle = 'rgba(255, 42, 95, 0.35)';
+      } else if (hoverLetra === l) {
+        ctx.fillStyle = 'rgba(255, 102, 0, 0.26)';
+        ctx.strokeStyle = '#ff6600';
+      } else {
+        ctx.fillStyle = 'rgba(26, 36, 56, 0.95)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+      }
+      ctx.fill();
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      D.text(ctx, l, kx + kW / 2, ry + kH / 2 + 1, {
+        size: vert ? 18 : 17,
+        weight: 800,
+        color: bad ? '#475569' : (ok ? '#34d399' : '#f8fafc')
+      });
+    });
+  });
+
+  // Resumen inferior
+  const footerY = H - 18;
+  D.text(ctx, `PALABRAS RESUELTAS: ${resueltas} · RACHA ACTUAL: ${racha}`, centerX, footerY, {
+    size: 11.5, weight: 700, color: '#94a3b8'
+  });
+
+  FX.draw(ctx);
+  ctx.restore();
+  FX.drawFlash(ctx, W, H);
+}
+
+const SONG = {
+  bpm: 116,
+  tracks: [
+    { type: 'triangle', vol: 0.22, notes: 'A4 . C5 . E5 . C5 . D5 . F5 . E5 . . . G4 . B4 . D5 . B4 . C5 . E5 . A4 . . .' },
+    { type: 'sine',     vol: 0.32, notes: 'A2 . A2 . E2 . E2 . D2 . D2 . E2 . E2 . G2 . G2 . D2 . D2 . A2 . E2 . A2 . . .' }
+  ]
 };
-BG.input.onKey((e, code, down) => { if (!down || e.repeat || BG.ui.open || e.ctrlKey || e.metaKey) return; if (e.key && e.key.length === 1) { const ch = norm(e.key); if (/^[A-ZÑ]$/.test(ch)) guess(ch); } });
 
-// ── Dibujo del ahorcado (neón) ────────────────────────────────────────────
-function draw() {
-  g.clearRect(0, 0, 300, 300);
-  g.lineCap = 'round'; g.lineJoin = 'round';
-  const line = (pts, c = '#8b8bb3', w = 6) => { g.strokeStyle = c; g.lineWidth = w; g.shadowColor = c; g.shadowBlur = c === '#8b8bb3' ? 0 : 12; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); g.shadowBlur = 0; };
-  line([[40, 280], [160, 280]]); line([[80, 280], [80, 30], [200, 30], [200, 60]]); line([[80, 80], [130, 30]], '#8b8bb3', 4);
-  const c = errors >= MAXERR ? '#ff3d6e' : '#ff9a1f';
-  if (errors > 0) { g.strokeStyle = c; g.lineWidth = 5; g.shadowColor = c; g.shadowBlur = 14; g.beginPath(); g.arc(200, 88, 26, 0, 7); g.stroke(); g.shadowBlur = 0;
-    if (errors >= MAXERR) { g.lineWidth = 3; [[188, 80], [212, 80]].forEach(([x, y]) => { g.beginPath(); g.moveTo(x - 5, y - 5); g.lineTo(x + 5, y + 5); g.moveTo(x + 5, y - 5); g.lineTo(x - 5, y + 5); g.stroke(); }); }
-    else { g.fillStyle = c; g.beginPath(); g.arc(191, 84, 3, 0, 7); g.arc(209, 84, 3, 0, 7); g.fill(); } }
-  if (errors > 1) line([[200, 114], [200, 190]], c, 5);
-  if (errors > 2) line([[200, 135], [168, 165]], c, 5);
-  if (errors > 3) line([[200, 135], [232, 165]], c, 5);
-  if (errors > 4) line([[200, 190], [174, 235]], c, 5);
-  if (errors > 5) line([[200, 190], [226, 235]], c, 5);
-  if (anim > 0) { gc.animate([{ transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'none' }], { duration: 200 }); anim = 0; }
+sortearPalabra();
+if (BG.thumb) {
+  palabra = 'ALTOVICIO';
+  categoria = 'Videojuegos';
+  pista = 'El portal para jugar y competir con amigos';
+  usadas = new Set(['A','L','T','O','V','C','E','M']);
+  errores = 2;
+  estado = 'play';
+  if (BG.preview) {
+    sortearPalabra();
+    const ordenBot = ['A','E','O','S','I','R','N','L','U','C','T','M','P','B','D','G','V','H','F','J','Z','Ñ','Q','X','K','W','Y'];
+    let bIdx = 0;
+    setInterval(() => {
+      if (estado !== 'play' || transicionT > 0) return;
+      while (bIdx < ordenBot.length && usadas.has(ordenBot[bIdx])) bIdx++;
+      if (bIdx >= ordenBot.length) { bIdx = 0; sortearPalabra(); return; }
+      intentarLetra(ordenBot[bIdx]);
+    }, 520);
+  }
+} else {
+  BG.ready.then(mostrarMenu);
 }
 
-if (BG.thumb) { word = 'CARPINCHO'; hint = ''; guessed = new Set(['C', 'A', 'R', 'O']); errors = 3; buildKb(); paintWord(); draw(); document.getElementById('cat').textContent = 'ANIMALES'; ['C', 'A', 'R', 'O'].forEach(ch => document.querySelector(`.k[data-k="${ch}"]`).classList.add('ok')); ['E', 'S', 'T'].forEach(ch => document.querySelector(`.k[data-k="${ch}"]`).classList.add('no')); }
-else BG.ready.then(showMenu);
+BG.loop(dt => update(dt), render);
 </script>
 </body>
 </html>

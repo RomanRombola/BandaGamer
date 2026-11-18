@@ -1,5 +1,14 @@
 # AltoVicio — Changelog
 
+## 🎨 V15.4 — Rediseño e integración de juegos casuales y de lógica (A10 · G1 a G6)
+
+- **Ahorcado HD (`pages/games/juego-local-40.html`, G1)**: diseño vertical completo (560×820) que aprovecha toda la pantalla en celular (`390×844`), escenario de cápsula de contención energética con personaje guardián ilustrado que reacciona y pierde piezas de escudo con cada error, más de 240 palabras en 8 categorías con pistas y cosméticos desbloqueables con VicioCoins vía `bg-buy` (sin leer `bandagamer_usuario_v2`).
+- **Snake HD (`pages/games/juego-local-1.html`, G2)**: pradera orgánica con mosaico de césped, flores y bordes de piedra redondeada, serpiente con cuerpo de curva continua, escamas, ojos que siguen la fruta y lengua bífida animada, 5 frutas ilustradas en Canvas, cosméticos por `bg-buy` y demo automática en `?preview=1`.
+- **Memory Match HD (`pages/games/juego-local-3.html`, G3)**: nuevo dorso de cartas con emblema **AV · AltoVicio** (reemplaza el antiguo "BG"), 18 íconos SVG vectoriales propios a todo color, 4 dificultades con ranking por tiempo y dorsos desbloqueables por `bg-buy`.
+- **Doodle Jump HD (`pages/games/juego-local-13.html`, G4)**: cielo dinámico que asciende desde el atardecer hasta el espacio profundo con nubes y estrellas, personaje ilustrado con gorro hélice / cohete, resortes animados, monstruos alados y cosméticos por `bg-buy`.
+- **Curve Fever HD (`pages/games/juego-local-26.html`, G5) y Color Flood HD (`pages/games/juego-local-21.html`, G5)**: arenas con grilla holográfica / tablero de cristal biselado, ondas animadas, estelas y paletas personalizables con VicioCoins (`bg-buy`), más celebración de fuegos artificiales al ganar.
+- **Piedra Papel Tijera Táctico (`pages/games/juego-local-22.html`, G6)**: IA adaptativa con memoria de Markov y radar en vivo de tendencias, habilidades tácticas con energía (*Golpe Crítico ×2*, *Escudo*, *Escáner*), emblemas vectoriales por `bg-buy` y **Salas Online 1v1** en Firebase Realtime Database con `asegurarIdentidad()` y soporte de invitación por `?room=`.
+
 ## 🛍️ V15 — Tienda ilustrada (estilo Plato)
 
 - **107 ítems nuevos dibujados**, a partir de las láminas de Román: 36 marcos, 13 fondos de perfil, 17 para la cabeza, 6 para los ojos, 7 para la cara, 3 para la boca, 6 para el cuello, 4 para la espalda (alas, espadas) y 15 pins.

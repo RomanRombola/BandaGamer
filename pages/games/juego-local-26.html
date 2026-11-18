@@ -3,289 +3,507 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Curve Fever</title>
+<title>Curve Fever HD — AltoVicio</title>
 <link rel="stylesheet" href="kit/bg-kit.css">
+<style>
+  #cf-shop-btn {
+    position: absolute; top: 8px; right: 10px; z-index: 30;
+    background: linear-gradient(135deg, var(--bg-accent), var(--bg-accent2));
+    color: #fff; border: none; border-radius: 10px; padding: 6px 11px;
+    font-family: var(--bg-font-d); font-size: 11px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  body.bg-thumb #cf-shop-btn { display: none !important; }
+  .cos-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 6px 0 12px; }
+  .cos-btn {
+    background: rgba(255,255,255,0.05); border: 1.5px solid var(--bg-line);
+    border-radius: 12px; padding: 9px 8px; color: var(--bg-text);
+    font-family: var(--bg-font-d); font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .cos-btn.sel { border-color: var(--bg-accent); background: rgba(255,102,0,0.18); }
+  .cos-btn small { display: block; font-size: 10px; margin-top: 2px; color: var(--bg-accent2); }
+  .cos-btn.sel small { color: var(--bg-good); }
+  .cos-aviso { font-size: 12px; color: var(--bg-accent2); min-height: 16px; margin-bottom: 6px; font-weight: 700; }
+</style>
 </head>
 <body>
 <script src="kit/bg-kit.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  CURVE FEVER — AltoVicio
-//  Hasta 4 serpientes: cada una puede ser humana o CPU (antes hacían falta
-//  2 personas en el mismo teclado) · huecos en la estela · power-ups
-//  Cada vez que alguien choca, los que siguen vivos suman 1 punto
+//  G5 · CURVE FEVER HD — AltoVicio
+//  Arena neón con brechas automáticas, power-ups en mapa, modo vs 3 Bots IA y
+//  2 Jugadores local, celebración de fuegos artificiales al ganar y bg-buy.
 // ═══════════════════════════════════════════════════════════════════════════
 const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
-const W = 800, H = 560, CELL = 2, GW = W / CELL, GH = H / CELL;
-const PLAYERS = [
-  { name: 'ROJO', color: '#ff3d6e', keys: ['ArrowLeft', 'ArrowRight'], keyTxt: '← →' },
-  { name: 'CIAN', color: '#2ef2ff', keys: ['KeyA', 'KeyD'], keyTxt: 'A D' },
-  { name: 'LIMA', color: '#9dff3d', keys: ['KeyJ', 'KeyL'], keyTxt: 'J L' },
-  { name: 'VIOLETA', color: '#c04dff', keys: ['KeyB', 'KeyM'], keyTxt: 'B M' },
-];
-const POWERS = [
-  { id: 'fast', icon: '»', color: '#ff9a1f', name: 'VELOZ', self: true },
-  { id: 'slow', icon: '«', color: '#2ef2ff', name: 'LENTOS', self: false },
-  { id: 'ghost', icon: '◌', color: '#ffffff', name: 'FANTASMA', self: true },
-  { id: 'wrap', icon: '⟲', color: '#9dff3d', name: 'SIN PAREDES', self: true },
-  { id: 'clear', icon: '✕', color: '#ffd400', name: 'BORRAR', self: null },
-  { id: 'invert', icon: '⇄', color: '#ff3dd0', name: 'INVERTIDOS', self: false },
-];
+const W = 720, H = 560;
+
+const CATALOGO_CF = {
+  estela: [
+    { id: 'cf_cian',   nombre: 'Láser Cian',    precio: 0,   col: '#00b4ff', glow: '#38bdf8' },
+    { id: 'cf_solar',  nombre: 'Fuego Solar',   precio: 100, col: '#ff6600', glow: '#fde047' },
+    { id: 'cf_plasma', nombre: 'Plasma Violeta',precio: 180, col: '#c084fc', glow: '#f472b6' },
+    { id: 'cf_oro',    nombre: 'Oro Imperial',  precio: 250, col: '#fde047', glow: '#ffffff' }
+  ],
+  arena: [
+    { id: 'ar_abismo',  nombre: 'Abismo Neón',    precio: 0,   bg1: '#090d1a', bg2: '#111a2e', border: '#00b4ff' },
+    { id: 'ar_reactor', nombre: 'Reactor Fusión', precio: 140, bg1: '#1a0c1a', bg2: '#2a122e', border: '#ff2a5f' }
+  ]
+};
+const DEF_COSM = { estela: 'cf_cian', arena: 'ar_abismo' };
+let cosmEquip = Object.assign({}, DEF_COSM, BG.load('cosm', {}));
+let portalCoins = 0, portalItems = [], portalConectado = false, compraPendiente = null;
 
 BG.init({
-  post: { bloom: .6, vignette: .35, thumbFx: true },
-  id: 'curvefever', title: 'CURVE FEVER', icon: '🐍', accent: '#ff3d6e', accent2: '#2ef2ff',
-  subtitle: 'Doblá a tiempo, no choques con ninguna estela y quedate último en pie.',
-  hud: [{ id: 'round', label: 'Ronda', color: '#ffd400' }, { id: 'goal', label: 'Meta', color: '#9dff3d' }, { id: 'you', label: 'Tus puntos', color: '#ff3d6e' }],
-  help: 'Rojo: <kbd>←</kbd><kbd>→</kbd> · Cian: <kbd>A</kbd><kbd>D</kbd> · Lima: <kbd>J</kbd><kbd>L</kbd> · Violeta: <kbd>B</kbd><kbd>M</kbd> · <kbd>Espacio</kbd> arranca la ronda',
-  helpTouch: 'Tocá la mitad izquierda o derecha de la pantalla para doblar.',
+  id: 'curvefever',
+  title: 'CURVE FEVER',
+  icon: '⚡',
+  accent: '#00b4ff',
+  accent2: '#ff6600',
+  music: true,
+  subtitle: 'Trazá estelas luminosas, pasá por los huecos, agarrá potenciadores y encerrá a tus rivales.',
+  hud: [
+    { id: 'score', label: 'Puntos', color: '#00b4ff' },
+    { id: 'round', label: 'Ronda',  color: '#ff6600', value: '1/5' },
+    { id: 'best',  label: 'Récord', color: '#ffb800' }
+  ],
+  help: '1P: <kbd>←</kbd><kbd>→</kbd> para girar · 2P Local: P1 <kbd>←</kbd><kbd>→</kbd> y P2 <kbd>A</kbd><kbd>D</kbd>',
+  helpTouch: 'Usá las flechas izquierda y derecha en pantalla para doblar tu nave.',
   touch: { dpad: 'h', buttons: [] },
-  onRestart: () => startMatch(), onMenu: () => showMenu(),
+  onRestart: () => iniciarTorneo(modoJuego),
+  onMenu: () => mostrarMenu()
 });
+
 const view = BG.canvas(W, H);
 const ctx = view.ctx;
-const trail = document.createElement('canvas');   // las estelas se pintan acá una sola vez
-const tctx = trail.getContext('2d');
-let occ = new Int16Array(GW * GH), occT = new Float32Array(GW * GH);
 
-let cfg = BG.load('cfg', { slots: ['human', 'cpu', 'cpu', 'cpu'], diff: 1 });
-let snakes = [], scores = [], round = 0, goal = 10, state = 'menu', roundT = 0, power = [], powerT = 3, clock = 0, touchDir = 0;
-view.onResize = () => redrawTrail();
+const shopBtn = U.el('button', { id: 'cf-shop-btn' }, 'Personalizar');
+shopBtn.addEventListener('click', () => abrirTiendaCF());
+BG.stage.appendChild(shopBtn);
 
-function activeIdx() { return cfg.slots.map((s, i) => s !== 'off' ? i : -1).filter(i => i >= 0); }
-function startMatch() {
-  const act = activeIdx();
-  if (act.length < 2) { BG.ui.toast('Necesitás al menos 2 jugadores', '#ff3d6e'); return; }
-  BG.save('cfg', cfg);
-  scores = PLAYERS.map(() => 0); round = 0; goal = 5 * (act.length - 1) + 5;
-  BG.hud.set('goal', goal);
-  BG.start(); newRound();
-}
-function newRound() {
-  round++; BG.hud.set('round', round);
-  occ.fill(0); occT.fill(0); history = [];
-  trail.width = Math.round(W * view.scale); trail.height = Math.round(H * view.scale);
-  tctx.setTransform(view.scale, 0, 0, view.scale, 0, 0); tctx.lineCap = 'round';
-  power = []; powerT = U.rand(3, 5);
-  snakes = [];
-  for (const i of activeIdx()) {
-    let x, y, tries = 0;
-    do { x = U.rand(90, W - 90); y = U.rand(90, H - 90); } while (tries++ < 50 && snakes.some(o => U.dist(o.x, o.y, x, y) < 140));
-    // mirando hacia el centro (con algo de azar) para no arrancar contra la pared
-    const a = Math.atan2(H / 2 - y, W / 2 - x) + U.rand(-1, 1);
-    snakes.push({ i, x, y, a, alive: true, human: cfg.slots[i] === 'human', gap: 0, gapT: U.rand(1.5, 3), fx: {}, px: x, py: y, aiT: 0, aiTurn: 0, hue: PLAYERS[i].color });
+function itemCat(catKey, id) { return CATALOGO_CF[catKey].find(x => x.id === id); }
+function loTengo(catKey, id) { const it = itemCat(catKey, id); return !!it && (it.precio === 0 || portalItems.includes(id)); }
+
+window.addEventListener('message', e => {
+  if (e.source !== window.parent) return;
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+  if (d.type === 'bg-hello-ack') {
+    portalConectado = true;
+    portalCoins = Number(d.coins) || 0;
+    portalItems = Array.isArray(d.items) ? d.items.map(String) : [];
+    for (const k of Object.keys(DEF_COSM)) if (!loTengo(k, cosmEquip[k])) cosmEquip[k] = DEF_COSM[k];
+  } else if (d.type === 'bg-buy-result') {
+    portalCoins = Number(d.coins) || portalCoins;
+    if (Array.isArray(d.items)) portalItems = d.items.map(String);
+    const pend = compraPendiente;
+    compraPendiente = null;
+    if (d.ok && pend && pend.id === d.item) {
+      cosmEquip[pend.catKey] = pend.id;
+      BG.save('cosm', cosmEquip);
+      SFX.play('power');
+      abrirTiendaCF();
+    } else if (!d.ok) {
+      SFX.play('error');
+      const av = document.getElementById('cf-cos-aviso');
+      if (av) av.textContent = d.error || 'No se pudo completar la compra';
+    }
   }
-  state = 'ready'; roundT = 0; clock = 0;
-}
-let history = [];
-function showMenu() {
-  state = 'menu'; BG.stop();
-  const lab = { human: '🧑 HUMANO', cpu: '🤖 CPU', off: '— VACÍO' };
-  const diffs = ['FÁCIL', 'NORMAL', 'DIFÍCIL'];
+});
+
+function abrirTiendaCF() {
+  const estabaJugando = (state === 'play' && !BG.paused);
+  if (estabaJugando) BG.paused = true;
+
+  const armar = (titulo, catKey) => {
+    const btns = CATALOGO_CF[catKey].map(it => {
+      const owned = loTengo(catKey, it.id);
+      const sel = cosmEquip[catKey] === it.id;
+      const lbl = sel ? '✓ Equipado' : (owned ? 'Equipar' : `${it.precio} VicioCoins`);
+      return `<button class="cos-btn ${sel ? 'sel' : ''}" data-cat="${catKey}" data-id="${it.id}">
+        ${U.esc(it.nombre)}<small>${U.esc(lbl)}</small>
+      </button>`;
+    }).join('');
+    return `<div class="bg-label">${U.esc(titulo)}</div><div class="cos-grid">${btns}</div>`;
+  };
+
   BG.ui.show({
-    icon: '🐍', title: 'CURVE FEVER', sub: BG.game.subtitle,
-    html: `<div class="bg-label">Jugadores (tocá para cambiar)</div>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">${PLAYERS.map((p, i) => `
-        <button class="bg-btn" data-slot="${i}" style="display:flex;justify-content:space-between;align-items:center;border-color:${p.color}55">
-          <span style="color:${p.color}">● ${p.name} <small style="display:inline;color:#8b8ba3">${BG.isTouch && i ? '' : p.keyTxt}</small></span><span>${lab[cfg.slots[i]]}</span></button>`).join('')}</div>
-      <div class="bg-label">Dificultad CPU</div><div class="bg-seg">${diffs.map((d, k) => `<button class="bg-btn ${cfg.diff === k ? 'sel' : ''}" data-diff="${k}">${d}</button>`).join('')}</div>`,
-    buttons: [{ label: '▶ JUGAR', primary: true, onClick: startMatch }],
-    help: BG.isTouch ? BG.game.helpTouch : BG.game.help,
+    title: 'PERSONALIZAR CURVE',
+    sub: 'Cambiá el color de tu estela láser y la arena.',
+    html: `
+      <div style="font-size:12px;color:var(--bg-muted);margin-bottom:4px">Tus VicioCoins: <b style="color:var(--bg-accent2)">${U.fmt(portalCoins)}</b></div>
+      <div class="cos-aviso" id="cf-cos-aviso">${portalConectado ? '' : 'Abrí el juego desde AltoVicio para usar tus VicioCoins.'}</div>
+      ${armar('Estela Láser', 'estela')}
+      ${armar('Arena de Combate', 'arena')}
+    `,
+    buttons: [{
+      label: estabaJugando ? '▶ CONTINUAR' : '← VOLVER AL MENÚ',
+      primary: true,
+      onClick: () => { if (estabaJugando) { BG.paused = false; BG.ui.hide(); } else mostrarMenu(); }
+    }],
     onShow: card => {
-      card.querySelectorAll('[data-slot]').forEach(b => b.addEventListener('click', () => {
-        const i = +b.dataset.slot, order = BG.isTouch ? (i === 0 ? ['human', 'cpu'] : ['cpu', 'off']) : ['human', 'cpu', 'off'];
-        cfg.slots[i] = order[(order.indexOf(cfg.slots[i]) + 1) % order.length];
-        b.lastElementChild.textContent = lab[cfg.slots[i]]; SFX.play('tick');
-      }));
-      card.querySelectorAll('[data-diff]').forEach(b => b.addEventListener('click', () => { cfg.diff = +b.dataset.diff; card.querySelectorAll('[data-diff]').forEach(x => x.classList.toggle('sel', x === b)); SFX.play('tick'); }));
-    },
+      card.querySelectorAll('.cos-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const catKey = b.dataset.cat, id = b.dataset.id;
+          const it = itemCat(catKey, id);
+          if (!it) return;
+          if (loTengo(catKey, id)) {
+            cosmEquip[catKey] = id;
+            BG.save('cosm', cosmEquip);
+            SFX.play('select');
+            abrirTiendaCF();
+            return;
+          }
+          const av = card.querySelector('#cf-cos-aviso');
+          if (!portalConectado) { if (av) av.textContent = 'Conectate desde AltoVicio para comprar.'; return; }
+          if (portalCoins < it.precio) { if (av) av.textContent = 'No tenés suficientes VicioCoins.'; SFX.play('error'); return; }
+          if (av) av.textContent = 'Comprando…';
+          compraPendiente = { catKey, id };
+          BG.portal.send('bg-buy', { item: id, price: it.precio });
+        });
+      });
+    }
   });
 }
 
-// ── Ocupación (grilla de 2px) para choques exactos ────────────────────────
-function mark(x, y, id, r) {
-  const cx = Math.floor(x / CELL), cy = Math.floor(y / CELL), rr = Math.ceil(r / CELL);
-  for (let dy = -rr; dy <= rr; dy++) for (let dx = -rr; dx <= rr; dx++) {
-    if (dx * dx + dy * dy > rr * rr + 1) continue;
-    const gx = cx + dx, gy = cy + dy;
-    if (gx < 0 || gy < 0 || gx >= GW || gy >= GH) continue;
-    const k = gy * GW + gx; if (!occ[k]) { occ[k] = id + 1; occT[k] = clock; }
+// ── Motor de Juego y Colisión por Grilla ──────────────────────────────────
+const CELL = 4;
+const GW = Math.floor(W / CELL), GH = Math.floor(H / CELL);
+let grid = new Int16Array(GW * GH);
+
+let modoJuego = BG.load('modo', 'ai'); // 'ai' (vs 3 bots) | '2p' (2 jugadores local + 2 bots)
+let players = [], orbs = [], ronda = 1, maxRondas = 5, totalScore = 0;
+let state = 'menu', t = 0, roundWaitT = 0, celebT = 0, stepCount = 0;
+
+function limpiarGrilla() { grid.fill(0); }
+
+function marcarCelda(x, y, val) {
+  const gx = Math.floor(x / CELL), gy = Math.floor(y / CELL);
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const nx = gx + dx, ny = gy + dy;
+      if (nx >= 0 && nx < GW && ny >= 0 && ny < GH) grid[ny * GW + nx] = val;
+    }
   }
 }
-function hitAt(x, y, s) {
+
+function celdaOcupada(x, y, ignoreStamp) {
+  if (x < 16 || x >= W - 16 || y < 16 || y >= H - 16) return true;
   const gx = Math.floor(x / CELL), gy = Math.floor(y / CELL);
-  if (gx < 0 || gy < 0 || gx >= GW || gy >= GH) return 'wall';
-  const k = gy * GW + gx, o = occ[k];
-  if (!o) return null;
-  if (o === s.i + 1 && clock - occT[k] < .25) return null;   // la propia estela recién pintada
-  return 'trail';
+  const v = grid[gy * GW + gx];
+  return v !== 0 && (ignoreStamp - v) > 12;
 }
-function free(x, y, s) {
-  if (x < 3 || y < 3 || x > W - 3 || y > H - 3) return s.fx.wrap > 0;
-  return !hitAt(x, y, s);
-}
-function redrawTrail() {
-  if (!history.length) return;
-  trail.width = Math.round(W * view.scale); trail.height = Math.round(H * view.scale);
-  tctx.setTransform(view.scale, 0, 0, view.scale, 0, 0); tctx.lineCap = 'round';
-  for (const h of history) seg(h);
-}
-function seg(h) { tctx.strokeStyle = h.c; tctx.lineWidth = h.w; tctx.beginPath(); tctx.moveTo(h.x1, h.y1); tctx.lineTo(h.x2, h.y2); tctx.stroke(); }
 
-// ── IA: mira 3 rayos (izq / recto / der) y elige el más libre ─────────────
-function ray(s, ang, len) {
-  for (let d = 6; d <= len; d += 4) { const x = s.x + Math.cos(ang) * d, y = s.y + Math.sin(ang) * d; if (!free(x, y, s)) return d; }
-  return len;
+function iniciarTorneo(m) {
+  modoJuego = m || modoJuego;
+  BG.save('modo', modoJuego);
+  ronda = 1;
+  totalScore = 0;
+  BG.hud.set('score', 0);
+  BG.hud.set('best', BG.getBest() || 0);
+  iniciarRonda();
 }
-function aiThink(s) {
-  const look = [70, 110, 160][cfg.diff];
-  const opts = [-1, 0, 1].map(t => {
-    let best = 0;
-    for (const off of [.25, .55, .95]) best += ray(s, s.a + t * off, look) * (off === .25 ? 1.4 : 1);
-    return { t, v: best + U.rand(0, [40, 20, 6][cfg.diff]) };
+
+function iniciarRonda() {
+  limpiarGrilla();
+  orbs = [];
+  stepCount = 20;
+  roundWaitT = 0;
+  celebT = 0;
+  const mySkin = itemCat('estela', cosmEquip.estela) || CATALOGO_CF.estela[0];
+  const spawns = [
+    { x: 140, y: 140, a: 0.4,  name: 'VOS',   col: mySkin.col, ai: false, controls: 'p1' },
+    { x: W - 140, y: H - 140, a: 3.5, name: modoJuego === '2p' ? 'JUGADOR 2' : 'BOT NOVA', col: '#ff2a5f', ai: modoJuego !== '2p', controls: 'p2' },
+    { x: W - 140, y: 140, a: 2.3, name: 'BOT VOLT', col: '#34d399', ai: true, controls: 'ai' },
+    { x: 140, y: H - 140, a: -0.8, name: 'BOT APEX', col: '#ffb800', ai: true, controls: 'ai' }
+  ];
+
+  players = spawns.map((s, idx) => ({
+    id: idx + 1, x: s.x, y: s.y, a: s.a, name: s.name, col: s.col,
+    ai: s.ai, controls: s.controls, alive: true,
+    gapT: U.rand(1.4, 2.8), inGap: 0, speedT: 0, ghostT: 0.8,
+    segs: [[{ x: s.x, y: s.y }]]
+  }));
+
+  BG.hud.set('round', `${ronda}/${maxRondas}`);
+  FX.clear();
+  state = 'play';
+  BG.start();
+  if (!BG.music.playing) BG.music.play(SONG);
+}
+
+function mostrarMenu() {
+  state = 'menu';
+  BG.stop();
+  BG.music.stop();
+  BG.ui.show({
+    title: 'CURVE FEVER HD',
+    sub: BG.game.subtitle,
+    buttons: [
+      { label: '🏆 TORNEO VS 3 BOTS (5 RONDAS)', small: `Sumá puntos sobreviviendo · Récord: ${U.fmt(BG.getBest() || 0)}`, primary: modoJuego === 'ai', onClick: () => { BG.ui.hide(); iniciarTorneo('ai'); } },
+      { label: '⚔️ 2 JUGADORES + 2 BOTS (LOCAL)', small: 'P1: Flechas · P2: Teclas A / D', primary: modoJuego === '2p', onClick: () => { BG.ui.hide(); iniciarTorneo('2p'); } }
+    ],
+    help: BG.isTouch ? BG.game.helpTouch : BG.game.help
   });
-  // buscar power-ups cercanos (nivel normal y difícil)
-  if (cfg.diff > 0) for (const p of power) { const ang = Math.atan2(p.y - s.y, p.x - s.x); let da = ((ang - s.a + Math.PI * 3) % (Math.PI * 2)) - Math.PI; if (Math.abs(da) < .9 && U.dist(p.x, p.y, s.x, s.y) < 180) opts[Math.sign(da) + 1].v += 30; }
-  opts.sort((a, b) => b.v - a.v);
-  s.aiTurn = opts[0].t;
 }
 
-function kill(s) {
-  s.alive = false;
-  FX.burst(s.x, s.y, { n: 26, color: [s.hue, '#fff'], speed: 220, life: .6 });
-  FX.shake(4, .2); SFX.play('hit');
-  snakes.forEach(o => { if (o.alive) { scores[o.i]++; } });
-  if (cfg.slots[0] === 'human') BG.hud.set('you', scores[0], true);
+function spawnOrb() {
+  if (orbs.length >= 3) return;
+  const tipos = [
+    { type: 'speed', col: '#ffb800', label: 'TURBO' },
+    { type: 'ghost', col: '#38bdf8', label: 'FANTASMA' },
+    { type: 'clear', col: '#10b981', label: 'LIMPIAR' }
+  ];
+  const t = U.pick(tipos);
+  orbs.push({ x: U.rand(70, W - 70), y: U.rand(70, H - 70), r: 13, ...t, pulse: 0 });
 }
-function grant(s, p) {
-  SFX.play('power'); FX.ring(p.x, p.y, { color: p.color, max: 40 });
-  if (p.id === 'clear') { occ.fill(0); history = []; tctx.clearRect(0, 0, W, H); BG.ui.toast('¡PANTALLA LIMPIA!', p.color); return; }
-  const targets = p.self ? [s] : snakes.filter(o => o !== s);
-  targets.forEach(o => { o.fx[p.id] = 5; });
+
+function decisionIA(p) {
+  // Raycast en 3 ángulos hacia adelante para esquivar muros y estelas
+  const lookDist = [24, 48, 76];
+  const evaluarAngulo = ang => {
+    for (const d of lookDist) {
+      const tx = p.x + Math.cos(ang) * d;
+      const ty = p.y + Math.sin(ang) * d;
+      if (celdaOcupada(tx, ty, stepCount)) return d;
+    }
+    return 100;
+  };
+  const f = evaluarAngulo(p.a);
+  const l = evaluarAngulo(p.a - 0.55);
+  const r = evaluarAngulo(p.a + 0.55);
+  if (f < 80) return l > r ? -1 : 1;
+  // Si está libre, buscar algún orbe cercano
+  if (orbs.length) {
+    const o = orbs[0];
+    const targetA = Math.atan2(o.y - p.y, o.x - p.x);
+    const diff = Math.atan2(Math.sin(targetA - p.a), Math.cos(targetA - p.a));
+    if (Math.abs(diff) > 0.15) return diff > 0 ? 1 : -1;
+  }
+  return Math.sin(t * 2 + p.id) * 0.15;
 }
 
 function update(dt) {
-  if (state === 'menu' || state === 'matchover') return;
-  if (state === 'ready') { roundT += dt; if (roundT > 1.4 || BG.input.pressed('action')) { state = 'play'; SFX.play('go'); } return; }
-  if (state === 'roundover') { roundT += dt; if (roundT > 1.8) newRound(); return; }
-  clock += dt;
-  const I = BG.input;
-  // power-ups
-  powerT -= dt;
-  if (powerT <= 0 && power.length < 3) { power.push({ ...U.pick(POWERS), x: U.rand(50, W - 50), y: U.rand(50, H - 50), t: 0 }); powerT = U.rand(3, 6); }
-  power.forEach(p => p.t += dt);
-  power = power.filter(p => p.t < 12);
-  for (const s of snakes) {
-    if (!s.alive) continue;
-    for (const k in s.fx) s.fx[k] = Math.max(0, s.fx[k] - dt);
-    // giro
-    let turn = 0;
-    if (s.human) {
-      const [l, r] = PLAYERS[s.i].keys;
-      turn = (I.isDown(r) ? 1 : 0) - (I.isDown(l) ? 1 : 0);
-      if (s.i === 0) { turn = turn || touchDir || ((I.virt.right ? 1 : 0) - (I.virt.left ? 1 : 0)); }
-    } else { s.aiT -= dt; if (s.aiT <= 0) { s.aiT = [.12, .07, .04][cfg.diff]; aiThink(s); } turn = s.aiTurn; }
-    if (s.fx.invert > 0) turn = -turn;
-    let sp = 105 * (s.fx.fast > 0 ? 1.6 : 1) * (s.fx.slow > 0 ? .6 : 1);
-    s.a += turn * 3.1 * dt * (s.fx.fast > 0 ? 1.2 : 1);
-    s.px = s.x; s.py = s.y;
-    s.x += Math.cos(s.a) * sp * dt; s.y += Math.sin(s.a) * sp * dt;
-    // huecos
-    s.gapT -= dt; if (s.gapT <= 0) { s.gap = .28; s.gapT = U.rand(1.6, 3.2); }
-    s.gap = Math.max(0, s.gap - dt);
-    const drawing = s.gap <= 0 && !(s.fx.ghost > 0);
-    // paredes
-    if (s.fx.wrap > 0) {
-      let wr = false;
-      if (s.x < 0) { s.x += W; wr = true; } if (s.x > W) { s.x -= W; wr = true; } if (s.y < 0) { s.y += H; wr = true; } if (s.y > H) { s.y -= H; wr = true; }
-      if (wr) { s.px = s.x; s.py = s.y; }
+  t += dt;
+  if (celebT > 0) {
+    celebT -= dt;
+    if (Math.random() < 0.25) {
+      FX.burst(U.rand(100, W - 100), U.rand(80, H - 140), { n: 24, color: ['#00b4ff', '#ff6600', '#fde047', '#34d399'], speed: 220, life: 0.65 });
     }
-    const res = hitAt(s.x + Math.cos(s.a) * 3, s.y + Math.sin(s.a) * 3, s);
-    if (res === 'wall' || (res === 'trail' && !(s.fx.ghost > 0))) { kill(s); continue; }
-    if (drawing) {
-      const h = { x1: s.px, y1: s.py, x2: s.x, y2: s.y, c: s.hue, w: 4.5 };
-      history.push(h); seg(h);
-      mark(s.x, s.y, s.i, 2.6);
+  }
+  if (state !== 'play') return;
+
+  if (roundWaitT > 0) {
+    roundWaitT -= dt;
+    if (roundWaitT <= 0) {
+      if (ronda < maxRondas) { ronda++; iniciarRonda(); }
+      else finalizarTorneo();
     }
-    for (let k = power.length - 1; k >= 0; k--) if (U.dist(power[k].x, power[k].y, s.x, s.y) < 16) { grant(s, power[k]); power.splice(k, 1); }
+    return;
   }
-  const alive = snakes.filter(s => s.alive);
-  if (alive.length <= 1) {
-    state = 'roundover'; roundT = 0;
-    const w = alive[0];
-    if (w) { BG.ui.toast(`¡${PLAYERS[w.i].name} GANA LA RONDA!`, w.hue); SFX.play('coin'); }
-    const top = Math.max(...activeIdx().map(i => scores[i]));
-    const leaders = activeIdx().filter(i => scores[i] === top);
-    if (top >= goal && leaders.length === 1) endMatch(leaders[0]);
+
+  stepCount++;
+  if (Math.random() < 0.012) spawnOrb();
+
+  let vivos = 0;
+  for (const p of players) {
+    if (!p.alive) continue;
+    vivos++;
+
+    let steer = 0;
+    if (p.ai || BG.preview) {
+      steer = decisionIA(p);
+    } else if (p.controls === 'p1') {
+      steer = (BG.input.held.has('ArrowRight') || BG.input.virt.right ? 1 : 0) - (BG.input.held.has('ArrowLeft') || BG.input.virt.left ? 1 : 0);
+      if (modoJuego === 'ai' && !steer) steer = BG.input.axisX();
+    } else if (p.controls === 'p2') {
+      steer = (BG.input.held.has('KeyD') ? 1 : 0) - (BG.input.held.has('KeyA') ? 1 : 0);
+    }
+
+    p.a += steer * 3.15 * dt;
+    if (p.speedT > 0) p.speedT -= dt;
+    if (p.ghostT > 0) p.ghostT -= dt;
+
+    // Brechas periódicas en la estela
+    p.gapT -= dt;
+    if (p.gapT <= 0) {
+      p.inGap = 0.24;
+      p.gapT = U.rand(1.6, 2.8);
+      p.segs.push([]);
+    }
+    if (p.inGap > 0) p.inGap -= dt;
+
+    const sp = (p.speedT > 0 ? 195 : 142);
+    p.x += Math.cos(p.a) * sp * dt;
+    p.y += Math.sin(p.a) * sp * dt;
+
+    // Recoger potenciadores
+    for (let i = orbs.length - 1; i >= 0; i--) {
+      const o = orbs[i];
+      if (Math.hypot(p.x - o.x, p.y - o.y) < o.r + 10) {
+        orbs.splice(i, 1);
+        SFX.play('power');
+        FX.burst(o.x, o.y, { n: 18, color: [o.col, '#fff'], speed: 170, life: 0.45 });
+        if (o.type === 'speed') p.speedT = 3.5;
+        else if (o.type === 'ghost') { p.ghostT = 3.2; p.segs.push([]); }
+        else if (o.type === 'clear') {
+          limpiarGrilla();
+          players.forEach(pl => { pl.segs = [[{ x: pl.x, y: pl.y }]]; });
+          FX.flash('#10b981', 0.25);
+        }
+        if (p.id === 1 && !BG.preview) { totalScore += 40; BG.hud.set('score', totalScore, true); }
+      }
+    }
+
+    // Colisión con muros o estelas
+    const chocaMuro = p.x < 16 || p.x >= W - 16 || p.y < 16 || p.y >= H - 16;
+    const chocaEstela = p.ghostT <= 0 && celdaOcupada(p.x, p.y, stepCount);
+    if (chocaMuro || chocaEstela) {
+      p.alive = false;
+      SFX.play('explode');
+      FX.shake(8, 0.3);
+      FX.burst(p.x, p.y, { n: 26, color: [p.col, '#fff', '#ff6600'], speed: 200, life: 0.6 });
+      // Premiar a los sobrevivientes si no es preview
+      if (!BG.preview && players[0].alive && p.id !== 1) {
+        totalScore += 80;
+        BG.hud.set('score', totalScore, true);
+        FX.text(players[0].x, players[0].y - 18, '+80 SOBREVIVIENTE', { color: '#34d399', size: 14 });
+      }
+      continue;
+    }
+
+    if (p.inGap <= 0 && p.ghostT <= 0) {
+      const currSeg = p.segs[p.segs.length - 1];
+      currSeg.push({ x: p.x, y: p.y });
+      marcarCelda(p.x, p.y, stepCount);
+    }
   }
-}
-function endMatch(winner) {
-  state = 'matchover'; BG.stop();
-  const youHuman = cfg.slots[0] === 'human', cpus = cfg.slots.filter(s => s === 'cpu').length;
-  let r = null;
-  if (youHuman && cpus > 0) r = BG.submitScore(scores[0] * (cfg.diff + 1) * 10 + (winner === 0 ? 200 * (cfg.diff + 1) : 0), { won: winner === 0 });
-  SFX.play(winner === 0 || !youHuman ? 'win' : 'lose');
-  const tabla = activeIdx().sort((a, b) => scores[b] - scores[a]).map(i => ({ label: PLAYERS[i].name + (cfg.slots[i] === 'cpu' ? ' 🤖' : ''), value: scores[i] }));
-  setTimeout(() => BG.ui.gameOver({
-    win: winner === 0 || cfg.slots[winner] === 'human', title: `¡GANÓ ${PLAYERS[winner].name}!`, icon: '🏆',
-    score: r ? scores[0] * (cfg.diff + 1) * 10 + (winner === 0 ? 200 * (cfg.diff + 1) : 0) : null,
-    isRecord: r && (r.isRecord || r.first), stats: tabla, onRetry: startMatch, onMenu: showMenu,
-  }), 900);
+
+  if (vivos <= 1) {
+    if (BG.preview) { iniciarRonda(); return; }
+    const ganador = players.find(p => p.alive);
+    if (ganador && ganador.id === 1) {
+      totalScore += 150;
+      BG.hud.set('score', totalScore, true);
+      SFX.play('win');
+      celebT = 1.6;
+      BG.ui.toast(`¡GANASTE LA RONDA ${ronda}! +150 PTS`, '#10b981');
+    } else {
+      BG.ui.toast(ganador ? `${ganador.name} GANA LA RONDA` : '¡EMPATE!', '#ffb800');
+    }
+    roundWaitT = 1.8;
+  }
 }
 
-// ── Dibujo ────────────────────────────────────────────────────────────────
+function finalizarTorneo() {
+  state = 'over';
+  BG.stop();
+  BG.music.stop();
+  const r = BG.submitScore(totalScore, { won: totalScore >= 300 });
+  celebT = 3;
+  BG.ui.gameOver({
+    win: totalScore >= 300,
+    title: totalScore >= 400 ? '¡CAMPEÓN DE LA ARENA!' : 'FIN DEL TORNEO',
+    score: totalScore,
+    isRecord: r.isRecord || r.first,
+    stats: [
+      { label: 'Rondas', value: maxRondas },
+      { label: 'Récord', value: U.fmt(BG.getBest() || totalScore) }
+    ],
+    onRetry: () => iniciarTorneo(modoJuego),
+    onMenu: mostrarMenu
+  });
+}
+
 function render() {
-  ctx.fillStyle = '#06060f'; ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = 'rgba(255,255,255,.035)'; ctx.lineWidth = 1; ctx.beginPath();
-  for (let x = 40; x < W; x += 40) { ctx.moveTo(x, 0); ctx.lineTo(x, H); } for (let y = 40; y < H; y += 40) { ctx.moveTo(0, y); ctx.lineTo(W, y); } ctx.stroke();
-  ctx.save(); FX.applyShake(ctx);
-  ctx.drawImage(trail, 0, 0, W, H);
-  // borde (punteado si alguien tiene "sin paredes")
-  const anyWrap = snakes.some(s => s.alive && s.fx.wrap > 0);
-  ctx.strokeStyle = anyWrap ? 'rgba(157,255,61,.6)' : 'rgba(255,214,0,.7)'; ctx.lineWidth = 3; if (anyWrap) ctx.setLineDash([10, 8]);
-  ctx.strokeRect(1.5, 1.5, W - 3, H - 3); ctx.setLineDash([]);
-  for (const p of power) {
-    const pul = 1 + Math.sin(p.t * 6) * .08, fade = p.t > 10 ? (Math.floor(p.t * 8) % 2 ? .3 : 1) : 1;
-    ctx.globalAlpha = fade; D.glowCircle(ctx, p.x, p.y, 13 * pul, p.color, 18); ctx.globalAlpha = 1;
-    D.text(ctx, p.icon, p.x, p.y + 1, { size: 15, color: '#06060f' });
+  const ar = itemCat('arena', cosmEquip.arena) || CATALOGO_CF.arena[0];
+  const g = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, W * 0.7);
+  g.addColorStop(0, ar.bg2);
+  g.addColorStop(1, ar.bg1);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // Grilla ambiental sutil
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
+  ctx.lineWidth = 1;
+  for (let x = 40; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 40; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+  ctx.save();
+  FX.applyShake(ctx);
+
+  // Borde luminoso de la arena
+  D.rr(ctx, 12, 12, W - 24, H - 24, 16);
+  ctx.strokeStyle = ar.border;
+  ctx.lineWidth = 3.5;
+  ctx.shadowColor = ar.border;
+  ctx.shadowBlur = 12;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Orbes potenciadores
+  for (const o of orbs) {
+    const r = o.r + Math.sin(t * 6) * 2;
+    D.glowCircle(ctx, o.x, o.y, r, o.col, 16);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(o.x, o.y, r * 0.45, 0, Math.PI * 2); ctx.fill();
+    D.text(ctx, o.label, o.x, o.y - 20, { size: 10, weight: 800, color: o.col });
   }
-  for (const s of snakes) {
-    if (!s.alive) continue;
-    const ghost = s.fx.ghost > 0;
-    D.glowCircle(ctx, s.x, s.y, 4.5, ghost ? 'rgba(255,255,255,.6)' : '#fff', 14);
-    if (state === 'ready') {
-      ctx.strokeStyle = s.hue; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x + Math.cos(s.a) * 30, s.y + Math.sin(s.a) * 30); ctx.stroke();
-      D.text(ctx, PLAYERS[s.i].name + (s.human ? '' : ' 🤖'), s.x, s.y - 18, { size: 10, color: s.hue });
+
+  // Estelas curvas y naves
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const p of players) {
+    ctx.save();
+    ctx.strokeStyle = p.col;
+    ctx.lineWidth = 7;
+    ctx.shadowColor = p.col;
+    ctx.shadowBlur = 10;
+    for (const seg of p.segs) {
+      if (seg.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(seg[0].x, seg[0].y);
+      for (let i = 1; i < seg.length; i++) ctx.lineTo(seg[i].x, seg[i].y);
+      ctx.stroke();
     }
-    const act = Object.entries(s.fx).filter(([, v]) => v > 0).map(([k]) => POWERS.find(p => p.id === k).icon).join('');
-    if (act) D.text(ctx, act, s.x, s.y - 14, { size: 11, color: '#fff', family: 'body' });
+    ctx.shadowBlur = 0;
+
+    if (p.alive) {
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.a);
+      if (p.ghostT > 0) ctx.globalAlpha = 0.55 + Math.sin(t * 16) * 0.25;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(11, 0);
+      ctx.lineTo(-7, -7);
+      ctx.lineTo(-4, 0);
+      ctx.lineTo(-7, 7);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
   }
+
   FX.draw(ctx);
   ctx.restore();
-  // marcador
-  if (state !== 'menu') activeIdx().forEach((i, k) => {
-    D.text(ctx, `${PLAYERS[i].name} ${scores[i]}`, 14 + k * 130, 18, { size: 12, color: PLAYERS[i].color, align: 'left' });
-  });
-  if (state === 'ready') D.text(ctx, `RONDA ${round}`, W / 2, H / 2, { size: 30, color: '#fff', glow: '#ff3d6e', alpha: Math.min(1, roundT * 3) });
+  FX.drawFlash(ctx, W, H);
 }
 
-// ── Táctil (jugador 1) ────────────────────────────────────────────────────
-const tps = new Map();
-const rc = () => { let d = 0; tps.forEach(v => d += v); touchDir = U.clamp(d, -1, 1); };
-view.canvas.addEventListener('pointerdown', e => { const p = view.toLocal(e.clientX, e.clientY); tps.set(e.pointerId, p.x < W / 2 ? -1 : 1); rc(); });
-view.canvas.addEventListener('pointermove', e => { if (!tps.has(e.pointerId)) return; tps.set(e.pointerId, view.toLocal(e.clientX, e.clientY).x < W / 2 ? -1 : 1); rc(); });
-['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => view.canvas.addEventListener(ev, e => { tps.delete(e.pointerId); rc(); }));
+const SONG = {
+  bpm: 136,
+  tracks: [
+    { type: 'square',   vol: 0.18, notes: 'E5 . B4 . C5 . D5 . C5 . B4 . A4 . A4 . C5 . E5 . D5 . C5 . B4 . . . C5 . D5 . E5 . C5 . A4 . A4 .' },
+    { type: 'triangle', vol: 0.42, notes: 'E2 . E3 . E2 . E3 . A2 . A3 . A2 . A3 . D3 . D4 . G2 . G3 . C3 . C4 . A2 . B2 .' }
+  ]
+};
 
-// ── Arranque ──────────────────────────────────────────────────────────────
-if (BG.isTouch) cfg.slots = cfg.slots.map((s, i) => i === 0 ? 'human' : (s === 'human' ? 'cpu' : s));
-if (BG.thumb) {
-  cfg = { slots: ['human', 'cpu', 'cpu', 'cpu'], diff: 1 }; scores = [3, 5, 2, 4];
-  newRound(); state = 'play';
-  // simular unos segundos de partida para dibujar estelas
-  snakes.forEach(s => { s.human = false; });
-  for (let k = 0; k < 300; k++) update(1 / 60);
-  state = 'play'; update = () => {};
-} else BG.ready.then(showMenu);
+iniciarTorneo('ai');
+if (!BG.thumb) {
+  state = 'menu';
+  BG.stop();
+  BG.music.stop();
+  BG.ready.then(mostrarMenu);
+}
+
 BG.loop(dt => update(dt), render);
 </script>
 </body>

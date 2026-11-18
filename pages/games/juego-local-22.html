@@ -3,136 +3,775 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Piedra Papel Tijera</title>
+<title>Piedra Papel Tijera Táctico — AltoVicio</title>
 <link rel="stylesheet" href="kit/bg-kit.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
-#wrap { width: min(720px, 100%); display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 10px; }
-#arena { display: flex; align-items: center; justify-content: center; gap: clamp(16px, 6vw, 60px); min-height: 200px; }
-.hand { width: clamp(110px, 26vw, 170px); aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: clamp(60px, 14vw, 96px); background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.12), rgba(255,255,255,.02)); border: 2px solid rgba(255,255,255,.12); position: relative; }
-.hand.you { border-color: rgba(46,242,255,.5); box-shadow: 0 0 30px rgba(46,242,255,.2); }
-.hand.cpu { border-color: rgba(255,61,208,.5); box-shadow: 0 0 30px rgba(255,61,208,.2); }
-.hand.win { animation: winp .6s ease; border-color: #39ff88; box-shadow: 0 0 40px rgba(57,255,136,.5); }
-.hand.lose { opacity: .45; filter: grayscale(.6); }
-.hand.shake { animation: shake .3s ease-in-out 3; }
-@keyframes shake { 50% { transform: translateY(-22px) rotate(-8deg); } }
-@keyframes winp { 50% { transform: scale(1.12); } }
-.hand small { position: absolute; bottom: -26px; font-family: 'Orbitron', sans-serif; font-size: 11px; letter-spacing: 2px; color: #8b8ba3; }
-#vs { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 22px; color: #ffd400; text-shadow: 0 0 14px rgba(255,212,0,.6); }
-#res { min-height: 34px; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(16px, 3.5vw, 22px); letter-spacing: 2px; text-align: center; }
-#why { min-height: 20px; color: #8b8ba3; font-weight: 600; text-align: center; }
-#picks { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.pk { width: 86px; height: 96px; border-radius: 16px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 38px; transition: transform .1s, border-color .15s; }
-.pk span { font-size: 11px; font-family: 'Orbitron', sans-serif; letter-spacing: 1px; }
-.pk:hover { transform: translateY(-4px); border-color: #2ef2ff; }
-.pk:disabled { opacity: .4; transform: none; cursor: default; }
-#dots { display: flex; gap: 6px; }
-#dots i { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.1); }
-#dots i.y { background: #2ef2ff; box-shadow: 0 0 8px #2ef2ff; } #dots i.c { background: #ff3dd0; box-shadow: 0 0 8px #ff3dd0; } #dots i.d { background: #8b8ba3; }
-#brain { font-size: 12px; color: #8b8ba3; text-align: center; }
+  #rps-shop-btn, #rps-online-btn {
+    position: absolute; top: 8px; z-index: 30;
+    border: none; border-radius: 10px; padding: 6px 11px;
+    font-family: var(--bg-font-d); font-size: 11px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  #rps-shop-btn { right: 10px; background: linear-gradient(135deg, var(--bg-accent), var(--bg-accent2)); color: #fff; }
+  #rps-online-btn { right: 112px; background: rgba(0, 180, 255, 0.18); border: 1px solid #00b4ff; color: #38bdf8; }
+  body.bg-thumb #rps-shop-btn, body.bg-thumb #rps-online-btn { display: none !important; }
+  .cos-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 6px 0 12px; }
+  .cos-btn {
+    background: rgba(255,255,255,0.05); border: 1.5px solid var(--bg-line);
+    border-radius: 12px; padding: 9px 8px; color: var(--bg-text);
+    font-family: var(--bg-font-d); font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .cos-btn.sel { border-color: var(--bg-accent); background: rgba(255,102,0,0.18); }
+  .cos-btn small { display: block; font-size: 10px; margin-top: 2px; color: var(--bg-accent2); }
+  .cos-btn.sel small { color: var(--bg-good); }
+  .cos-aviso { font-size: 12px; color: var(--bg-accent2); min-height: 16px; margin-bottom: 6px; font-weight: 700; }
 </style>
 </head>
 <body>
-<div id="bg-stage">
-  <div id="wrap">
-    <div id="dots"></div>
-    <div id="arena"><div class="hand you" id="hy">✊<small>VOS</small></div><div id="vs">VS</div><div class="hand cpu" id="hc">✊<small>CPU</small></div></div>
-    <div id="res">¡Elegí!</div>
-    <div id="why"></div>
-    <div id="picks"></div>
-    <div id="brain"></div>
-  </div>
-</div>
 <script src="kit/bg-kit.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  PIEDRA, PAPEL O TIJERA — AltoVicio
-//  La CPU aprende tus patrones (cadena de Markov sobre tus últimas jugadas)
-//  Modo clásico o extendido (Lagarto-Spock) · al mejor de 7 · racha de partidos
+//  G6 · PIEDRA PAPEL TIJERA TÁCTICO — AltoVicio
+//  IA adaptativa que aprende tus patrones (Markov) + Escáner de Tendencias visible
+//  + Habilidades Tácticas con Energía (Crítico x2, Escudo, Escaneo) + Online 1v1
 // ═══════════════════════════════════════════════════════════════════════════
-const { util: U, sfx: SFX } = BG;
-const ALL = {
-  r: { e: '✊', n: 'PIEDRA', beats: { s: 'aplasta', l: 'aplasta' } },
-  p: { e: '✋', n: 'PAPEL', beats: { r: 'envuelve', k: 'refuta' } },
-  s: { e: '✌️', n: 'TIJERA', beats: { p: 'corta', l: 'decapita' } },
-  l: { e: '🦎', n: 'LAGARTO', beats: { k: 'envenena', p: 'come' } },
-  k: { e: '🖖', n: 'SPOCK', beats: { s: 'rompe', r: 'vaporiza' } },
-};
-BG.init({
-  id: 'rps', title: 'PIEDRA PAPEL TIJERA', icon: '✊', accent: '#2ef2ff', accent2: '#ff3dd0', pausable: false,
-  subtitle: 'Al mejor de 7. Cuidado: la CPU aprende de tus jugadas y trata de anticiparte.',
-  hud: [{ id: 'score', label: 'Marcador', value: '0 - 0' }, { id: 'streak', label: 'Racha', color: '#39ff88' }, { id: 'mode', label: 'Modo', color: '#ffd400', value: 'CLÁSICO' }],
-  help: 'Teclas: <kbd>1</kbd> piedra · <kbd>2</kbd> papel · <kbd>3</kbd> tijera · <kbd>4</kbd> lagarto · <kbd>5</kbd> spock',
-});
-let ext = BG.load('ext', false), you, cpu, history = [], busy = false, streak = BG.load('streak', 0), rounds;
-const moves = () => ext ? ['r', 'p', 's', 'l', 'k'] : ['r', 'p', 's'];
-const beats = (a, b) => b in ALL[a].beats;
+const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
+const W = 540, H = 720;
 
-// Predicción: cuenta qué jugaste después de tus últimas 1-2 jugadas y elige lo que le gana
-function cpuPick() {
-  const ms = moves();
-  if (history.length < 3 || Math.random() < .15) return U.pick(ms);
-  const scores = Object.fromEntries(ms.map(m => [m, .1]));
-  for (const ord of [2, 1]) {
-    if (history.length <= ord) continue;
-    const ctxKey = history.slice(-ord).join('');
-    for (let i = ord; i < history.length; i++) if (history.slice(i - ord, i).join('') === ctxKey) scores[history[i]] += ord * 1.5;
+const JUGADAS = [
+  { id: 0, key: 'R', nombre: 'PIEDRA', vencesA: 2, color: '#ff2a5f' },
+  { id: 1, key: 'P', nombre: 'PAPEL',  vencesA: 0, color: '#00b4ff' },
+  { id: 2, key: 'S', nombre: 'TIJERA', vencesA: 1, color: '#ffb800' }
+];
+
+// Personalidades tácticas de la IA (visibles en el escáner para tomar decisiones estratégicas)
+const PERFILES_IA = [
+  { nombre: 'ANALISTA DE PATRONES', desc: 'Predice tu próxima jugada según lo que repetís' },
+  { nombre: 'CONTRAATAQUE ESPEJO',  desc: 'Tiende a jugar lo que vence a su última jugada' },
+  { nombre: 'CAZADOR DE RACHA',     desc: 'Si ganás una ronda, busca contrarrestar esa misma mano' }
+];
+
+const CATALOGO_RPS = {
+  emblemas: [
+    { id: 'em_mecha',   nombre: 'Mecha Cyber',     precio: 0,   cR: '#ff2a5f', cP: '#00b4ff', cS: '#ffb800' },
+    { id: 'em_dragon',  nombre: 'Furia Elemental', precio: 100, cR: '#f97316', cP: '#10b981', cS: '#a855f7' },
+    { id: 'em_imperial',nombre: 'Oro y Platino',   precio: 200, cR: '#fde047', cP: '#38bdf8', cS: '#f43f5e' }
+  ]
+};
+let embEquip = BG.load('emblemas', 'em_mecha');
+let portalCoins = 0, portalItems = [], portalConectado = false, compraPendiente = null, portalUser = null;
+
+BG.init({
+  id: 'ppt',
+  title: 'PPT TÁCTICO',
+  icon: '⚔️',
+  accent: '#ff6600',
+  accent2: '#00b4ff',
+  music: true,
+  subtitle: 'Leé las tendencias de la IA, cargá energía táctica para activar Escudos o Críticos y ganá el duelo.',
+  hud: [
+    { id: 'score',  label: 'Puntos',   color: '#ff6600' },
+    { id: 'series', label: 'Marcador', color: '#00b4ff', value: '0 - 0' },
+    { id: 'best',   label: 'Récord',   color: '#ffb800' }
+  ],
+  help: '<kbd>1</kbd> Piedra · <kbd>2</kbd> Papel · <kbd>3</kbd> Tijera · <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd> Habilidades tácticas',
+  helpTouch: 'Mirar el Radar de Tendencias de la IA arriba, activá una habilidad táctica y tocá tu jugada.',
+  onRestart: () => iniciarDuelo(modoJuego),
+  onMenu: () => mostrarMenu()
+});
+
+const view = BG.canvas(W, H);
+const ctx = view.ctx;
+
+const shopBtn = U.el('button', { id: 'rps-shop-btn' }, 'Emblemas');
+shopBtn.addEventListener('click', () => abrirTiendaRPS());
+const onlineBtn = U.el('button', { id: 'rps-online-btn' }, 'Sala 1v1');
+onlineBtn.addEventListener('click', () => abrirModalOnline());
+BG.stage.append(onlineBtn, shopBtn);
+
+function itemEmb(id) { return CATALOGO_RPS.emblemas.find(x => x.id === id); }
+function loTengo(id) { const it = itemEmb(id); return !!it && (it.precio === 0 || portalItems.includes(id)); }
+
+window.addEventListener('message', e => {
+  if (e.source !== window.parent) return;
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+  if (d.type === 'bg-hello-ack') {
+    portalConectado = true;
+    portalUser = d.user || null;
+    portalCoins = Number(d.coins) || 0;
+    portalItems = Array.isArray(d.items) ? d.items.map(String) : [];
+    if (!loTengo(embEquip)) embEquip = 'em_mecha';
+  } else if (d.type === 'bg-buy-result') {
+    portalCoins = Number(d.coins) || portalCoins;
+    if (Array.isArray(d.items)) portalItems = d.items.map(String);
+    const pend = compraPendiente;
+    compraPendiente = null;
+    if (d.ok && pend === d.item) {
+      embEquip = pend;
+      BG.save('emblemas', embEquip);
+      SFX.play('power');
+      abrirTiendaRPS();
+    } else if (!d.ok) {
+      SFX.play('error');
+      const av = document.getElementById('rps-cos-aviso');
+      if (av) av.textContent = d.error || 'No se pudo completar la compra';
+    }
   }
-  history.forEach((m, i) => scores[m] += .2 * (i / history.length));   // frecuencia general (pesa más lo reciente)
-  const guess = ms.reduce((a, b) => scores[a] > scores[b] ? a : b);
-  const counters = ms.filter(m => beats(m, guess));
-  return U.pick(counters);
+});
+
+function abrirTiendaRPS() {
+  const estabaJugando = (state === 'play' && !BG.paused);
+  if (estabaJugando) BG.paused = true;
+
+  const btns = CATALOGO_RPS.emblemas.map(it => {
+    const owned = loTengo(it.id);
+    const sel = embEquip === it.id;
+    const lbl = sel ? '✓ Equipado' : (owned ? 'Equipar' : `${it.precio} VicioCoins`);
+    return `<button class="cos-btn ${sel ? 'sel' : ''}" data-id="${it.id}">
+      ${U.esc(it.nombre)}<small>${U.esc(lbl)}</small>
+    </button>`;
+  }).join('');
+
+  BG.ui.show({
+    title: 'EMBLEMAS DE COMBATE',
+    sub: 'Desbloqueá estilos de armas para Piedra, Papel y Tijera.',
+    html: `
+      <div style="font-size:12px;color:var(--bg-muted);margin-bottom:4px">Tus VicioCoins: <b style="color:var(--bg-accent2)">${U.fmt(portalCoins)}</b></div>
+      <div class="cos-aviso" id="rps-cos-aviso">${portalConectado ? '' : 'Abrí el juego desde AltoVicio para usar tus VicioCoins.'}</div>
+      <div class="cos-grid">${btns}</div>
+    `,
+    buttons: [{
+      label: estabaJugando ? '▶ CONTINUAR' : '← VOLVER AL MENÚ',
+      primary: true,
+      onClick: () => { if (estabaJugando) { BG.paused = false; BG.ui.hide(); } else mostrarMenu(); }
+    }],
+    onShow: card => {
+      card.querySelectorAll('.cos-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const id = b.dataset.id;
+          const it = itemEmb(id);
+          if (!it) return;
+          if (loTengo(id)) {
+            embEquip = id;
+            BG.save('emblemas', id);
+            SFX.play('select');
+            abrirTiendaRPS();
+            return;
+          }
+          const av = card.querySelector('#rps-cos-aviso');
+          if (!portalConectado) { if (av) av.textContent = 'Conectate desde AltoVicio para comprar.'; return; }
+          if (portalCoins < it.precio) { if (av) av.textContent = 'No tenés suficientes VicioCoins.'; SFX.play('error'); return; }
+          if (av) av.textContent = 'Comprando…';
+          compraPendiente = id;
+          BG.portal.send('bg-buy', { item: id, price: it.precio });
+        });
+      });
+    }
+  });
 }
-function newMatch() {
-  you = 0; cpu = 0; rounds = []; busy = false;
-  document.getElementById('res').textContent = '¡Elegí!'; document.getElementById('why').textContent = '';
-  buildPicks(); dots(); hud(); BG.start();
+
+// ── Cerebro Predictivo de la IA (Markov + Frecuencias) y Tácticas ─────────
+let modoJuego = 'ai'; // 'ai' | 'online'
+let state = 'menu', t = 0;
+let myHP = 5, foeHP = 5, maxHP = 5, score = 0, racha = 0, energia = 1;
+let tacticaActiva = null; // 'crit' (costo 2), 'shield' (costo 1), 'scan' (costo 1)
+let jugadaDescartadaIA = null, proximaJugadaIA = 0;
+let perfilIA = PERFILES_IA[0];
+
+// Matriz de aprendizaje: transiciones[ultimaJugadaJugador][jugadaSiguiente]
+let transiciones = [[1, 1, 1], [1, 1, 1], [1, 1, 1]];
+let conteoJugador = [1, 1, 1];
+let ultimaMia = null, ultimaIA = null, ultimoResultado = 0; // 1 gané, -1 perdí, 0 empate
+let probabilidadesIA = [33, 34, 33];
+let animRonda = null; // { mio, rival, resTxt, resCol, t0 }
+let cardBounds = [], tacBounds = [];
+
+function calcularIntencionIA() {
+  // Calcula los pesos de probabilidad de lo que jugará la IA en esta ronda
+  // (Se muestran en el Radar de Tendencias para que el jugador tome decisiones con estrategia real)
+  let pesos = [1, 1, 1];
+
+  // 1. Predicción Markov según lo que el jugador suele hacer después de su última jugada
+  if (ultimaMia !== null) {
+    const fila = transiciones[ultimaMia];
+    const predJugador = fila.indexOf(Math.max(...fila));
+    const counter = (predJugador + 1) % 3; // lo que vence a la jugada predicha del jugador
+    pesos[counter] += 2.6;
+  }
+
+  // 2. Comportamiento según perfil psicológico actual
+  if (perfilIA === PERFILES_IA[1] && ultimaIA !== null) {
+    pesos[(ultimaIA + 1) % 3] += 2.2;
+  } else if (perfilIA === PERFILES_IA[2] && ultimoResultado === 1 && ultimaMia !== null) {
+    pesos[(ultimaMia + 1) % 3] += 2.8;
+  }
+
+  const suma = pesos[0] + pesos[1] + pesos[2];
+  probabilidadesIA = pesos.map(w => Math.round((w / suma) * 100));
+  const diff = 100 - (probabilidadesIA[0] + probabilidadesIA[1] + probabilidadesIA[2]);
+  probabilidadesIA[0] += diff;
+
+  // Elegir jugada real ponderada por esas probabilidades
+  let r = Math.random() * 100, acc = 0;
+  proximaJugadaIA = 0;
+  for (let i = 0; i < 3; i++) {
+    acc += probabilidadesIA[i];
+    if (r <= acc) { proximaJugadaIA = i; break; }
+  }
+  jugadaDescartadaIA = null;
 }
-function hud() { BG.hud.set('score', `${you} - ${cpu}`); BG.hud.set('streak', streak); BG.hud.set('mode', ext ? 'EXTENDIDO' : 'CLÁSICO'); }
-function buildPicks() {
-  document.getElementById('picks').innerHTML = moves().map((m, i) => `<button class="pk" data-m="${m}">${ALL[m].e}<span>${ALL[m].n}</span></button>`).join('');
-  document.querySelectorAll('.pk').forEach(b => b.onclick = () => play(b.dataset.m));
-  document.getElementById('brain').textContent = history.length >= 3 ? `🧠 La CPU ya analizó ${history.length} de tus jugadas` : '🧠 La CPU todavía no te conoce…';
+
+function iniciarDuelo(m) {
+  modoJuego = m || 'ai';
+  if (modoJuego !== 'online') Net.salir();
+  myHP = 5; foeHP = 5; score = 0; racha = 0; energia = 1;
+  tacticaActiva = null; ultimaMia = null; ultimaIA = null;
+  transiciones = [[1, 1, 1], [1, 1, 1], [1, 1, 1]];
+  conteoJugador = [1, 1, 1];
+  perfilIA = U.pick(PERFILES_IA);
+  calcularIntencionIA();
+  animRonda = null;
+  actualizarHUD();
+  FX.clear();
+  state = 'play';
+  BG.start();
+  if (!BG.music.playing) BG.music.play(SONG);
 }
-function dots() { document.getElementById('dots').innerHTML = Array.from({ length: 7 }, (_, i) => `<i class="${rounds[i] || ''}"></i>`).join(''); }
-function play(m) {
-  if (busy) return; busy = true;
-  const c = cpuPick();
-  const hy = document.getElementById('hy'), hc = document.getElementById('hc');
-  [hy, hc].forEach(h => { h.classList.remove('win', 'lose'); h.firstChild.nodeValue = '✊'; h.classList.remove('shake'); void h.offsetWidth; h.classList.add('shake'); });
-  document.querySelectorAll('.pk').forEach(b => b.disabled = true);
-  const words = ['PIEDRA…', 'PAPEL…', 'TIJERA…'];
-  words.forEach((w, i) => setTimeout(() => { document.getElementById('res').textContent = w; SFX.tone({ f: 330 + i * 110, dur: .08, type: 'square', vol: .1 }); }, i * 300));
-  setTimeout(() => {
-    hy.firstChild.nodeValue = ALL[m].e; hc.firstChild.nodeValue = ALL[c].e;
-    history.push(m); if (history.length > 60) history.shift();
-    const res = document.getElementById('res'), why = document.getElementById('why');
-    if (m === c) { res.textContent = 'EMPATE'; res.style.color = '#8b8ba3'; why.textContent = 'Los dos eligieron ' + ALL[m].n.toLowerCase(); rounds.push('d'); SFX.play('swap'); }
-    else if (beats(m, c)) { you++; res.textContent = '¡GANASTE LA RONDA!'; res.style.color = '#39ff88'; why.textContent = `${ALL[m].n} ${ALL[m].beats[c]} a ${ALL[c].n}`.toLowerCase(); hy.classList.add('win'); hc.classList.add('lose'); rounds.push('y'); SFX.play('coin'); }
-    else { cpu++; res.textContent = 'GANÓ LA CPU'; res.style.color = '#ff3dd0'; why.textContent = `${ALL[c].n} ${ALL[c].beats[m]} a ${ALL[m].n}`.toLowerCase(); hc.classList.add('win'); hy.classList.add('lose'); rounds.push('c'); SFX.play('error'); }
-    dots(); hud();
-    if (you >= 4 || cpu >= 4) setTimeout(endMatch, 900);
-    else setTimeout(() => { busy = false; buildPicks(); }, 700);
-  }, 950);
+
+function actualizarHUD() {
+  BG.hud.set('score', score);
+  BG.hud.set('series', `${5 - foeHP} - ${5 - myHP}`);
+  BG.hud.set('best', BG.getBest() || 0);
 }
-function endMatch() {
-  const won = you > cpu;
-  streak = won ? streak + 1 : 0; BG.save('streak', streak); hud();
-  let r = null; if (won) r = BG.submitScore(streak, { won: true, mode: ext ? 'ext' : 'default' });
-  SFX.play(won ? 'win' : 'lose'); BG.stop();
-  BG.ui.gameOver({ win: won, icon: won ? '🏆' : '🤖', title: won ? '¡GANASTE EL PARTIDO!' : 'GANÓ LA CPU', sub: `${you} a ${cpu}`, score: won ? streak : null, scoreLabel: 'PARTIDOS SEGUIDOS',
-    isRecord: r && (r.isRecord || r.first), stats: [{ label: 'Mejor racha', value: BG.getBest(ext ? 'ext' : 'default') || 0 }], retryLabel: '↻ OTRO PARTIDO', onRetry: newMatch, onMenu: showMenu });
-}
-function showMenu() {
-  BG.ui.show({ icon: '✊', title: 'PIEDRA PAPEL TIJERA', sub: BG.game.subtitle,
+
+function mostrarMenu() {
+  state = 'menu';
+  BG.stop();
+  BG.music.stop();
+  BG.ui.show({
+    title: 'PPT TÁCTICO HD',
+    sub: BG.game.subtitle,
     buttons: [
-      { label: '✊ CLÁSICO', small: 'Piedra, papel y tijera', primary: !ext, onClick: () => { ext = false; BG.save('ext', false); BG.ui.hide(); newMatch(); } },
-      { label: '🖖 EXTENDIDO', small: 'Con Lagarto y Spock (5 opciones)', primary: ext, onClick: () => { ext = true; BG.save('ext', true); BG.ui.hide(); newMatch(); } },
+      { label: '🧠 DUELO TÁCTICO VS IA ADAPTATIVA', small: `Leé el radar de probabilidades y usá habilidades · Récord: ${U.fmt(BG.getBest() || 0)}`, primary: true, onClick: () => { BG.ui.hide(); iniciarDuelo('ai'); } },
+      { label: '🌐 SALA ONLINE 1V1 CON AMIGOS', small: 'Creá o unite a una sala con código en tiempo real', onClick: () => { BG.ui.hide(); abrirModalOnline(); } }
     ],
-    html: ext ? '' : '', help: BG.game.help + '<br>En el extendido: tijera corta papel, papel envuelve piedra, piedra aplasta lagarto, lagarto envenena a Spock, Spock rompe tijera, tijera decapita lagarto, lagarto come papel, papel refuta a Spock, Spock vaporiza piedra y piedra aplasta tijera.' });
+    help: BG.isTouch ? BG.game.helpTouch : BG.game.help
+  });
 }
-BG.input.onKey((e, code, down) => { if (!down || e.repeat || BG.ui.open) return; const i = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4 }[code]; if (i != null && moves()[i]) play(moves()[i]); });
-if (BG.thumb) { ext = true; you = 3; cpu = 2; rounds = ['y', 'c', 'y', 'd', 'c', 'y']; buildPicks(); dots(); document.getElementById('hy').firstChild.nodeValue = '🖖'; document.getElementById('hc').firstChild.nodeValue = '✌️'; document.getElementById('hy').classList.add('win'); document.getElementById('res').textContent = '¡GANASTE LA RONDA!'; document.getElementById('res').style.color = '#39ff88'; }
-else BG.ready.then(showMenu);
+
+function activarTactica(id) {
+  if (state !== 'play' || (animRonda && performance.now() - animRonda.t0 < 950)) return;
+  if (id === 'scan') {
+    if (energia < 1 || jugadaDescartadaIA !== null || modoJuego === 'online') return;
+    energia -= 1;
+    const descartables = [0, 1, 2].filter(x => x !== proximaJugadaIA);
+    jugadaDescartadaIA = U.pick(descartables);
+    SFX.play('power');
+    BG.ui.toast(`ESCANEO: LA IA NO JUGARÁ ${JUGADAS[jugadaDescartadaIA].nombre}`, '#38bdf8');
+    return;
+  }
+  const costo = id === 'crit' ? 2 : 1;
+  if (tacticaActiva === id) { tacticaActiva = null; SFX.play('click'); return; }
+  if (energia < costo) {
+    SFX.play('error');
+    BG.ui.toast(`Necesitás ${costo} de energía táctica`, '#ff2a5f');
+    return;
+  }
+  tacticaActiva = id;
+  SFX.play('select');
+}
+
+function elegirMano(miId) {
+  if (state !== 'play') return;
+  if (animRonda && performance.now() - animRonda.t0 < 950) return;
+
+  if (modoJuego === 'online') {
+    enviarJugadaOnline(miId);
+    return;
+  }
+
+  const iaId = proximaJugadaIA;
+
+  // Registrar patrón del jugador antes de actualizar
+  if (ultimaMia !== null) transiciones[ultimaMia][miId] += 2;
+  conteoJugador[miId]++;
+  ultimaMia = miId;
+  ultimaIA = iaId;
+
+  resolverChoque(miId, iaId);
+  // Rotar perfil de IA ocasionalmente
+  if (Math.random() < 0.35) perfilIA = U.pick(PERFILES_IA);
+  calcularIntencionIA();
+}
+
+function resolverChoque(miId, iaId) {
+  let res = 0; // 0 empate, 1 gano, -1 pierdo
+  if (miId !== iaId) {
+    res = JUGADAS[miId].vencesA === iaId ? 1 : -1;
+  }
+  ultimoResultado = res;
+
+  let dmgToFoe = 0, dmgToMe = 0;
+  let txt = '¡EMPATE! +1 ENERGÍA', col = '#38bdf8';
+
+  if (res === 1) {
+    const esCrit = tacticaActiva === 'crit' && energia >= 2;
+    if (esCrit) energia -= 2;
+    dmgToFoe = esCrit ? 2 : 1;
+    foeHP = Math.max(0, foeHP - dmgToFoe);
+    racha++;
+    energia = Math.min(3, energia + 1);
+    const pts = (esCrit ? 180 : 100) + racha * 25;
+    score += pts;
+    txt = esCrit ? `¡GOLPE CRÍTICO! -2 VIDA (+${pts})` : `¡GANASTE EL CHOQUE! (+${pts})`;
+    col = '#10b981';
+    SFX.play('coin');
+    FX.burst(W / 2, 290, { n: 26, color: ['#10b981', '#fde047', '#fff'], speed: 210, life: 0.6 });
+  } else if (res === -1) {
+    const tieneEscudo = tacticaActiva === 'shield' && energia >= 1;
+    if (tieneEscudo) {
+      energia -= 1;
+      txt = '¡ESCUDO BLOQUEÓ EL DAÑO!';
+      col = '#00b4ff';
+      SFX.play('power');
+      FX.ring(W / 2, 290, { color: '#00b4ff', max: 75 });
+    } else {
+      dmgToMe = 1;
+      myHP = Math.max(0, myHP - 1);
+      racha = 0;
+      energia = Math.min(3, energia + 1);
+      txt = '¡IMPACTO RECIBIDO! -1 VIDA';
+      col = '#ff2a5f';
+      SFX.play('hurt');
+      FX.shake(8, 0.3);
+      FX.burst(W / 2, 290, { n: 18, color: ['#ff2a5f', '#ff6600'], speed: 170, life: 0.45 });
+    }
+  } else {
+    energia = Math.min(3, energia + 1);
+    score += 20;
+    SFX.play('bounce');
+    FX.ring(W / 2, 290, { color: '#fde047', max: 55 });
+  }
+
+  tacticaActiva = null;
+  animRonda = { mio: miId, rival: iaId, resTxt: txt, resCol: col, t0: performance.now() };
+  actualizarHUD();
+
+  if (foeHP <= 0 || myHP <= 0) {
+    if (BG.preview) { setTimeout(() => iniciarDuelo('ai'), 900); return; }
+    const gano = foeHP <= 0;
+    if (gano) score += myHP * 60;
+    actualizarHUD();
+    state = 'over';
+    BG.stop();
+    BG.music.stop();
+    const r = BG.submitScore(score, { won: gano });
+    setTimeout(() => {
+      BG.ui.gameOver({
+        win: gano,
+        title: gano ? '¡VICTORIA TÁCTICA!' : 'FIN DEL DUELO',
+        sub: gano ? `Derrotaste al rival conservando ${myHP} escudos` : 'El rival agotó tus escudos',
+        score,
+        isRecord: r.isRecord || r.first,
+        stats: [
+          { label: 'Marcador', value: `${5 - foeHP} - ${5 - myHP}` },
+          { label: 'Récord', value: U.fmt(BG.getBest() || score) }
+        ],
+        onRetry: () => iniciarDuelo(modoJuego),
+        onMenu: mostrarMenu
+      });
+    }, 1050);
+  }
+}
+
+// ── Salas Online 1v1 con asegurarIdentidad() (Realtime Database) ──────────
+const fbConfig = {
+  apiKey: "AIzaSyACkFsE_0cBEsLEPQPc3GLeZD3KZ0i89RE",
+  authDomain: "gor2games-657f7.firebaseapp.com",
+  databaseURL: "https://gor2games-657f7-default-rtdb.firebaseio.com",
+  projectId: "gor2games-657f7"
+};
+let FB_OK = false;
+try { if (!firebase.apps.length) firebase.initializeApp(fbConfig); FB_OK = !!firebase.database; } catch (e) {}
+
+async function asegurarIdentidad() {
+  const auth = firebase.auth();
+  if (!auth.currentUser) {
+    await new Promise(res => { const off = auth.onAuthStateChanged(() => { off(); res(); }); setTimeout(res, 2200); });
+  }
+  if (!auth.currentUser) await auth.signInAnonymously();
+  return auth.currentUser.uid;
+}
+
+const Net = {
+  ref: null, code: '', uid: null, role: 'host', rivalNombre: 'Esperando rival…', miEleccion: null, rondaNum: 1, offs: [],
+  salir() {
+    this.offs.forEach(f => { try { f(); } catch (e) {} }); this.offs = [];
+    if (this.ref) BG.portal.send('bg-room', { code: null });
+    this.ref = null; this.code = ''; this.miEleccion = null;
+  }
+};
+
+function abrirModalOnline() {
+  BG.ui.show({
+    title: 'SALA ONLINE 1V1',
+    sub: 'Jugá Piedra Papel Tijera en tiempo real contra un amigo.',
+    html: `
+      <div style="display:flex;gap:8px;margin:10px 0">
+        <input id="rps-room-inp" maxlength="6" placeholder="CÓDIGO (EJ: AB12)" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid var(--bg-line);border-radius:10px;padding:10px;color:#fff;font-family:var(--bg-font-d);font-weight:800;text-align:center;text-transform:uppercase;outline:none">
+        <button class="bg-btn" id="rps-join-btn">UNIRSE</button>
+      </div>
+      <div class="cos-aviso" id="rps-net-status"></div>
+    `,
+    buttons: [
+      { label: '⚡ CREAR SALA NUEVA', primary: true, onClick: () => crearSalaRPS() },
+      { label: '← VOLVER', onClick: () => mostrarMenu() }
+    ],
+    onShow: card => {
+      card.querySelector('#rps-join-btn').addEventListener('click', () => {
+        const c = card.querySelector('#rps-room-inp').value;
+        unirseSalaRPS(c);
+      });
+    }
+  });
+}
+
+async function crearSalaRPS() {
+  const st = document.getElementById('rps-net-status');
+  if (!FB_OK) { if (st) st.textContent = 'Sin conexión a Firebase.'; return; }
+  try {
+    if (st) st.textContent = 'Creando sala…';
+    const uid = await asegurarIdentidad();
+    Net.salir();
+    const code = Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('');
+    const ref = firebase.database().ref('gameRooms/rps_' + code);
+    const nom = String((portalUser && portalUser.nombre) || 'Jugador 1').slice(0, 20);
+    await ref.set({ created: Date.now(), host: uid, hostNombre: nom, round: 1 });
+    conectarSalaRPS(ref, code, uid, 'host');
+  } catch (e) { if (st) st.textContent = 'No se pudo crear la sala.'; }
+}
+
+async function unirseSalaRPS(rawCode) {
+  const st = document.getElementById('rps-net-status');
+  const code = String(rawCode || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (code.length < 4 || !FB_OK) { if (st) st.textContent = 'Código inválido.'; return; }
+  try {
+    if (st) st.textContent = 'Conectando…';
+    const uid = await asegurarIdentidad();
+    Net.salir();
+    const ref = firebase.database().ref('gameRooms/rps_' + code);
+    const snap = await ref.once('value');
+    const d = snap.val();
+    if (!d) { if (st) st.textContent = 'Sala no encontrada.'; return; }
+    const role = d.host === uid ? 'host' : 'guest';
+    if (role === 'guest') {
+      const nom = String((portalUser && portalUser.nombre) || 'Jugador 2').slice(0, 20);
+      await ref.update({ guest: uid, guestNombre: nom });
+    }
+    conectarSalaRPS(ref, code, uid, role);
+  } catch (e) { if (st) st.textContent = 'Error al unirse.'; }
+}
+
+function conectarSalaRPS(ref, code, uid, role) {
+  BG.ui.hide();
+  iniciarDuelo('online');
+  Object.assign(Net, { ref, code, uid, role, miEleccion: null, rondaNum: 1 });
+  BG.portal.send('bg-room', { code });
+
+  let ultimaRondaResuelta = 0;
+  const fn = snap => {
+    const d = snap.val();
+    if (!d) return;
+    Net.rivalNombre = String((role === 'host' ? d.guestNombre : d.hostNombre) || `Sala ${code} (Esperando amigo)`).slice(0, 24);
+    const rNum = d.round || 1;
+    const moves = (d.moves && d.moves[rNum]) || {};
+    if (moves.host != null && moves.guest != null && ultimaRondaResuelta < rNum) {
+      ultimaRondaResuelta = rNum;
+      const miM = role === 'host' ? Number(moves.host) : Number(moves.guest);
+      const suM = role === 'host' ? Number(moves.guest) : Number(moves.host);
+      Net.miEleccion = null;
+      Net.rondaNum = rNum + 1;
+      resolverChoque(miM, suM);
+      if (role === 'host') ref.update({ round: rNum + 1 }).catch(() => {});
+    }
+  };
+  ref.on('value', fn);
+  Net.offs.push(() => ref.off('value', fn));
+}
+
+function enviarJugadaOnline(miId) {
+  if (!Net.ref || Net.miEleccion !== null) return;
+  Net.miEleccion = miId;
+  SFX.play('select');
+  BG.ui.toast(`Elegiste ${JUGADAS[miId].nombre} · Esperando al rival…`, '#00b4ff');
+  Net.ref.child(`moves/${Net.rondaNum}/${Net.role}`).set(miId).catch(() => {});
+}
+
+// ── Controles y Dibujo Vectorial Ilustrado ────────────────────────────────
+BG.input.onKey((e, code, down) => {
+  if (!down || state !== 'play' || BG.paused || BG.ui.open) return;
+  if (e.key === '1') elegirMano(0);
+  else if (e.key === '2') elegirMano(1);
+  else if (e.key === '3') elegirMano(2);
+  else if (code === 'KeyQ') activarTactica('crit');
+  else if (code === 'KeyW') activarTactica('shield');
+  else if (code === 'KeyE') activarTactica('scan');
+});
+
+view.canvas.addEventListener('pointerdown', e => {
+  if (state !== 'play') return;
+  const p = view.toLocal(e.clientX, e.clientY);
+  for (const tb of tacBounds) {
+    if (p.x >= tb.x && p.x <= tb.x + tb.w && p.y >= tb.y && p.y <= tb.y + tb.h) {
+      activarTactica(tb.id);
+      return;
+    }
+  }
+  for (const cb of cardBounds) {
+    if (p.x >= cb.x && p.x <= cb.x + cb.w && p.y >= cb.y && p.y <= cb.y + cb.h) {
+      elegirMano(cb.id);
+      return;
+    }
+  }
+});
+
+function dibujarEmblemaArma(id, cx, cy, r, emb) {
+  const col = [emb.cR, emb.cP, emb.cS][id];
+  ctx.save();
+  ctx.translate(cx, cy);
+  D.glowCircle(ctx, 0, 0, r, col + '44', 18);
+  ctx.fillStyle = '#0f172a';
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = col;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  if (id === 0) {
+    // PIEDRA: Puño / Meteorito Blindado Vectorial
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.48, -r * 0.15);
+    ctx.lineTo(-r * 0.25, -r * 0.52);
+    ctx.lineTo(r * 0.32, -r * 0.48);
+    ctx.lineTo(r * 0.52, 0);
+    ctx.lineTo(r * 0.28, r * 0.48);
+    ctx.lineTo(-r * 0.35, r * 0.44);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // Nudillos luminosos
+    ctx.fillStyle = '#fff';
+    for (const kx of [-12, 0, 12]) { ctx.beginPath(); ctx.arc(kx, -6, 3.2, 0, Math.PI * 2); ctx.fill(); }
+  } else if (id === 1) {
+    // PAPEL: Escudo / Pergamino de Energía Vectorial
+    D.rr(ctx, -r * 0.42, -r * 0.52, r * 0.84, r * 1.04, 10);
+    ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 3.5;
+    for (const ly of [-14, 0, 14]) {
+      ctx.beginPath(); ctx.moveTo(-r * 0.24, ly); ctx.lineTo(r * 0.24, ly); ctx.stroke();
+    }
+  } else {
+    // TIJERA: Hojas Láser Cruzadas Vectoriales
+    for (const s of [-1, 1]) {
+      ctx.save();
+      ctx.scale(s, 1);
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.1, r * 0.1);
+      ctx.lineTo(r * 0.45, -r * 0.52);
+      ctx.lineTo(r * 0.15, -r * 0.52);
+      ctx.lineTo(-r * 0.22, 0);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(-r * 0.24, r * 0.32, r * 0.18, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+function update(dt) { t += dt; }
+
+function render() {
+  const emb = itemEmb(embEquip) || CATALOGO_RPS.emblemas[0];
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0b1020');
+  bg.addColorStop(1, '#161f38');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  FX.applyShake(ctx);
+
+  // 1. Panel Superior: Escáner de Tendencias de la IA / Estado Online
+  D.rr(ctx, 20, 18, W - 40, 152, 18);
+  ctx.fillStyle = 'rgba(20, 28, 48, 0.94)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  const rivalNom = modoJuego === 'online' ? Net.rivalNombre : `IA: ${perfilIA.nombre}`;
+  D.text(ctx, rivalNom, 38, 44, { size: 13, weight: 800, color: '#38bdf8', align: 'left' });
+
+  // Barras de Escudos (Vidas) de Rival y Jugador
+  for (let i = 0; i < maxHP; i++) {
+    ctx.fillStyle = i < foeHP ? '#ff2a5f' : 'rgba(255,255,255,0.1)';
+    D.rr(ctx, W - 165 + i * 26, 35, 20, 14, 4); ctx.fill();
+  }
+
+  if (modoJuego === 'ai') {
+    D.text(ctx, perfilIA.desc, 38, 68, { size: 12, weight: 600, color: '#94a3b8', align: 'left', family: 'body' });
+    D.text(ctx, 'RADAR DE PROBABILIDAD DEL RIVAL EN ESTA RONDA:', 38, 94, { size: 10.5, weight: 800, color: '#ffb800', align: 'left' });
+
+    const cols = [emb.cR, emb.cP, emb.cS];
+    for (let i = 0; i < 3; i++) {
+      const bx = 38 + i * 160, by = 112, bw = 142, bh = 22;
+      const descartada = jugadaDescartadaIA === i;
+      D.rr(ctx, bx, by, bw, bh, 7);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fill();
+      if (!descartada) {
+        D.rr(ctx, bx, by, (probabilidadesIA[i] / 100) * bw, bh, 7);
+        ctx.fillStyle = cols[i] + '88'; ctx.fill();
+      }
+      D.text(ctx, descartada ? `${JUGADAS[i].nombre}: 0%` : `${JUGADAS[i].nombre}: ${probabilidadesIA[i]}%`, bx + bw / 2, by + 12, {
+        size: 11, weight: 800, color: descartada ? '#64748b' : '#ffffff'
+      });
+    }
+    const totMias = conteoJugador[0] + conteoJugador[1] + conteoJugador[2];
+    const favIdx = conteoJugador.indexOf(Math.max(...conteoJugador));
+    D.text(ctx, `Tu tendencia detectada por la IA: ${JUGADAS[favIdx].nombre} (${Math.round((conteoJugador[favIdx] / totMias) * 100)}%)`, 38, 152, {
+      size: 11, weight: 700, color: '#cbd5e1', align: 'left', family: 'body'
+    });
+  } else {
+    D.text(ctx, `Duelo Online en vivo · Sala ${Net.code}`, 38, 86, { size: 14, weight: 700, color: '#e2e8f0', align: 'left' });
+    D.text(ctx, Net.miEleccion !== null ? '¡Jugada enviada! Esperando a que elija tu rival…' : 'Elegí Piedra, Papel o Tijera abajo.', 38, 120, { size: 13, weight: 600, color: '#ffb800', align: 'left', family: 'body' });
+  }
+
+  // 2. Arena Central de Choque
+  D.rr(ctx, 20, 184, W - 40, 212, 22);
+  ctx.fillStyle = 'rgba(13, 18, 32, 0.85)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.stroke();
+
+  if (animRonda) {
+    const dtA = Math.min(1, (performance.now() - animRonda.t0) / 260);
+    const ease = U.ease.outBack(dtA);
+    const lx = U.lerp(80, 165, ease), rx = U.lerp(W - 80, W - 165, ease);
+
+    D.text(ctx, 'VOS', lx, 212, { size: 12, weight: 800, color: '#38bdf8' });
+    dibujarEmblemaArma(animRonda.mio, lx, 276, 52, emb);
+
+    D.text(ctx, 'VS', W / 2, 276, { size: 22, weight: 900, color: '#64748b' });
+
+    D.text(ctx, 'RIVAL', rx, 212, { size: 12, weight: 800, color: '#ff2a5f' });
+    dibujarEmblemaArma(animRonda.rival, rx, 276, 52, emb);
+
+    D.text(ctx, animRonda.resTxt, W / 2, 366, { size: 16, weight: 900, color: animRonda.resCol });
+  } else {
+    D.text(ctx, 'PREPARADO PARA EL CHOQUE', W / 2, 275, { size: 18, weight: 800, color: '#64748b' });
+    D.text(ctx, 'Analizá el radar superior y elegí tu táctica y tu mano', W / 2, 305, { size: 13, weight: 600, color: '#94a3b8', family: 'body' });
+  }
+
+  // 3. Barra de Tus Escudos y Habilidades Tácticas con Energía
+  D.text(ctx, 'TUS ESCUDOS:', 34, 424, { size: 12, weight: 800, color: '#10b981', align: 'left' });
+  for (let i = 0; i < maxHP; i++) {
+    ctx.fillStyle = i < myHP ? '#10b981' : 'rgba(255,255,255,0.1)';
+    D.rr(ctx, 138 + i * 26, 415, 20, 14, 4); ctx.fill();
+  }
+
+  D.text(ctx, `ENERGÍA TÁCTICA: ${'⚡'.repeat(energia) || '0'}/3`, W - 34, 424, { size: 12, weight: 800, color: '#ffb800', align: 'right' });
+
+  tacBounds = [];
+  const tacs = [
+    { id: 'crit',   nombre: 'CRÍTICO x2', costo: 2, tecla: 'Q', col: '#ff6600' },
+    { id: 'shield', nombre: 'ESCUDO',     costo: 1, tecla: 'W', col: '#00b4ff' },
+    { id: 'scan',   nombre: 'ESCANEAR IA',costo: 1, tecla: 'E', col: '#34d399' }
+  ];
+  const tw = 156, th = 52, tGap = 16;
+  tacs.forEach((tc, idx) => {
+    const tx = 20 + idx * (tw + tGap), ty = 446;
+    tacBounds.push({ id: tc.id, x: tx, y: ty, w: tw, h: th });
+    const sel = tacticaActiva === tc.id;
+    const disp = energia >= tc.costo && !(tc.id === 'scan' && (jugadaDescartadaIA !== null || modoJuego === 'online'));
+
+    D.rr(ctx, tx, ty, tw, th, 12);
+    ctx.fillStyle = sel ? tc.col + '38' : 'rgba(255,255,255,0.05)';
+    ctx.fill();
+    ctx.strokeStyle = sel ? tc.col : (disp ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)');
+    ctx.lineWidth = sel ? 2.5 : 1.5;
+    ctx.stroke();
+
+    D.text(ctx, `${tc.nombre} (${tc.tecla})`, tx + tw / 2, ty + 19, { size: 12, weight: 800, color: disp ? '#ffffff' : '#64748b' });
+    D.text(ctx, `Costo: ${tc.costo} Energía`, tx + tw / 2, ty + 36, { size: 11, weight: 600, color: sel ? '#fde047' : '#94a3b8', family: 'body' });
+  });
+
+  // 4. Las 3 Cartas de Acción (Piedra, Papel, Tijera)
+  cardBounds = [];
+  const cw = 156, ch = 176, cGap = 16, cy = 518;
+  JUGADAS.forEach((j, idx) => {
+    const cx = 20 + idx * (cw + cGap);
+    cardBounds.push({ id: j.id, x: cx, y: cy, w: cw, h: ch });
+    const col = [emb.cR, emb.cP, emb.cS][idx];
+
+    D.rr(ctx, cx, cy, cw, ch, 18);
+    ctx.fillStyle = 'rgba(22, 30, 52, 0.96)';
+    ctx.fill();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2.2;
+    ctx.stroke();
+
+    dibujarEmblemaArma(j.id, cx + cw / 2, cy + 72, 42, emb);
+
+    D.text(ctx, j.nombre, cx + cw / 2, cy + 138, { size: 16, weight: 900, color: '#ffffff' });
+    D.text(ctx, `Vence a ${JUGADAS[j.vencesA].nombre}`, cx + cw / 2, cy + 158, { size: 11, weight: 600, color: '#94a3b8', family: 'body' });
+  });
+
+  FX.draw(ctx);
+  ctx.restore();
+  FX.drawFlash(ctx, W, H);
+}
+
+const SONG = {
+  bpm: 128,
+  tracks: [
+    { type: 'triangle', vol: 0.24, notes: 'D5 . F5 . A5 . G5 . F5 . E5 . D5 . . . C5 . E5 . G5 . F5 . E5 . C5 . D5 . . .' },
+    { type: 'sine',     vol: 0.4,  notes: 'D3 . D3 . A2 . A2 .D3 . D3 . A2 . A2 . C3 . C3 . G2 . G2 . D3 . A2 . D3 . . .' }
+  ]
+};
+
+iniciarDuelo('ai');
+let roomParam = new URLSearchParams(location.search).get('room');
+if (roomParam) {
+  unirseSalaRPS(roomParam);
+} else if (BG.thumb) {
+  elegirMano(0);
+  if (BG.preview) {
+    setInterval(() => {
+      if (state !== 'play') iniciarDuelo('ai');
+      if (energia >= 2) activarTactica('crit');
+      else if (energia >= 1 && jugadaDescartadaIA === null) activarTactica('scan');
+      // Elegir mano que vence a la mayor probabilidad de la IA
+      const maxP = probabilidadesIA.indexOf(Math.max(...probabilidadesIA));
+      elegirMano((maxP + 1) % 3);
+    }, 980);
+  }
+} else {
+  state = 'menu';
+  BG.stop();
+  BG.music.stop();
+  BG.ready.then(mostrarMenu);
+}
+
+BG.loop(dt => update(dt), render);
 </script>
 </body>
 </html>
