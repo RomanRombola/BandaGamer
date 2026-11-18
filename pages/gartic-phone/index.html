@@ -291,10 +291,15 @@ const COLORS=["#000000","#ffffff","#e63946","#ff6600","#ffd60a","#2dc653","#0096
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo(0,0);}
-function toast(msg,icon="ℹ️"){const c=document.getElementById("toast-c"),t=document.createElement("div");t.className="toast";t.innerHTML=`<span>${icon}</span><span>${msg}</span>`;c.appendChild(t);setTimeout(()=>t.remove(),3000);}
+// Escapa texto que viene de la sala (nombres, chat, palabras). Las salas se pueden escribir
+// sin cuenta, así que NUNCA se inserta texto de otro jugador como HTML: un nombre o mensaje
+// como <img onerror=...> ejecutaba código en el navegador de todos (y, como el juego corre en
+// el mismo dominio que el portal, podía robar la sesión de Google del jugador).
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function toast(msg,icon="ℹ️"){const c=document.getElementById("toast-c"),t=document.createElement("div");t.className="toast";t.innerHTML=`<span>${esc(icon)}</span><span>${esc(msg)}</span>`;c.appendChild(t);setTimeout(()=>t.remove(),3000);}
 function genCode(){const ch="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";return Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join("");}
 function genId(){return Math.random().toString(36).substr(2,10)+Date.now().toString(36);}
-function emj(n){const e=["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔"];let h=0;for(let i=0;i<n.length;i++)h=(h<<5)-h+n.charCodeAt(i);return e[Math.abs(h)%e.length];}
+function emj(n){n=String(n||"");const e=["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔"];let h=0;for(let i=0;i<n.length;i++)h=(h<<5)-h+n.charCodeAt(i);return e[Math.abs(h)%e.length];}
 function rref(p){return db.ref(p);}
 
 // ── CREAR / UNIRSE ────────────────────────────────────────────────────────
@@ -409,7 +414,7 @@ function updateLobbyList(players){
   const list=document.getElementById("lobby-list");list.innerHTML="";
   Object.values(players).sort((a,b)=>a.joinedAt-b.joinedAt).forEach(p=>{
     const d=document.createElement("div");d.className=`pi ${p.isHost?"host":""}`;
-    d.innerHTML=`<div class="av">${emj(p.name)}</div><div class="pn">${p.name}</div>${p.isHost?'<span class="badge bh">HOST</span>':''}${p.id===myId?'<span class="badge" style="background:rgba(0,170,255,0.1);color:var(--se);border:1px solid rgba(0,170,255,0.2)">TÚ</span>':''}`;
+    d.innerHTML=`<div class="av">${emj(p.name)}</div><div class="pn">${esc(p.name)}</div>${p.isHost?'<span class="badge bh">HOST</span>':''}${p.id===myId?'<span class="badge" style="background:rgba(0,170,255,0.1);color:var(--se);border:1px solid rgba(0,170,255,0.2)">TÚ</span>':''}`;
     list.appendChild(d);
   });
 }
@@ -654,9 +659,9 @@ function renderChain(idx){
   chain.steps.forEach((step,i)=>{
     const d=document.createElement("div");
     d.className=`chain-step ${step.type==="draw"?"step-draw":"step-text"}`;
-    d.innerHTML=`<div class="chain-author">${step.type==="draw"?"🎨":"✍️"} ${step.author} — paso ${i+1}</div>`;
-    if(step.type==="text") d.innerHTML+=`<div class="chain-text">"${step.content}"</div>`;
-    else d.innerHTML+=`<img class="chain-img" src="${step.content}" alt="dibujo">`;
+    d.innerHTML=`<div class="chain-author">${step.type==="draw"?"🎨":"✍️"} ${esc(step.author)} — paso ${i+1}</div>`;
+    if(step.type==="text") d.innerHTML+=`<div class="chain-text">"${esc(step.content)}"</div>`;
+    else if(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(String(step.content||""))) d.innerHTML+=`<img class="chain-img" src="${step.content}" alt="dibujo">`;
     container.appendChild(d);
   });
   // Dots

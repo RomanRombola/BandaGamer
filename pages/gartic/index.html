@@ -270,10 +270,15 @@ const COLORS=["#ffffff","#111111","#ff3366","#ff6600","#ffe600","#39ff14","#00aa
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo(0,0);}
-function toast(msg,icon="ℹ️"){const c=document.getElementById("toast-c"),t=document.createElement("div");t.className="toast";t.innerHTML=`<span>${icon}</span><span>${msg}</span>`;c.appendChild(t);setTimeout(()=>t.remove(),3000);}
+// Escapa texto que viene de la sala (nombres, chat, palabras). Las salas se pueden escribir
+// sin cuenta, así que NUNCA se inserta texto de otro jugador como HTML: un nombre o mensaje
+// como <img onerror=...> ejecutaba código en el navegador de todos (y, como el juego corre en
+// el mismo dominio que el portal, podía robar la sesión de Google del jugador).
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function toast(msg,icon="ℹ️"){const c=document.getElementById("toast-c"),t=document.createElement("div");t.className="toast";t.innerHTML=`<span>${esc(icon)}</span><span>${esc(msg)}</span>`;c.appendChild(t);setTimeout(()=>t.remove(),3000);}
 function genCode(){const ch="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";return Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join("");}
 function genId(){return Math.random().toString(36).substr(2,12)+Date.now().toString(36);}
-function emj(n){const e=["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔"];let h=0;for(let i=0;i<n.length;i++)h=(h<<5)-h+n.charCodeAt(i);return e[Math.abs(h)%e.length];}
+function emj(n){n=String(n||"");const e=["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔"];let h=0;for(let i=0;i<n.length;i++)h=(h<<5)-h+n.charCodeAt(i);return e[Math.abs(h)%e.length];}
 function blankWord(w){return w.split("").map(c=>c===" "?"  ":"_").join(" ");}
 function randWords(n=3){return [...POOL].sort(()=>Math.random()-0.5).slice(0,n);}
 
@@ -353,7 +358,7 @@ function handleRoom(room){
     const plist=document.getElementById("lobby-list");plist.innerHTML="";
     Object.values(players).sort((a,b)=>a.joinedAt-b.joinedAt).forEach(p=>{
       const d=document.createElement("div");d.className=`pi ${p.isHost?"host":""}`;
-      d.innerHTML=`<div class="av">${emj(p.name)}</div><div class="pn">${p.name}</div>${p.isHost?'<span class="badge bh">HOST</span>':''}${p.id===myId?'<span class="badge" style="background:rgba(0,170,255,0.1);color:var(--se);border:1px solid rgba(0,170,255,0.2)">TÚ</span>':''}`;
+      d.innerHTML=`<div class="av">${emj(p.name)}</div><div class="pn">${esc(p.name)}</div>${p.isHost?'<span class="badge bh">HOST</span>':''}${p.id===myId?'<span class="badge" style="background:rgba(0,170,255,0.1);color:var(--se);border:1px solid rgba(0,170,255,0.2)">TÚ</span>':''}`;
       plist.appendChild(d);
     });
     document.getElementById("p-count").textContent=Object.keys(players).length;
@@ -442,7 +447,7 @@ function updateSidePlayers(room,players){
     const isDraw=p.id===room.currentDrawer;
     const hasG=guessedMap[p.id];
     const d=document.createElement("div");d.className=`pi ${isDraw?"drawing":""}`;
-    d.innerHTML=`<div class="av">${emj(p.name)}</div><div style="flex:1"><div class="pn">${p.name}${p.id===myId?" <span style='color:var(--se);font-size:10px'>(vos)</span>":""}</div></div><span class="ps">${p.score}</span>${isDraw?'<span class="badge bdraw">✏️</span>':hasG?'<span class="badge bguess">✓</span>':""}`;
+    d.innerHTML=`<div class="av">${emj(p.name)}</div><div style="flex:1"><div class="pn">${esc(p.name)}${p.id===myId?" <span style='color:var(--se);font-size:10px'>(vos)</span>":""}</div></div><span class="ps">${Number(p.score)||0}</span>${isDraw?'<span class="badge bdraw">✏️</span>':hasG?'<span class="badge bguess">✓</span>':""}`;
     list.appendChild(d);
   });
 }
@@ -509,7 +514,7 @@ function subChat(){
     msgs.slice(-50).forEach(m=>{
       const d=document.createElement("div");
       d.className=`cmsg ${m.correct?"correct":m.sys?"sys":m.id===myId?"mine":""}`;
-      d.innerHTML=m.sys?m.text:`<span class="cname">${m.name}:</span> ${m.text}`;
+      d.innerHTML=m.sys?esc(m.text):`<span class="cname">${esc(m.name)}:</span> ${esc(m.text)}`;
       box.appendChild(d);
     });
     box.scrollTop=box.scrollHeight;
@@ -558,7 +563,7 @@ function showRoundResult(room,players){
   const sc=document.getElementById("rr-scores");sc.innerHTML="";
   Object.values(players).sort((a,b)=>b.score-a.score).forEach((p,i)=>{
     const d=document.createElement("div");d.className="score-item";
-    d.innerHTML=`<span style="font-size:16px">${["🥇","🥈","🥉"][i]||i+1}</span><div class="av">${emj(p.name)}</div><span style="flex:1;font-weight:700">${p.name}</span><span style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;color:var(--ac)">${p.score}</span>`;
+    d.innerHTML=`<span style="font-size:16px">${["🥇","🥈","🥉"][i]||i+1}</span><div class="av">${emj(p.name)}</div><span style="flex:1;font-weight:700">${esc(p.name)}</span><span style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;color:var(--ac)">${Number(p.score)||0}</span>`;
     sc.appendChild(d);
   });
   if(isHost){document.getElementById("rr-host").style.display="block";document.getElementById("rr-guest").style.display="none";}
@@ -586,7 +591,7 @@ function showFinal(players){
   const sc=document.getElementById("final-scores");sc.innerHTML="";
   Object.values(players).sort((a,b)=>b.score-a.score).forEach((p,i)=>{
     const d=document.createElement("div");d.className="score-item";
-    d.innerHTML=`<span style="font-size:18px">${["🥇","🥈","🥉"][i]||i+1}</span><div class="av">${emj(p.name)}</div><span style="flex:1;font-weight:700;font-size:15px">${p.name}</span><span style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--ac)">${p.score}</span>`;
+    d.innerHTML=`<span style="font-size:18px">${["🥇","🥈","🥉"][i]||i+1}</span><div class="av">${emj(p.name)}</div><span style="flex:1;font-weight:700;font-size:15px">${esc(p.name)}</span><span style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--ac)">${Number(p.score)||0}</span>`;
     sc.appendChild(d);
   });
   show("s-final");

@@ -384,10 +384,15 @@ let lastStatus=null;
 
 // ── UI helpers ─────────────────────────────────────────────────────────────
 function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); document.getElementById(id).classList.add("active"); window.scrollTo(0,0); }
-function toast(msg,icon="ℹ️"){ const c=document.getElementById("toast-c"),t=document.createElement("div"); t.className="toast"; t.innerHTML=`<span>${icon}</span><span>${msg}</span>`; c.appendChild(t); setTimeout(()=>t.remove(),3000); }
+// Escapa texto que viene de la sala (nombres, chat, palabras). Las salas se pueden escribir
+// sin cuenta, así que NUNCA se inserta texto de otro jugador como HTML: un nombre o mensaje
+// como <img onerror=...> ejecutaba código en el navegador de todos (y, como el juego corre en
+// el mismo dominio que el portal, podía robar la sesión de Google del jugador).
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function toast(msg,icon="ℹ️"){ const c=document.getElementById("toast-c"),t=document.createElement("div"); t.className="toast"; t.innerHTML=`<span>${esc(icon)}</span><span>${esc(msg)}</span>`; c.appendChild(t); setTimeout(()=>t.remove(),3000); }
 function genCode(){ const ch="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; return Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join(""); }
 function genId(){ return Math.random().toString(36).substr(2,12)+Date.now().toString(36); }
-function emoji(n){ const e=["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔","🦭","🐨","🐻","🦞","🦚"]; let h=0; for(let i=0;i<n.length;i++) h=(h<<5)-h+n.charCodeAt(i); return e[Math.abs(h)%e.length]; }
+function emoji(n){ n=String(n||""); const e=["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔","🦭","🐨","🐻","🦞","🦚"]; let h=0; for(let i=0;i<n.length;i++) h=(h<<5)-h+n.charCodeAt(i); return e[Math.abs(h)%e.length]; }
 function rref(path){ return db.ref(path); }
 
 // ── Categorías UI ──────────────────────────────────────────────────────────
@@ -525,7 +530,7 @@ function updateLobbyList(players){
   Object.values(players).sort((a,b)=>a.joinedAt-b.joinedAt).forEach(p=>{
     const d=document.createElement("div");
     d.className=`pi ${p.isHost?"host":""}`;
-    d.innerHTML=`<div class="av">${emoji(p.name)}</div><div class="pn">${p.name}</div>${p.isHost?'<span class="badge bh">HOST</span>':''} ${p.id===myId?'<span class="badge" style="background:rgba(0,170,255,0.1);color:var(--se);border:1px solid rgba(0,170,255,0.2)">TÚ</span>':''}`;
+    d.innerHTML=`<div class="av">${emoji(p.name)}</div><div class="pn">${esc(p.name)}</div>${p.isHost?'<span class="badge bh">HOST</span>':''} ${p.id===myId?'<span class="badge" style="background:rgba(0,170,255,0.1);color:var(--se);border:1px solid rgba(0,170,255,0.2)">TÚ</span>':''}`;
     list.appendChild(d);
   });
 }
@@ -579,7 +584,7 @@ async function loadMyRole(room){
       <div class="role-card civil">
         <div class="role-badge rb-civil">✅ ERES CIVIL</div>
         <div style="font-size:12px;color:var(--mu);margin-bottom:6px">La palabra secreta es:</div>
-        <div class="role-word">${room.word}</div>
+        <div class="role-word">${esc(room.word)}</div>
         <div class="role-desc">Dá pistas sin decir la palabra directamente.<br>Encontrá al impostor entre los demás.</div>
       </div>`;
   } else {
@@ -588,7 +593,7 @@ async function loadMyRole(room){
         <div class="role-badge rb-impostor">😈 ERES EL IMPOSTOR</div>
         <div style="font-size:13px;color:var(--mu);margin-bottom:10px">No sabés la palabra.</div>
         <div style="font-size:14px;font-weight:600;color:var(--da)">Fingí que la sabés y confundí a los demás.</div>
-        ${myHint?`<div class="role-hint">💡 Tu palabra pista: <strong style="font-size:18px;color:#ffe600">${myHint}</strong><br><span style="font-size:11px;opacity:.7">Podés usar esta palabra para pasar desapercibido</span></div>`:""}
+        ${myHint?`<div class="role-hint">💡 Tu palabra pista: <strong style="font-size:18px;color:#ffe600">${esc(myHint)}</strong><br><span style="font-size:11px;opacity:.7">Podés usar esta palabra para pasar desapercibido</span></div>`:""}
       </div>`;
   }
 
@@ -632,7 +637,7 @@ function updateGameScreen(room,players){
     const isCur=pid===room.currentTurn;
     const d=document.createElement("div");
     d.className=`pi ${p.eliminated?"elim":""}`;
-    d.innerHTML=`${isCur?`<div style="width:8px;height:8px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac);flex-shrink:0;animation:bl .8s ease infinite alternate"></div>`:`<div style="width:8px"></div>`}<div class="av">${emoji(p.name)}</div><div style="flex:1"><div class="pn">${p.name}${p.id===myId?" <span style='color:var(--se);font-size:11px'>(vos)</span>":""}</div><div style="font-size:11px;color:var(--mu)">Turno #${i+1}</div></div>${p.eliminated?'<span class="badge be">ELIMINADO</span>':''}${p.isHost?'<span class="badge bh">HOST</span>':''}`;
+    d.innerHTML=`${isCur?`<div style="width:8px;height:8px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac);flex-shrink:0;animation:bl .8s ease infinite alternate"></div>`:`<div style="width:8px"></div>`}<div class="av">${emoji(p.name)}</div><div style="flex:1"><div class="pn">${esc(p.name)}${p.id===myId?" <span style='color:var(--se);font-size:11px'>(vos)</span>":""}</div><div style="font-size:11px;color:var(--mu)">Turno #${i+1}</div></div>${p.eliminated?'<span class="badge be">ELIMINADO</span>':''}${p.isHost?'<span class="badge bh">HOST</span>':''}`;
     list.appendChild(d);
   });
 }
@@ -673,7 +678,7 @@ function updateVoteScreen(room,players){
     const isVoted=myVote===p.id;
     const d=document.createElement("div");
     d.className=`vote-item ${isVoted?"voted":""} ${myVote&&!isVoted?"no-vote":""}`;
-    d.innerHTML=`<div class="av">${emoji(p.name)}</div><div style="flex:1;font-weight:700;font-size:14px">${p.name}</div>${isVoted?'<span style="color:var(--da);font-size:18px">✓</span>':""}`;
+    d.innerHTML=`<div class="av">${emoji(p.name)}</div><div style="flex:1;font-weight:700;font-size:14px">${esc(p.name)}</div>${isVoted?'<span style="color:var(--da);font-size:18px">✓</span>':""}`;
     if(!myVote) d.onclick=()=>castVote(p.id);
     vl.appendChild(d);
   });
@@ -685,7 +690,7 @@ function updateVoteScreen(room,players){
     const pct=total>0?(cnt/total)*100:0;
     const d=document.createElement("div");
     d.style.marginBottom="10px";
-    d.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:700;font-size:14px">${p.name}</span><span class="vcnt">${cnt}</span></div><div class="vbar-wrap"><div class="vbar" style="width:${pct}%"></div></div>`;
+    d.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:700;font-size:14px">${esc(p.name)}</span><span class="vcnt">${Number(cnt)||0}</span></div><div class="vbar-wrap"><div class="vbar" style="width:${pct}%"></div></div>`;
     vb.appendChild(d);
   });
   document.getElementById("vote-total").textContent=`${totalVoted} de ${total} votos emitidos`;
@@ -742,9 +747,9 @@ function showResult(room,players){
   const impostorName=players[room.impostorId]?.name||"?";
   const content=document.getElementById("result-content");
   if(civilsWin){
-    content.innerHTML=`<span class="res-emoji">🎉</span><div class="res-title res-win">¡CIVILES GANAN!</div><p style="color:var(--mu);font-size:14px">${elimName} era el impostor. ¡Lo descubrieron!</p>`;
+    content.innerHTML=`<span class="res-emoji">🎉</span><div class="res-title res-win">¡CIVILES GANAN!</div><p style="color:var(--mu);font-size:14px">${esc(elimName)} era el impostor. ¡Lo descubrieron!</p>`;
   } else {
-    content.innerHTML=`<span class="res-emoji">😈</span><div class="res-title res-lose">¡EL IMPOSTOR GANA!</div><p style="color:var(--mu);font-size:14px">Eliminaron a ${elimName}, que era inocente. ${impostorName} se escapó.</p>`;
+    content.innerHTML=`<span class="res-emoji">😈</span><div class="res-title res-lose">¡EL IMPOSTOR GANA!</div><p style="color:var(--mu);font-size:14px">Eliminaron a ${esc(elimName)}, que era inocente. ${esc(impostorName)} se escapó.</p>`;
   }
   document.getElementById("result-word").textContent=room.word||"—";
   document.getElementById("result-impostor").textContent=`El impostor era: ${impostorName}${room.impostorId===myId?" (eras vos 😈)":""}`;
