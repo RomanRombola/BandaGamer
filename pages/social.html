@@ -161,6 +161,10 @@ body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans
 .invite-game-card .online-tag{position:absolute;top:6px;right:6px;background:var(--secondary);color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:4px;letter-spacing:0.5px;}
 .invite-game-card .emoji{font-size:26px;}
 </style>
+<link rel="manifest" href="../manifest.webmanifest">
+<script>if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));</script>
+<link rel="apple-touch-icon" href="../assets/logo/icon-192.png">
+<meta name="theme-color" content="#0d111a">
 </head>
 <body>
 <header class="header">
