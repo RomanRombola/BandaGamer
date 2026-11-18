@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Impostor Online entre Amigos</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 
 <!-- Firebase compat (no ES modules, funciona con onclick directamente) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -13,20 +13,29 @@
 <style>
 :root{--bg:#08080f;--sur:#111120;--sur2:#1a1a2e;--pr:#ff6600;--se:#00aaff;--ac:#ffe600;--da:#ff3366;--ok:#39ff14;--tx:#f0f0f0;--mu:#666688;--r:12px;}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--tx);font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 14px 40px;overflow-x:hidden;}
+body{background:var(--bg);color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 14px 40px;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(255,102,0,0.05),transparent 60%);pointer-events:none;z-index:0;}
-h1{font-family:'Orbitron',sans-serif;font-size:clamp(18px,4vw,30px);font-weight:900;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:4px;filter:drop-shadow(0 0 10px rgba(255,102,0,0.4));}
+h1{font-family:'Outfit',sans-serif;font-size:clamp(18px,4vw,30px);font-weight:900;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:4px;filter:drop-shadow(0 0 10px rgba(255,102,0,0.4));}
 .sub{color:var(--mu);font-size:13px;text-align:center;margin-bottom:20px;letter-spacing:1px;}
 .screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:500px;position:relative;z-index:1;}
 .screen.active{display:flex;animation:fu .3s ease;}
 @keyframes fu{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+/* Chat de la sala */
+.rc-msgs{max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+.rc-msg{background:var(--sur2);border-radius:10px;padding:7px 11px;font-size:14px;line-height:1.35;word-break:break-word;}
+.rc-msg b{color:var(--se);margin-right:4px;}
+.rc-msg.mio b{color:var(--pr);}
+.rc-vacio{color:var(--mu);font-size:13px;text-align:center;padding:6px 0;}
+.rc-form{display:flex;gap:8px;}
+.rc-form input{flex:1;font-size:15px;padding:10px 12px;}
+.rc-form .btn{width:auto;padding:0 18px;}
 .card{background:var(--sur);border:1px solid rgba(255,102,0,0.15);border-radius:var(--r);padding:20px;width:100%;margin-bottom:12px;}
-.ct{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--pr);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.ct{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:var(--pr);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
 .ct::before{content:'';width:3px;height:13px;background:var(--pr);border-radius:2px;flex-shrink:0;}
-label{display:block;font-size:11px;font-weight:700;color:var(--mu);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:'Orbitron',sans-serif;}
-input,select{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--tx);font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:600;padding:11px 14px;border-radius:10px;outline:none;transition:all .2s;margin-bottom:10px;}
+label{display:block;font-size:11px;font-weight:700;color:var(--mu);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:'Outfit',sans-serif;}
+input,select{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:600;padding:11px 14px;border-radius:10px;outline:none;transition:all .2s;margin-bottom:10px;}
 input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);box-shadow:0 0 12px rgba(255,102,0,0.2);}
-.btn{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;padding:13px 20px;border-radius:10px;border:none;cursor:pointer;letter-spacing:1px;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-bottom:8px;}
+.btn{font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;padding:13px 20px;border-radius:10px;border:none;cursor:pointer;letter-spacing:1px;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-bottom:8px;}
 .bp{background:linear-gradient(135deg,#ff6600,#ff9500);color:#fff;box-shadow:0 0 14px rgba(255,102,0,0.4);}
 .bp:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(255,102,0,0.6);}
 .bs{background:rgba(0,170,255,0.1);border:1px solid rgba(0,170,255,0.3);color:var(--se);}
@@ -40,8 +49,8 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
 .div::before,.div::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.07);}
 .code-box{background:linear-gradient(135deg,rgba(255,102,0,0.1),rgba(255,230,0,0.07));border:2px solid rgba(255,102,0,0.3);border-radius:14px;padding:16px;text-align:center;margin-bottom:12px;width:100%;cursor:pointer;transition:all .2s;}
 .code-box:hover{border-color:rgba(255,102,0,0.5);}
-.code-lbl{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Orbitron',sans-serif;margin-bottom:4px;}
-.code-val{font-family:'Orbitron',sans-serif;font-size:clamp(30px,8vw,48px);font-weight:900;letter-spacing:8px;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.code-lbl{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Outfit',sans-serif;margin-bottom:4px;}
+.code-val{font-family:'Outfit',sans-serif;font-size:clamp(30px,8vw,48px);font-weight:900;letter-spacing:8px;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .code-hint{font-size:11px;color:var(--mu);margin-top:4px;}
 .plist{display:flex;flex-direction:column;gap:6px;width:100%;}
 .pi{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:9px 12px;transition:all .2s;}
@@ -49,7 +58,7 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
 .pi.elim{opacity:0.3;}
 .av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;background:linear-gradient(135deg,rgba(255,102,0,0.2),rgba(0,170,255,0.1));border:1px solid rgba(255,255,255,0.1);}
 .pn{font-weight:700;font-size:14px;flex:1;}
-.badge{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:1px;}
+.badge{font-family:'Outfit',sans-serif;font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:1px;}
 .bh{background:rgba(255,102,0,0.2);color:var(--pr);border:1px solid rgba(255,102,0,0.3);}
 .bt{background:rgba(255,230,0,0.1);color:var(--ac);border:1px solid rgba(255,230,0,0.25);}
 .bg{background:rgba(57,255,20,0.1);color:var(--ok);border:1px solid rgba(57,255,20,0.2);}
@@ -70,10 +79,10 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
 .role-card{border-radius:16px;padding:28px 22px;text-align:center;width:100%;margin-bottom:12px;}
 .role-card.civil{background:linear-gradient(135deg,rgba(57,255,20,0.08),rgba(0,170,255,0.06));border:2px solid rgba(57,255,20,0.3);}
 .role-card.impostor{background:linear-gradient(135deg,rgba(255,51,102,0.1),rgba(255,80,0,0.06));border:2px solid rgba(255,51,102,0.4);}
-.role-badge{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;letter-spacing:2px;display:inline-block;margin-bottom:12px;}
+.role-badge{font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;letter-spacing:2px;display:inline-block;margin-bottom:12px;}
 .rb-civil{background:rgba(57,255,20,0.15);color:var(--ok);border:1px solid rgba(57,255,20,0.3);}
 .rb-impostor{background:rgba(255,51,102,0.15);color:var(--da);border:1px solid rgba(255,51,102,0.3);}
-.role-word{font-family:'Orbitron',sans-serif;font-size:clamp(22px,6vw,36px);font-weight:900;margin:10px 0;background:linear-gradient(90deg,var(--pr),var(--ac));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.role-word{font-family:'Outfit',sans-serif;font-size:clamp(22px,6vw,36px);font-weight:900;margin:10px 0;background:linear-gradient(90deg,var(--pr),var(--ac));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .role-desc{font-size:13px;color:var(--mu);line-height:1.6;}
 .role-hint{margin-top:12px;background:rgba(255,230,0,0.08);border:1px solid rgba(255,230,0,0.25);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--ac);}
 .cover-btn{background:var(--sur2);border:2px dashed rgba(255,102,0,0.3);border-radius:12px;padding:18px;text-align:center;font-size:13px;color:var(--mu);cursor:pointer;transition:all .2s;width:100%;margin-bottom:12px;}
@@ -81,8 +90,8 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
 
 /* Turno */
 .turn-card{background:linear-gradient(135deg,rgba(0,170,255,0.1),rgba(255,102,0,0.06));border:1px solid rgba(0,170,255,0.25);border-radius:14px;padding:18px;text-align:center;width:100%;margin-bottom:10px;}
-.turn-lbl{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Orbitron',sans-serif;margin-bottom:6px;}
-.turn-name{font-family:'Orbitron',sans-serif;font-size:clamp(16px,4vw,24px);font-weight:900;color:var(--se);}
+.turn-lbl{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Outfit',sans-serif;margin-bottom:6px;}
+.turn-name{font-family:'Outfit',sans-serif;font-size:clamp(16px,4vw,24px);font-weight:900;color:var(--se);}
 .turn-you{font-size:13px;color:var(--ac);margin-top:4px;font-weight:700;}
 .turn-dot{width:8px;height:8px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac);display:inline-block;margin-right:6px;animation:bl .8s ease infinite alternate;}
 @keyframes bl{from{opacity:.4;}to{opacity:1;}}
@@ -94,12 +103,12 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
 .vote-item.no-vote{opacity:.35;cursor:not-allowed;}
 .vbar-wrap{width:100%;height:4px;background:rgba(255,255,255,0.07);border-radius:2px;margin-top:8px;}
 .vbar{height:100%;background:var(--da);border-radius:2px;transition:width .4s ease;}
-.vcnt{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:var(--da);min-width:20px;text-align:right;}
+.vcnt{font-family:'Outfit',sans-serif;font-size:14px;font-weight:900;color:var(--da);min-width:20px;text-align:right;}
 
 /* Resultado */
 .res-emoji{font-size:60px;display:block;text-align:center;margin-bottom:8px;animation:popIn .4s ease;}
 @keyframes popIn{from{transform:scale(.4) rotate(-10deg);opacity:0;}60%{transform:scale(1.15) rotate(3deg);}to{transform:scale(1) rotate(0);opacity:1;}}
-.res-title{font-family:'Orbitron',sans-serif;font-size:clamp(20px,5vw,30px);font-weight:900;text-align:center;margin-bottom:8px;}
+.res-title{font-family:'Outfit',sans-serif;font-size:clamp(20px,5vw,30px);font-weight:900;text-align:center;margin-bottom:8px;}
 .res-win{background:linear-gradient(90deg,var(--ok),#00ff88);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .res-lose{background:linear-gradient(90deg,var(--da),#ff8800);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 
@@ -133,11 +142,11 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
   <div class="card">
     <div class="ct">Ingresar</div>
     <label>Tu nombre de jugador</label>
-    <input type="text" id="inp-name" placeholder="Ej: GorPlayer99..." maxlength="16" autocomplete="off">
+    <input type="text" id="inp-name" placeholder="Ej: Jugador99..." maxlength="16" autocomplete="off">
     <button class="btn bp" onclick="createRoom()">⚡ CREAR SALA</button>
     <div class="div">o tengo un código</div>
     <label>Código de sala</label>
-    <input type="text" id="inp-code" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-family:'Orbitron',sans-serif;font-size:20px;text-align:center">
+    <input type="text" id="inp-code" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-family:'Outfit',sans-serif;font-size:20px;text-align:center">
     <button class="btn bs" onclick="joinRoom()">🚪 UNIRSE A SALA</button>
   </div>
   <p style="color:var(--mu);font-size:12px;text-align:center">Mínimo 3 jugadores · Recomendado en llamada de voz 🎙</p>
@@ -152,7 +161,7 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
     <div class="code-hint">📋 Tocá para copiar y compartir</div>
   </div>
   <div class="card">
-    <div class="ct">Jugadores <span id="p-count" style="margin-left:auto;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:2px 10px;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--mu)">0</span></div>
+    <div class="ct">Jugadores <span id="p-count" style="margin-left:auto;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:2px 10px;font-family:'Outfit',sans-serif;font-size:11px;color:var(--mu)">0</span></div>
     <div class="plist" id="lobby-list"></div>
     <p style="color:var(--mu);font-size:11px;margin-top:8px">Mínimo 3 jugadores para iniciar.</p>
   </div>
@@ -163,7 +172,7 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
       <label class="toggle"><input type="checkbox" id="cfg-hint"><span class="tslider"></span></label>
     </div>
     <div style="height:14px"></div>
-    <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Categorías de palabras</div>
+    <div style="font-family:'Outfit',sans-serif;font-size:11px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Categorías de palabras</div>
     <div class="cat-grid" id="cat-grid"></div>
   </div>
   <div id="host-btns" style="width:100%;display:none">
@@ -202,6 +211,15 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
   <div class="card">
     <div class="ct">Orden de turnos</div>
     <div class="plist" id="game-list"></div>
+  </div>
+  <!-- Chat de la sala (se mueve entre la pantalla de juego y la de votación) -->
+  <div class="card" id="room-chat">
+    <div class="ct">Chat de la sala</div>
+    <div class="rc-msgs" id="rc-msgs"><div class="rc-vacio">Escribí tu pista o charlá con la sala 💬</div></div>
+    <form class="rc-form" onsubmit="enviarChatSala(event)">
+      <input type="text" id="rc-inp" maxlength="120" placeholder="Tu mensaje..." autocomplete="off">
+      <button class="btn bp" type="submit" title="Enviar">➤</button>
+    </form>
   </div>
   <div id="game-host-btns" style="width:100%;display:none">
     <button class="btn bd" onclick="startVoting()">🗳️ INICIAR VOTACIÓN</button>
@@ -243,7 +261,7 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
     <div class="ct">Palabra secreta</div>
     <div style="text-align:center;padding:8px 0">
       <div style="font-size:12px;color:var(--mu);margin-bottom:6px">La palabra era:</div>
-      <div id="result-word" style="font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;color:var(--ac)">—</div>
+      <div id="result-word" style="font-family:'Outfit',sans-serif;font-size:28px;font-weight:900;color:var(--ac)">—</div>
       <div id="result-impostor" style="font-size:13px;color:var(--mu);margin-top:6px"></div>
     </div>
   </div>
@@ -376,18 +394,32 @@ function getPistaParaPalabra(word) {
 
 // ── Estado ─────────────────────────────────────────────────────────────────
 let myId="", myName="", roomCode="", isHost=false;
-let myRole="", myWord="", myHint="";
+let myRole="", myWord="", myHint="", rondaCargada=null;
 let wordHidden=true;
 let selectedCats=new Set(["mix"]);
 let roomListener=null;
 let lastStatus=null;
 
 // ── UI helpers ─────────────────────────────────────────────────────────────
-function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); document.getElementById(id).classList.add("active"); window.scrollTo(0,0); }
-function toast(msg,icon="ℹ️"){ const c=document.getElementById("toast-c"),t=document.createElement("div"); t.className="toast"; t.innerHTML=`<span>${icon}</span><span>${msg}</span>`; c.appendChild(t); setTimeout(()=>t.remove(),3000); }
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  const scr=document.getElementById(id); scr.classList.add("active"); window.scrollTo(0,0);
+  // El chat de la sala acompaña al jugador en la pantalla de juego y en la de votación
+  const rc=document.getElementById("room-chat");
+  if(rc && (id==="s-game"||id==="s-vote") && rc.parentNode!==scr){
+    scr.insertBefore(rc, scr.querySelector('[id$="-host-btns"]'));
+    const box=document.getElementById("rc-msgs"); box.scrollTop=box.scrollHeight;
+  }
+}
+// Escapa texto que viene de la sala (nombres, chat, palabras). Las salas se pueden escribir
+// sin cuenta, así que NUNCA se inserta texto de otro jugador como HTML: un nombre o mensaje
+// como <img onerror=...> ejecutaba código en el navegador de todos (y, como el juego corre en
+// el mismo dominio que el portal, podía robar la sesión de Google del jugador).
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function toast(msg,icon="ℹ️"){ const c=document.getElementById("toast-c"),t=document.createElement("div"); t.className="toast"; t.innerHTML=`<span>${esc(icon)}</span><span>${esc(msg)}</span>`; c.appendChild(t); setTimeout(()=>t.remove(),3000); }
 function genCode(){ const ch="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; return Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join(""); }
 function genId(){ return Math.random().toString(36).substr(2,12)+Date.now().toString(36); }
-function emoji(n){ const e=["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔","🦭","🐨","🐻","🦞","🦚"]; let h=0; for(let i=0;i<n.length;i++) h=(h<<5)-h+n.charCodeAt(i); return e[Math.abs(h)%e.length]; }
+function emoji(n){ n=String(n||""); const e=["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔","🦭","🐨","🐻","🦞","🦚"]; let h=0; for(let i=0;i<n.length;i++) h=(h<<5)-h+n.charCodeAt(i); return e[Math.abs(h)%e.length]; }
 function rref(path){ return db.ref(path); }
 
 // ── Categorías UI ──────────────────────────────────────────────────────────
@@ -472,7 +504,34 @@ async function joinRoom(){
 function copyCode(){ navigator.clipboard?.writeText(roomCode).then(()=>toast("Código copiado","📋")).catch(()=>toast(`Código: ${roomCode}`,"📋")); }
 
 // ── SUSCRIBIR SALA ─────────────────────────────────────────────────────────
+// ── CHAT DE LA SALA ────────────────────────────────────────────────────────
+// Para quienes no están en llamada de voz. Va en impost/{CODIGO}__chat (fuera del nodo de
+// la sala, así cada mensaje no vuelve a dibujar toda la partida). Todo se muestra escapado.
+let chatRef=null, chatListener=null, ultimoChat=0;
+function subscribeChat(){
+  unsubscribeChat();
+  chatRef=rref(`impost/${roomCode}__chat`).limitToLast(40);
+  chatListener=chatRef.on("value",snap=>{
+    const msgs=Object.values(snap.val()||{}).filter(m=>m&&typeof m==="object").sort((a,b)=>(a.t||0)-(b.t||0));
+    const box=document.getElementById("rc-msgs");
+    box.innerHTML=msgs.length?msgs.map(m=>`<div class="rc-msg ${m.id===myId?"mio":""}"><b>${esc(m.name||"?")}:</b>${esc(m.text||"")}</div>`).join(""):'<div class="rc-vacio">Escribí tu pista o charlá con la sala 💬</div>';
+    box.scrollTop=box.scrollHeight;
+  });
+}
+function unsubscribeChat(){ if(chatRef&&chatListener) chatRef.off("value",chatListener); chatRef=null; chatListener=null; }
+async function enviarChatSala(e){
+  e.preventDefault();
+  const inp=document.getElementById("rc-inp");
+  const text=inp.value.trim().slice(0,120);
+  if(!text||!roomCode) return;
+  if(Date.now()-ultimoChat<700){ toast("Más despacio 🙂","⏳"); return; }
+  ultimoChat=Date.now(); inp.value="";
+  try{ await rref(`impost/${roomCode}__chat`).push({id:myId,name:myName,text,t:Date.now()}); }
+  catch(err){ inp.value=text; toast("No se pudo enviar","❌"); }
+}
+
 function subscribeRoom(){
+  subscribeChat();
   if(roomListener) rref(`impost/${roomCode}`).off("value",roomListener);
   roomListener=rref(`impost/${roomCode}`).on("value",snap=>{
     if(!snap.exists()){backToHome();return;}
@@ -480,7 +539,25 @@ function subscribeRoom(){
   });
 }
 
+// Muestra u oculta los controles de anfitrión en todas las pantallas
+function aplicarRolHost(){
+  const v=(id,mostrar,modo)=>{ const el=document.getElementById(id); if(el) el.style.display=mostrar?(modo||"block"):"none"; };
+  v("cfg-card",isHost); v("host-btns",isHost); v("guest-btns",!isHost);
+  v("game-host-btns",isHost); v("game-guest-info",!isHost);
+  v("vote-host-btns",isHost); v("vote-guest-info",!isHost);
+  v("result-host-btns",isHost); v("result-guest-info",!isHost);
+}
+
 function handleRoom(room){
+  // Si el anfitrión se fue, el que heredó el rol tiene que enterarse (antes nadie veía los
+  // botones para seguir y la sala quedaba trabada)
+  if(room.host && myId){
+    const soyHost=room.host===myId;
+    if(soyHost!==isHost){
+      isHost=soyHost; aplicarRolHost();
+      if(soyHost){ if(!document.getElementById("cat-grid").children.length) buildCats(); toast("Ahora sos el anfitrión de la sala","👑"); }
+    }
+  }
   const status=room.status;
   const statusChanged=status!==lastStatus;
   lastStatus=status;
@@ -494,13 +571,15 @@ function handleRoom(room){
     return;
   }
   if(status==="playing"){
-    if(statusChanged){
+    // La carta se muestra solo cuando empieza una ronda NUEVA. Antes, al cancelar una
+    // votación o empatar, a todos se les volvía a mostrar la carta y tenían que tocar "LISTO".
+    const claveRonda=room.ronda||room.word||null;
+    if(claveRonda!==rondaCargada || !myRole){
       loadMyRole(room);
+    } else if(statusChanged){
+      goToGame();
     } else if(document.getElementById("s-game").classList.contains("active")){
       updateGameScreen(room,players);
-    } else if(document.getElementById("s-result").classList.contains("active")){
-      // Nueva ronda iniciada
-      loadMyRole(room);
     }
     return;
   }
@@ -525,7 +604,7 @@ function updateLobbyList(players){
   Object.values(players).sort((a,b)=>a.joinedAt-b.joinedAt).forEach(p=>{
     const d=document.createElement("div");
     d.className=`pi ${p.isHost?"host":""}`;
-    d.innerHTML=`<div class="av">${emoji(p.name)}</div><div class="pn">${p.name}</div>${p.isHost?'<span class="badge bh">HOST</span>':''} ${p.id===myId?'<span class="badge" style="background:rgba(0,170,255,0.1);color:var(--se);border:1px solid rgba(0,170,255,0.2)">TÚ</span>':''}`;
+    d.innerHTML=`<div class="av">${emoji(p.name)}</div><div class="pn">${esc(p.name)}</div>${p.isHost?'<span class="badge bh">HOST</span>':''} ${p.id===myId?'<span class="badge" style="background:rgba(0,170,255,0.1);color:var(--se);border:1px solid rgba(0,170,255,0.2)">TÚ</span>':''}`;
     list.appendChild(d);
   });
 }
@@ -553,23 +632,53 @@ async function startGame(){
   // Turnos aleatorios — se mezclan en cada nueva palabra
   const shuffled=[...ids].sort(()=>Math.random()-0.5);
 
-  // Roles (guardados en Firebase, cada jugador lee el suyo)
-  const roles={};
-  ids.forEach(id=>{ roles[id]={ role:id===impostorId?"impostor":"civil", hint:id===impostorId&&hintEnabled?hint:"" }; });
+  // Roles: cada jugador lee SOLO su carta (ver repartirRoles)
+  const ronda=await repartirRoles(ids,word,impostorId,hintEnabled?hint:"");
 
   await rref(`impost/${roomCode}`).update({
-    status:"playing", word, impostorId,
+    status:"playing", word:null, impostorId:null, roles:null, ronda,
     turnOrder:shuffled, currentTurn:shuffled[0],
-    roles, votes:{}, round:1, hintEnabled
+    votes:{}, round:1, hintEnabled
   });
+}
+
+// ── CARTAS SECRETAS ────────────────────────────────────────────────────────
+// Antes la palabra, el impostor y los roles de todos estaban en el nodo de la sala, que
+// todos los jugadores descargan: el impostor podía ver la palabra con las herramientas de
+// red. Ahora cada carta va a impost/{CODIGO}__sec/{jugador} y cada uno escucha solo la suya.
+// La palabra y el impostor se publican en la sala recién al mostrar el resultado.
+// (Sin cuentas no se puede impedir del todo que alguien lea el nodo a mano: para eso
+// hace falta login anónimo de Firebase + reglas por jugador.)
+function secPath(id){ return `impost/${roomCode}__sec${id?"/"+id:""}`; }
+async function repartirRoles(ids,word,impostorId,hint){
+  const ronda=Date.now();
+  const sec={ _host:{ word, impostorId, ronda } };
+  ids.forEach(id=>{
+    const imp=id===impostorId;
+    sec[id]={ role:imp?"impostor":"civil", word:imp?null:word, hint:imp?hint:"", ronda };
+  });
+  await rref(secPath()).set(sec);
+  return ronda;
 }
 
 // ── CARGAR ROL ─────────────────────────────────────────────────────────────
 async function loadMyRole(room){
-  const roleData=room.roles?.[myId];
-  if(!roleData) return;
+  let roleData=null, palabra=null;
+  if(room.roles && room.roles[myId]){
+    // Compatibilidad con salas creadas por la versión anterior
+    roleData=room.roles[myId]; palabra=room.word;
+  } else {
+    for(let i=0;i<5 && !roleData;i++){
+      const snap=await rref(secPath(myId)).once("value");
+      const v=snap.val();
+      if(v && (!room.ronda || v.ronda===room.ronda)){ roleData=v; palabra=v.word; }
+      else await new Promise(r=>setTimeout(r,300));
+    }
+  }
+  if(!roleData){ toast("No se pudo cargar tu carta. Pedile al host una nueva ronda.","⚠️"); return; }
+  rondaCargada=room.ronda||room.word||null;
   myRole=roleData.role;
-  myWord=myRole==="civil"?room.word:"???";
+  myWord=myRole==="civil"?(palabra||""):"???";
   myHint=roleData.hint||"";
 
   // Construir tarjeta de rol
@@ -579,7 +688,7 @@ async function loadMyRole(room){
       <div class="role-card civil">
         <div class="role-badge rb-civil">✅ ERES CIVIL</div>
         <div style="font-size:12px;color:var(--mu);margin-bottom:6px">La palabra secreta es:</div>
-        <div class="role-word">${room.word}</div>
+        <div class="role-word">${esc(myWord)}</div>
         <div class="role-desc">Dá pistas sin decir la palabra directamente.<br>Encontrá al impostor entre los demás.</div>
       </div>`;
   } else {
@@ -588,7 +697,7 @@ async function loadMyRole(room){
         <div class="role-badge rb-impostor">😈 ERES EL IMPOSTOR</div>
         <div style="font-size:13px;color:var(--mu);margin-bottom:10px">No sabés la palabra.</div>
         <div style="font-size:14px;font-weight:600;color:var(--da)">Fingí que la sabés y confundí a los demás.</div>
-        ${myHint?`<div class="role-hint">💡 Tu palabra pista: <strong style="font-size:18px;color:#ffe600">${myHint}</strong><br><span style="font-size:11px;opacity:.7">Podés usar esta palabra para pasar desapercibido</span></div>`:""}
+        ${myHint?`<div class="role-hint">💡 Tu palabra pista: <strong style="font-size:18px;color:#ffe600">${esc(myHint)}</strong><br><span style="font-size:11px;opacity:.7">Podés usar esta palabra para pasar desapercibido</span></div>`:""}
       </div>`;
   }
 
@@ -632,7 +741,7 @@ function updateGameScreen(room,players){
     const isCur=pid===room.currentTurn;
     const d=document.createElement("div");
     d.className=`pi ${p.eliminated?"elim":""}`;
-    d.innerHTML=`${isCur?`<div style="width:8px;height:8px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac);flex-shrink:0;animation:bl .8s ease infinite alternate"></div>`:`<div style="width:8px"></div>`}<div class="av">${emoji(p.name)}</div><div style="flex:1"><div class="pn">${p.name}${p.id===myId?" <span style='color:var(--se);font-size:11px'>(vos)</span>":""}</div><div style="font-size:11px;color:var(--mu)">Turno #${i+1}</div></div>${p.eliminated?'<span class="badge be">ELIMINADO</span>':''}${p.isHost?'<span class="badge bh">HOST</span>':''}`;
+    d.innerHTML=`${isCur?`<div style="width:8px;height:8px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac);flex-shrink:0;animation:bl .8s ease infinite alternate"></div>`:`<div style="width:8px"></div>`}<div class="av">${emoji(p.name)}</div><div style="flex:1"><div class="pn">${esc(p.name)}${p.id===myId?" <span style='color:var(--se);font-size:11px'>(vos)</span>":""}</div><div style="font-size:11px;color:var(--mu)">Turno #${i+1}</div></div>${p.eliminated?'<span class="badge be">ELIMINADO</span>':''}${p.isHost?'<span class="badge bh">HOST</span>':''}`;
     list.appendChild(d);
   });
 }
@@ -673,7 +782,7 @@ function updateVoteScreen(room,players){
     const isVoted=myVote===p.id;
     const d=document.createElement("div");
     d.className=`vote-item ${isVoted?"voted":""} ${myVote&&!isVoted?"no-vote":""}`;
-    d.innerHTML=`<div class="av">${emoji(p.name)}</div><div style="flex:1;font-weight:700;font-size:14px">${p.name}</div>${isVoted?'<span style="color:var(--da);font-size:18px">✓</span>':""}`;
+    d.innerHTML=`<div class="av">${emoji(p.name)}</div><div style="flex:1;font-weight:700;font-size:14px">${esc(p.name)}</div>${isVoted?'<span style="color:var(--da);font-size:18px">✓</span>':""}`;
     if(!myVote) d.onclick=()=>castVote(p.id);
     vl.appendChild(d);
   });
@@ -685,7 +794,7 @@ function updateVoteScreen(room,players){
     const pct=total>0?(cnt/total)*100:0;
     const d=document.createElement("div");
     d.style.marginBottom="10px";
-    d.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:700;font-size:14px">${p.name}</span><span class="vcnt">${cnt}</span></div><div class="vbar-wrap"><div class="vbar" style="width:${pct}%"></div></div>`;
+    d.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:700;font-size:14px">${esc(p.name)}</span><span class="vcnt">${Number(cnt)||0}</span></div><div class="vbar-wrap"><div class="vbar" style="width:${pct}%"></div></div>`;
     vb.appendChild(d);
   });
   document.getElementById("vote-total").textContent=`${totalVoted} de ${total} votos emitidos`;
@@ -725,8 +834,15 @@ async function closeVoting(){
     return;
   }
   const elimId=top[0];
-  const wasImpostor=elimId===room.impostorId;
-  await rref(`impost/${roomCode}`).update({[`players/${elimId}/eliminated`]:true,status:"result",lastEliminated:elimId,civilsWin:wasImpostor});
+  // El impostor y la palabra están en el nodo secreto: se revelan junto con el resultado
+  let impostorId=room.impostorId, word=room.word;
+  if(!impostorId){
+    const hs=await rref(secPath("_host")).once("value");
+    const h=hs.val()||{};
+    impostorId=h.impostorId||null; word=h.word||null;
+  }
+  const wasImpostor=elimId===impostorId;
+  await rref(`impost/${roomCode}`).update({[`players/${elimId}/eliminated`]:true,status:"result",lastEliminated:elimId,civilsWin:wasImpostor,impostorId,word});
 }
 
 async function cancelVoting(){
@@ -742,9 +858,9 @@ function showResult(room,players){
   const impostorName=players[room.impostorId]?.name||"?";
   const content=document.getElementById("result-content");
   if(civilsWin){
-    content.innerHTML=`<span class="res-emoji">🎉</span><div class="res-title res-win">¡CIVILES GANAN!</div><p style="color:var(--mu);font-size:14px">${elimName} era el impostor. ¡Lo descubrieron!</p>`;
+    content.innerHTML=`<span class="res-emoji">🎉</span><div class="res-title res-win">¡CIVILES GANAN!</div><p style="color:var(--mu);font-size:14px">${esc(elimName)} era el impostor. ¡Lo descubrieron!</p>`;
   } else {
-    content.innerHTML=`<span class="res-emoji">😈</span><div class="res-title res-lose">¡EL IMPOSTOR GANA!</div><p style="color:var(--mu);font-size:14px">Eliminaron a ${elimName}, que era inocente. ${impostorName} se escapó.</p>`;
+    content.innerHTML=`<span class="res-emoji">😈</span><div class="res-title res-lose">¡EL IMPOSTOR GANA!</div><p style="color:var(--mu);font-size:14px">Eliminaron a ${esc(elimName)}, que era inocente. ${esc(impostorName)} se escapó.</p>`;
   }
   document.getElementById("result-word").textContent=room.word||"—";
   document.getElementById("result-impostor").textContent=`El impostor era: ${impostorName}${room.impostorId===myId?" (eras vos 😈)":""}`;
@@ -778,13 +894,12 @@ async function newRound(){
   let hint="";
   if(hintEnabled){ hint=getPistaParaPalabra(word); }
   const shuffled=[...ids].sort(()=>Math.random()-0.5);
-  const roles={};
-  ids.forEach(id=>{ roles[id]={role:id===impostorId?"impostor":"civil",hint:id===impostorId&&hintEnabled?hint:""}; });
+  const ronda=await repartirRoles(ids,word,impostorId,hintEnabled?hint:"");
 
   Object.assign(updates,{
-    status:"playing", word, impostorId,
+    status:"playing", word:null, impostorId:null, roles:null, ronda,
     turnOrder:shuffled, currentTurn:shuffled[0],
-    roles, votes:{}, lastEliminated:null, civilsWin:null
+    votes:{}, lastEliminated:null, civilsWin:null
   });
   await rref(`impost/${roomCode}`).update(updates);
 }
@@ -807,19 +922,25 @@ async function leaveRoom(){
       await rref(`impost/${roomCode}/host`).set(nextHost);
     } else {
       await rref(`impost/${roomCode}`).remove();
+      await rref(secPath()).remove().catch(()=>{});
+      await rref(`impost/${roomCode}__chat`).remove().catch(()=>{});
     }
   } else {
     await rref(`impost/${roomCode}/players/${myId}`).remove();
   }
-  backToHome();
+  // Antes llamaba a backToHome(): como el que salía seguía marcado como anfitrión, le
+  // reiniciaba la partida a todos y lo dejaba en el lobby de una sala que ya había dejado.
+  _resetCompleto();
 }
 
 function backToHome(){
   if(!roomCode || !isHost){ _resetCompleto(); return; }
-  myRole=""; myWord=""; myHint=""; lastStatus=null;
+  myRole=""; myWord=""; myHint=""; lastStatus=null; rondaCargada=null;
   // Resetear sala a estado lobby sin eliminarla
+  rref(secPath()).remove().catch(()=>{});
+  rref(`impost/${roomCode}__chat`).remove().catch(()=>{});
   rref(`impost/${roomCode}`).update({
-    status:"lobby", word:null, impostorId:null,
+    status:"lobby", word:null, impostorId:null, ronda:null,
     turnOrder:null, currentTurn:null, votes:null,
     roles:null, lastEliminated:null, civilsWin:null
   }).then(()=>{
@@ -842,7 +963,8 @@ function backToHome(){
 
 function _resetCompleto(){
   if(roomListener) rref(`impost/${roomCode}`).off("value",roomListener);
-  myId=""; myName=""; roomCode=""; isHost=false; myRole=""; myWord=""; myHint=""; lastStatus=null;
+  unsubscribeChat();
+  myId=""; myName=""; roomCode=""; isHost=false; myRole=""; myWord=""; myHint=""; lastStatus=null; rondaCargada=null;
   document.getElementById("inp-name").value="";
   document.getElementById("inp-code").value="";
   show("s-home");

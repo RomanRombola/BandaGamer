@@ -33,15 +33,27 @@ const FB_CONFIG = {
   appId:             "1:91189543289:web:2a6ffc41710279febb6fa8"
 };
 
-// Inicializar Firebase (evitar duplicados si ya lo inicializaron Gartic o Impostor)
-if (!firebase.apps.length) {
-  firebase.initializeApp(FB_CONFIG);
-} else {
-  firebase.app(); // usar instancia existente
-}
+// Si el SDK de Firebase no llegó a cargar (bloqueador de anuncios, red de colegio o
+// empresa, sin conexión) la página tiene que seguir funcionando en modo invitado.
+// Antes todo el sitio quedaba en blanco con "firebase is not defined".
+const FIREBASE_OK = typeof firebase !== "undefined" && typeof firebase.initializeApp === "function";
 
-const _auth = firebase.auth();
-const _db   = firebase.firestore();
+let _auth, _db;
+if (FIREBASE_OK) {
+  // Inicializar Firebase (evitar duplicados si ya lo inicializaron Gartic o Impostor)
+  if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+  _auth = firebase.auth();
+  _db   = firebase.firestore();
+} else {
+  console.warn("[Storage] Firebase no está disponible: se usa solo el modo invitado.");
+  _auth = {
+    currentUser: null,
+    onAuthStateChanged(cb) { setTimeout(() => cb(null), 0); return () => {}; },
+    signInWithPopup() { return Promise.reject(Object.assign(new Error("Firebase no disponible"), { code: "firebase/no-disponible" })); },
+    signOut() { return Promise.resolve(); },
+  };
+  _db = null;
+}
 
 // Promesa que se resuelve cuando Firebase Auth terminó de restaurar la sesión.
 // Sin esto, currentUser es null durante los primeros ms de cada página y el
@@ -77,6 +89,7 @@ function _publicarPerfil(usuario) {
     nivel:        usuario.nivel  || 1,
     xp:           usuario.xp    || 0,
     avatar:       usuario.avatar || '😊',
+    accesorios:   usuario.accesorios || null,
     fotoPerfil:   usuario.fotoPerfil || null,
     updatedAt:    firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true }).catch(() => {});
@@ -269,6 +282,52 @@ function _encolar(fn) {
   return corrida;
 }
 
+// ── Progreso diario (bonus, misiones y topes de premios) ──────────────────
+// Se guarda DENTRO del usuario (Firestore o localStorage del invitado), no en una clave
+// suelta del navegador: antes el bonus se volvía a cobrar en otro dispositivo o en
+// incógnito, y las misiones (que medían totales acumulados) se cobraban todos los días.
+// El día es el del reloj local del jugador (antes era UTC: en Argentina cambiaba a las 21 h).
+const LIMITES_DIARIOS = {
+  partidas_premiadas: 40,   // partidas que dan +5 XP y +5 VicioCoins por día
+  records_premiados:  10,   // récords que dan premio extra por día
+};
+const PREMIOS = {
+  partida:       { xp: 5,  monedas: 5 },
+  record:        { xp: 25, monedas: 20 },   // se suma a la partida: total +30 XP y +25 VicioCoins
+  primer_record: { xp: 10, monedas: 20 },
+  bonus_diario:  { xp: 25, monedas: 50 },
+};
+// tipo "diaria": se reinicia cada día y mide lo hecho HOY · tipo "unica": se cobra una sola vez
+const MISIONES = [
+  { id: "m_jugar1", tipo: "diaria", titulo: "Calentando motores", desc: "Jugá al menos 1 partida hoy",  meta: 1,   premio: 25, xp: 30, progreso: (u, d) => d.partidas },
+  { id: "m_fav3",   tipo: "unica",  titulo: "Curador del Vicio",  desc: "Marcá 3 juegos favoritos",     meta: 3,   premio: 40, xp: 30, progreso: (u)    => (u.favoritos || []).length },
+  { id: "m_xp300",  tipo: "diaria", titulo: "Subiendo de Rango",  desc: "Ganá 300 XP hoy",              meta: 300, premio: 60, xp: 30, progreso: (u, d) => d.xp },
+];
+
+function _hoyLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+// Devuelve (y si hace falta crea/reinicia) el bloque diario del usuario. Muta u.
+function _diarioDe(u) {
+  const hoy = _hoyLocal();
+  if (!u.diario || typeof u.diario !== "object" || u.diario.fecha !== hoy) {
+    u.diario = { fecha: hoy, partidas: 0, xp: 0, partidas_premiadas: 0, records_premiados: 0, bonus: false, reclamadas: [] };
+  }
+  const d = u.diario;
+  if (!Array.isArray(d.reclamadas)) d.reclamadas = [];
+  for (const k of ["partidas", "xp", "partidas_premiadas", "records_premiados"]) d[k] = Number(d[k]) || 0;
+  return d;
+}
+// Suma XP dentro de un mutador (actualiza nivel y el contador diario). Devuelve si subió de nivel.
+function _sumarXPEn(u, cantidad) {
+  const antes = u.nivel || 1;
+  u.xp = (u.xp || 0) + cantidad;
+  u.nivel = _nivelPorXP(u.xp);
+  _diarioDe(u).xp += cantidad;
+  return u.nivel > antes;
+}
+
 // ── Ranking global ────────────────────────────────────────────────────────
 // Escribe un resumen del usuario en /ranking para el leaderboard público.
 async function _actualizarRanking(u) {
@@ -277,7 +336,8 @@ async function _actualizarRanking(u) {
   await _db.doc(`ranking/${user.uid}`).set({
     uid:        user.uid,
     nombre:     u.nombre,
-    avatar:     u.avatar,
+    avatar:     u.avatar || '😊',
+    accesorios: u.accesorios || null,       // sin esto el ranking mostraba a todos con el avatar por defecto
     fotoPerfil: u.fotoPerfil || null,
     xp:         u.xp,
     nivel:      u.nivel,
@@ -367,6 +427,7 @@ const Storage = (() => {
         if (u.historial.length > 20) u.historial.length = 20;
         u.juegos_jugados = (u.juegos_jugados || 0) + 1;
         u.ultima_sesion  = new Date().toISOString();
+        _diarioDe(u).partidas += 1;
       });
     } catch (e) {
       console.warn("[Storage] Error al registrar visita:", e);
@@ -402,14 +463,78 @@ const Storage = (() => {
       return { usuario: await getUsuario(), subioNivel: false, nuevoNivel: null };
     }
     let subioNivel = false;
-    const usuario = await actualizarUsuario(u => {
-      const nivelAntes = u.nivel || 1;
-      u.xp = (u.xp || 0) + cantidad;
-      u.nivel = _nivelPorXP(u.xp);
-      subioNivel = u.nivel > nivelAntes;
-    });
+    const usuario = await actualizarUsuario(u => { subioNivel = _sumarXPEn(u, cantidad); });
     if (subioNivel) invalidarCacheRanking();
     return { usuario, subioNivel, nuevoNivel: usuario.nivel };
+  }
+
+  // ── Premios diarios ──────────────────────────────────────────────────────
+  // Todos validan y cobran dentro de la misma transacción: no se puede cobrar dos veces
+  // aunque haya dos pestañas abiertas ni pasando otro premio desde la consola.
+  async function getEstadoDiario() {
+    const u = await getUsuario();
+    const d = _diarioDe(u);
+    const misiones = MISIONES.map(m => {
+      const actual = Math.min(Number(m.progreso(u, d)) || 0, m.meta);
+      const reclamada = m.tipo === "unica" ? (u.misiones_unicas || []).includes(m.id) : d.reclamadas.includes(m.id);
+      return { id: m.id, tipo: m.tipo, titulo: m.titulo, desc: m.desc, meta: m.meta, premio: m.premio, actual, reclamada, lista: actual >= m.meta && !reclamada };
+    });
+    return { usuario: u, bonusReclamado: !!d.bonus, misiones, limites: LIMITES_DIARIOS, diario: d };
+  }
+
+  async function reclamarBonusDiario() {
+    let error = null, subioNivel = false;
+    const usuario = await actualizarUsuario(u => {
+      error = null;
+      const d = _diarioDe(u);
+      if (d.bonus) { error = "Ya reclamaste el bonus de hoy"; return; }
+      d.bonus = true;
+      u.monedas = (u.monedas || 0) + PREMIOS.bonus_diario.monedas;
+      subioNivel = _sumarXPEn(u, PREMIOS.bonus_diario.xp);
+    });
+    if (subioNivel) invalidarCacheRanking();
+    return { ok: !error, error, usuario, subioNivel, nuevoNivel: usuario.nivel, premio: PREMIOS.bonus_diario };
+  }
+
+  async function reclamarMision(id) {
+    const m = MISIONES.find(x => x.id === id);
+    if (!m) return { ok: false, error: "Misión inválida" };
+    let error = null, subioNivel = false;
+    const usuario = await actualizarUsuario(u => {
+      error = null;
+      const d = _diarioDe(u);
+      u.misiones_unicas = Array.isArray(u.misiones_unicas) ? u.misiones_unicas : [];
+      const ya = m.tipo === "unica" ? u.misiones_unicas.includes(m.id) : d.reclamadas.includes(m.id);
+      if (ya) { error = "Ya reclamaste esta misión"; return; }
+      if ((Number(m.progreso(u, d)) || 0) < m.meta) { error = "Todavía no completaste la misión"; return; }
+      if (m.tipo === "unica") u.misiones_unicas.push(m.id); else d.reclamadas.push(m.id);
+      u.monedas = (u.monedas || 0) + m.premio;
+      subioNivel = _sumarXPEn(u, m.xp);
+    });
+    if (subioNivel) invalidarCacheRanking();
+    return { ok: !error, error, usuario, subioNivel, nuevoNivel: usuario.nivel, premio: m.premio, xp: m.xp };
+  }
+
+  // Premio por partida terminada (y extra si fue récord), con tope diario.
+  async function premiarPartida({ esRecord = false, primerRecord = false } = {}) {
+    let xp = 0, monedas = 0, subioNivel = false;
+    const usuario = await actualizarUsuario(u => {
+      const d = _diarioDe(u);
+      xp = 0; monedas = 0;
+      if (d.partidas_premiadas < LIMITES_DIARIOS.partidas_premiadas) {
+        d.partidas_premiadas++;
+        xp += PREMIOS.partida.xp; monedas += PREMIOS.partida.monedas;
+      }
+      if (esRecord && d.records_premiados < LIMITES_DIARIOS.records_premiados) {
+        d.records_premiados++;
+        const p = primerRecord ? PREMIOS.primer_record : PREMIOS.record;
+        xp += p.xp; monedas += p.monedas;
+      }
+      u.monedas = (u.monedas || 0) + monedas;
+      subioNivel = xp > 0 && _sumarXPEn(u, xp);
+    });
+    if (subioNivel) invalidarCacheRanking();
+    return { xp, monedas, subioNivel, nuevoNivel: usuario.nivel, usuario };
   }
 
   async function sumarMonedas(cantidad) {
@@ -448,6 +573,7 @@ const Storage = (() => {
   const RANKING_TTL = 3 * 60 * 1000;
 
   async function getRankingGlobal(limite = 50) {
+    if (!_db) return [];
     const ahora = Date.now();
     if (_rankingCache.data && (ahora - _rankingCache.ts) < RANKING_TTL) {
       return _rankingCache.data.slice(0, limite);
@@ -475,6 +601,7 @@ const Storage = (() => {
 
   // Devuelve el perfil público de cualquier usuario por uid.
   async function getPerfilPublico(uid) {
+    if (!_db) return null;
     try {
       const doc = await _db.doc(`ranking/${uid}`).get();
       return doc.exists ? doc.data() : null;
@@ -483,20 +610,25 @@ const Storage = (() => {
     }
   }
 
-  // Migra datos de localStorage (clave V1) a Firestore cuando el usuario hace login.
-  // Solo se ejecuta una vez (si Firestore no tiene datos del usuario todavía).
+  // Migra el progreso de invitado (localStorage) a Firestore cuando el usuario entra con Google.
+  // Solo se ejecuta si la cuenta de Google todavía no tiene datos. Antes buscaba únicamente la
+  // clave V1 ("gor2games_usuario") y el progreso del invitado actual (bandagamer_usuario_v2)
+  // se perdía al conectar la cuenta.
   async function migrarLocalAFirestore() {
     const user = _auth.currentUser;
-    if (!user) return;
+    if (!user || !_db) return;
     try {
       const docFirestore = await _db.doc(`usuarios/${user.uid}`).get();
       if (docFirestore.exists) return;
 
-      const rawLocal = localStorage.getItem("gor2games_usuario"); // clave V1
-      if (!rawLocal) return;
-
-      const localData = JSON.parse(rawLocal);
-      if (!localData.nombre) return;
+      let clave = null, localData = null;
+      for (const k of [STORAGE_KEY, "gor2games_usuario"]) {
+        try {
+          const d = JSON.parse(localStorage.getItem(k) || "null");
+          if (d && d.nombre) { clave = k; localData = d; break; }
+        } catch (e) {}
+      }
+      if (!localData) return;
 
       const merged = {
         ...USUARIO_DEFAULT,
@@ -505,8 +637,21 @@ const Storage = (() => {
         nombre: localData.nombre || user.displayName || "Jugador",
         fecha_registro: localData.fecha_registro || new Date().toISOString(),
       };
+      delete merged.esInvitado;
+      merged.nivel = _nivelPorXP(merged.xp);
       await _db.doc(`usuarios/${user.uid}`).set(merged);
-      console.log("[Storage] Datos migrados de localStorage a Firestore.");
+
+      if (clave === STORAGE_KEY) {
+        try {
+          const visitas = JSON.parse(localStorage.getItem(VISITAS_KEY) || "null");
+          if (visitas && typeof visitas === "object") await _db.doc(`visitas/${user.uid}`).set(visitas, { merge: true });
+        } catch (e) {}
+        // El progreso ya vive en la cuenta: si no se borra, reaparecía como invitado al cerrar sesión
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(VISITAS_KEY);
+      }
+      _invalidateCache();
+      console.log("[Storage] Progreso de invitado migrado a la cuenta de Google.");
     } catch (e) {
       console.warn("[Storage] Error en migración:", e);
     }
@@ -556,6 +701,7 @@ const Storage = (() => {
           uid: user.uid,
           nombre: String(perfil.nombre || "Jugador").slice(0, 24),
           avatar: perfil.avatar || "😊",
+          accesorios: perfil.accesorios || null,
           nivel: perfil.nivel || 1,
           score: puntaje,
           at: firebase.firestore.FieldValue.serverTimestamp(),
@@ -569,6 +715,7 @@ const Storage = (() => {
   }
 
   async function getRankingJuego(juegoId, modo, orden = "desc", limite = 20) {
+    if (!_db) return [];
     try {
       const snap = await _db.collection(_board(juegoId, modo)).orderBy("score", orden).limit(limite).get();
       return snap.docs.map(d => d.data());
@@ -579,6 +726,7 @@ const Storage = (() => {
   }
 
   async function getPuntajesDe(juegoId, modo, uids) {
+    if (!_db) return [];
     const res = await Promise.all((uids || []).map(uid =>
       _db.doc(`${_board(juegoId, modo)}/${uid}`).get().then(s => s.exists ? s.data() : null).catch(() => null)));
     return res.filter(Boolean);
@@ -597,6 +745,13 @@ const Storage = (() => {
   }
 
   return {
+    getEstadoDiario,
+    reclamarBonusDiario,
+    reclamarMision,
+    premiarPartida,
+    MISIONES,
+    LIMITES_DIARIOS,
+    FIREBASE_OK,
     registrarPuntaje,
     getRecords,
     enviarPuntajeRanking,

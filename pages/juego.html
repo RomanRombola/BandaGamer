@@ -6,7 +6,7 @@
 <title>AltoVicio — Jugando</title>
 <link rel="icon" type="image/x-icon" href="../favicon.ico">
 <link rel="icon" type="image/svg+xml" href="../assets/logo/logo.svg">
-<link rel="stylesheet" href="../css/styles.css?v=13">
+<link rel="stylesheet" href="../css/styles.css?v=14">
 </head>
 <body class="pagina-juego">
 
@@ -22,13 +22,13 @@
 
 <!-- === HEADER === -->
 <header>
-  <a id="logo-container" href="../?v=13" title="AltoVicio">
-    <div class="logo-icon">🎮</div>
+  <a id="logo-container" href="../?v=14" title="AltoVicio">
+    <div class="logo-icon"><svg viewBox="0 0 48 48" width="24" height="24"><rect x="4" y="12" width="40" height="24" rx="12" fill="#fff"/><circle cx="16" cy="24" r="5" fill="#ff6600"/><circle cx="31" cy="20" r="2.8" fill="#0f172a"/><circle cx="36" cy="26" r="2.8" fill="#ff2a5f"/></svg></div>
     <span class="logo-texto">ALTOVICIO</span>
   </a>
 
   <nav id="nav-menu">
-    <a href="../?v=13" class="nav-btn">Inicio</a>
+    <a href="../?v=14" class="nav-btn">Inicio</a>
     <a href="social.html" class="nav-btn">Social <span class="nav-badge" data-social-badge style="display:none">0</span></a>
   </nav>
 
@@ -43,7 +43,7 @@
       <span id="xp-texto">0/1000 XP</span>
     </div>
     <span class="perfil-monedas">🪙 <span id="perfil-monedas">0</span></span>
-    <span id="perfil-nivel" style="font-family:'Orbitron',sans-serif;font-size:12px;color:var(--color-muted)">Nv.1</span>
+    <span id="perfil-nivel" style="font-family:'Outfit',sans-serif;font-size:12px;color:var(--color-muted)">Nv.1</span>
   </div>
   <button id="hamburger" aria-label="Menú">☰<span class="nav-badge" data-social-badge style="display:none">0</span></button>
 </header>
@@ -53,14 +53,14 @@
 
   <div id="estado-cargando" style="text-align:center;padding:80px 20px">
     <div style="font-size:50px;margin-bottom:16px;animation:pulseGlow 0.8s ease infinite alternate">🎮</div>
-    <div style="font-family:'Orbitron',sans-serif;color:var(--color-muted);font-size:16px;letter-spacing:2px">CARGANDO JUEGO...</div>
+    <div style="font-family:'Outfit',sans-serif;color:var(--color-muted);font-size:16px;letter-spacing:2px">CARGANDO JUEGO...</div>
   </div>
 
   <div id="estado-error" class="juego-error" style="display:none">
     <div style="font-size:60px;margin-bottom:16px">❌</div>
-    <h2 style="font-family:'Orbitron',sans-serif;color:var(--color-primary);font-size:24px;margin-bottom:8px">JUEGO NO ENCONTRADO</h2>
+    <h2 style="font-family:'Outfit',sans-serif;color:var(--color-primary);font-size:24px;margin-bottom:8px">JUEGO NO ENCONTRADO</h2>
     <p style="color:var(--color-muted);margin-bottom:20px">El ID del juego no existe o es inválido.</p>
-    <a href="../?v=13" class="btn-volver-inicio">← Volver al Inicio</a>
+    <a href="../?v=14" class="btn-volver-inicio">← Volver al Inicio</a>
   </div>
 
   <div id="juego-contenido" style="display:none">
@@ -88,7 +88,7 @@
           <span class="fallback-icon">⚠️</span>
           <span class="fallback-msg" id="fallback-msg">Este juego no pudo cargarse en el frame.</span>
           <a id="btn-nueva-pestana" href="#" target="_blank" rel="noopener" class="btn-nueva-pestana">Abrir en nueva pestaña →</a>
-          <a href="../?v=13" class="btn-volver-inicio" style="margin-top:8px">← Inicio</a>
+          <a href="../?v=14" class="btn-volver-inicio" style="margin-top:8px">← Inicio</a>
         </div>
         <div id="juego-emulador-container" style="display:none;width:100%;height:100%"></div>
       </div>
@@ -157,17 +157,38 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<script src="../js/games-data.js?v=13"></script>
-<script src="../js/storage.js?v=13"></script>
-<script src="../js/social.js?v=13"></script>
-<script src="../js/notifs.js?v=13"></script>
+<script src="../js/games-data.js?v=14"></script>
+<script src="../js/storage.js?v=14"></script>
+<script src="../js/social.js?v=14"></script>
+<script src="../js/notifs.js?v=14"></script>
+<script src="../js/avatar.js?v=14"></script>
 <script>
 // ── Página de juego ────────────────────────────────────────────────────────
 const NOMBRES_NIVEL = ["", "Novato", "Jugador", "Veterano", "Experto", "Élite", "Leyenda", "Maestro", "Campeón", "Gran Maestro", "Supremo"];
 
-// XP por puntajes (límites por visita para que no se pueda "farmear")
-const XP_PARTIDA = 5, XP_RECORD = 25, XP_PRIMER_RECORD = 10, MAX_PARTIDAS_XP = 20, MAX_RECORDS_XP = 6;
-let partidasConXP = 0, recordsConXP = 0;
+// Los premios por partida/récord y sus topes DIARIOS están en Storage.premiarPartida()
+// (antes el tope era por visita y se reiniciaba recargando; las monedas no tenían tope).
+
+// ── Actividad real ─────────────────────────────────────────────────────────
+// El XP y las monedas por tiempo solo corren si el jugador interactuó hace poco.
+// Antes alcanzaba con dejar la pestaña abierta: ~1200 XP por hora sin tocar nada.
+const INACTIVIDAD_MAX_MS = 60 * 1000;
+let ultimaActividad = Date.now();
+function marcarActividad() { ultimaActividad = Date.now(); }
+const EVENTOS_ACTIVIDAD = ["keydown", "pointerdown", "pointermove", "touchstart", "wheel"];
+EVENTOS_ACTIVIDAD.forEach(ev => window.addEventListener(ev, marcarActividad, { passive: true, capture: true }));
+// Los juegos propios son del mismo dominio: se escuchan sus eventos directamente
+function engancharActividadIframe(iframe) {
+  try { const w = iframe.contentWindow; EVENTOS_ACTIVIDAD.forEach(ev => w.addEventListener(ev, marcarActividad, { passive: true, capture: true })); }
+  catch (e) { /* juego externo: no se puede escuchar adentro */ }
+}
+function jugadorActivo() {
+  if (Date.now() - ultimaActividad < INACTIVIDAD_MAX_MS) return true;
+  // Juegos externos (otro dominio): no vemos sus eventos, solo si el foco está en el juego
+  const iframe = $("juego-iframe");
+  return !!(juegoActual && juegoActual.tipo !== "local" && document.hasFocus() && document.activeElement === iframe
+            && Date.now() - ultimaActividad < 5 * INACTIVIDAD_MAX_MS);
+}
 
 let intervaloTiempo = null, segundosSesion = 0, xpSesion = 0, monedaAcum = 0, segundosSinGuardar = 0;
 let juegoActual = null;
@@ -214,7 +235,7 @@ async function actualizarPerfil() {
 function iniciarContadorTiempo() {
   detenerContadorTiempo();
   intervaloTiempo = setInterval(() => {
-    if (document.visibilityState !== "visible") return;
+    if (document.visibilityState !== "visible" || !jugadorActivo()) return;
     segundosSesion++; monedaAcum++; segundosSinGuardar++;
     const m = Math.floor(segundosSesion / 60), s = segundosSesion % 60;
     $("stat-tiempo").textContent = `${m}:${String(s).padStart(2, "0")}`;
@@ -279,14 +300,19 @@ function lanzarFallback(url) {
   $("juego-fallback").classList.add("visible");
   $("btn-nueva-pestana").href = url;
 }
+// Juegos externos: no se puede saber de forma confiable si el sitio se dejó cargar en un
+// iframe (Chrome dispara "load" incluso cuando lo bloquea, y antes a los 4 s se ocultaba un
+// juego que todavía estaba cargando). Ahora el juego nunca se oculta y se muestra un aviso
+// con el enlace para abrirlo en otra pestaña.
 function cargarIframe(juego) {
   const iframe = $("juego-iframe");
-  const timeout = setTimeout(() => {
-    try { const doc = iframe.contentDocument || iframe.contentWindow.document; if (!doc || doc.body.innerHTML === "") lanzarFallback(juego.embed_url); }
-    catch (e) { lanzarFallback(juego.embed_url); }
-  }, 4000);
-  iframe.onload = () => clearTimeout(timeout);
   iframe.src = juego.embed_url;
+  const aviso = document.createElement("a");
+  aviso.href = juego.embed_url; aviso.target = "_blank"; aviso.rel = "noopener";
+  aviso.className = "jp-aviso-externo";
+  aviso.textContent = "¿No carga? Abrilo en otra pestaña ↗";
+  aviso.style.cssText = "position:absolute;right:12px;bottom:12px;z-index:5;background:rgba(13,17,26,.9);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:12px;font-weight:700;padding:8px 12px;border-radius:10px;text-decoration:none";
+  $("juego-frame-wrap").appendChild(aviso);
 }
 function cargarLocal(juego) {
   const iframe = $("juego-iframe");
@@ -294,7 +320,7 @@ function cargarLocal(juego) {
   let url = juego.embed_url;
   if (room) url += (url.includes("?") ? "&" : "?") + "room=" + encodeURIComponent(room);
   iframe.src = url;
-  iframe.onload = () => setTimeout(() => iframe.focus(), 200);
+  iframe.onload = () => { engancharActividadIframe(iframe); setTimeout(() => iframe.focus(), 200); };
   $("juego-frame-wrap").addEventListener("click", () => iframe.focus());
 }
 // Emuladores: tipo "emulador" con embed_url a la ROM y core (nes, gba, snes, gb, gbc)
@@ -339,6 +365,7 @@ window.addEventListener("message", async (e) => {
       records: (u.records && u.records[juegoActual.id]) || {},
     }, "*");
   } else if (d.type === "bg-score") {
+    marcarActividad();
     registrarPuntaje(d);
   }
 });
@@ -353,18 +380,20 @@ async function registrarPuntaje(d) {
   try { res = await Storage.registrarPuntaje(juegoActual.id, modo, score, orden); }
   catch (e) { console.warn("[Récord] no se pudo guardar:", e); return; }
 
-  let xp = 0;
-  if (partidasConXP < MAX_PARTIDAS_XP) { partidasConXP++; xp += XP_PARTIDA; }
-  if (res.isRecord && recordsConXP < MAX_RECORDS_XP) { recordsConXP++; xp += res.prev == null ? XP_PRIMER_RECORD : XP_RECORD; }
-  if (xp) darXP(xp);
-  const monedasGanadas = (res.isRecord ? 25 : 5);
-  Storage.sumarMonedas(monedasGanadas).then(() => actualizarPerfil()).catch(() => {});
+  let xp = 0, monedas = 0;
+  try {
+    const premio = await Storage.premiarPartida({ esRecord: res.isRecord, primerRecord: res.prev == null });
+    xp = premio.xp; monedas = premio.monedas; xpSesion += xp;
+    if (premio.subioNivel) mostrarOverlayNivel(NOMBRES_NIVEL[premio.nuevoNivel]);
+    actualizarPerfil();
+  } catch (e) { console.warn("[Premio] no se pudo guardar:", e); }
+  const extra = (xp ? "  +" + xp + " XP" : "") + (monedas ? "  +" + monedas + " 🪙" : "");
 
   if (res.isRecord) {
-    toastJuego(`🏆 ${res.prev == null ? "Primer récord" : "¡Nuevo récord!"} en ${juegoActual.nombre}${modos().length > 1 ? " (" + info.nombre + ")" : ""}: ${fmtScore(score, info)}${xp ? "  +" + xp + " XP" : ""}`);
+    toastJuego(`🏆 ${res.prev == null ? "Primer récord" : "¡Nuevo récord!"} en ${juegoActual.nombre}${modos().length > 1 ? " (" + info.nombre + ")" : ""}: ${fmtScore(score, info)}${extra}`);
     if (Storage.auth.currentUser) await Storage.enviarPuntajeRanking(juegoActual.id, modo, score, orden, res.usuario || {});
   } else if (xp) {
-    toastJuego(`+${xp} XP por la partida`);
+    toastJuego(`Partida terminada:${extra}`);
   }
   if (modo !== modoRanking && modos().some(m => m.id === modo)) { modoRanking = modo; pintarModos(); }
   cargarRanking();
@@ -419,7 +448,7 @@ async function cargarRanking() {
   lista.innerHTML = filas.map((f, i) => `
     <div class="rk-fila ${f.uid === miUid ? "yo" : ""}">
       <span class="rk-pos">${["🥇", "🥈", "🥉"][i] || (i + 1)}</span>
-      <span class="rk-av">${esc(f.avatar || "😊")}</span>
+      <span class="rk-av">${f.accesorios && window.renderAvatar ? window.renderAvatar(f.avatar || "😊", f.accesorios, 26) : esc(f.avatar || "😊")}</span>
       <span class="rk-nom">${esc(f.nombre || "Jugador")}${f.uid === miUid ? ' <em>vos</em>' : ""}</span>
       <span class="rk-pts">${esc(fmtScore(f.score, info))}</span>
     </div>`).join("");
@@ -449,7 +478,7 @@ function iniciarAmigos() {
   Social.onAmigos(async lista => {
     _amigosCache = lista.map(a => a.uid);
     _amigos = await Promise.all(lista.map(async a => {
-      try { const p = await Social.getPerfil(a.uid); return { uid: a.uid, nombre: (p && p.nombre) || "Jugador", avatar: (p && p.avatar) || "😊" }; }
+      try { const p = await Social.getPerfil(a.uid); return { uid: a.uid, nombre: (p && p.nombre) || "Jugador", avatar: (p && p.avatar) || "😊", accesorios: (p && p.accesorios) || null, fotoPerfil: (p && p.fotoPerfil) || null }; }
       catch (e) { return { uid: a.uid, nombre: "Jugador", avatar: "😊" }; }
     }));
     if (_unsubPres) _unsubPres();
@@ -469,7 +498,7 @@ function pintarAmigos() {
     else if (p.online) estado = '<span class="st on">● Online</span>';
     const unirse = (p.roomId && p.juegoId) ? `<button class="am-b join" data-act="unirse" data-juego="${esc(p.juegoId)}" data-room="${esc(p.roomId)}">▶ Unirse</button>` : "";
     return `<div class="am-fila">
-      <div class="am-av">${esc(a.avatar)}</div>
+      <div class="am-av">${Social.avatarHTML(a, 30)}</div>
       <div class="am-info"><div class="am-nom">${esc(a.nombre)}</div>${estado}</div>
       <div class="am-acc">${unirse}
         <button class="am-b" data-act="chat" data-uid="${esc(a.uid)}" title="Chatear">💬</button>

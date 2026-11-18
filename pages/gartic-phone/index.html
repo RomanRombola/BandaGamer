@@ -3,29 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Banda Phone</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<title>Gartic Phone — AltoVicio</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 :root{--bg:#08080f;--sur:#111120;--sur2:#1a1a2e;--pr:#ff6600;--se:#00aaff;--ac:#ffe600;--da:#ff3366;--ok:#39ff14;--tx:#f0f0f0;--mu:#666688;--r:12px;}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--tx);font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 12px 40px;overflow-x:hidden;}
+body{background:var(--bg);color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 12px 40px;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(255,102,0,0.05),transparent 60%);pointer-events:none;z-index:0;}
-h1{font-family:'Orbitron',sans-serif;font-size:clamp(18px,4vw,28px);font-weight:900;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:4px;filter:drop-shadow(0 0 10px rgba(255,102,0,0.4));}
+h1{font-family:'Outfit',sans-serif;font-size:clamp(18px,4vw,28px);font-weight:900;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:4px;filter:drop-shadow(0 0 10px rgba(255,102,0,0.4));}
 .sub{color:var(--mu);font-size:13px;text-align:center;margin-bottom:20px;letter-spacing:1px;}
 .screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:540px;position:relative;z-index:1;}
 .screen.active{display:flex;animation:fu .3s ease;}
 @keyframes fu{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
 .card{background:var(--sur);border:1px solid rgba(255,102,0,0.15);border-radius:var(--r);padding:18px;width:100%;margin-bottom:12px;}
-.ct{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--pr);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.ct{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:var(--pr);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
 .ct::before{content:'';width:3px;height:13px;background:var(--pr);border-radius:2px;flex-shrink:0;}
-label{display:block;font-size:11px;font-weight:700;color:var(--mu);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:'Orbitron',sans-serif;}
-input,select,textarea{width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:var(--tx);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;padding:10px 13px;border-radius:10px;outline:none;transition:all .2s;margin-bottom:10px;}
+label{display:block;font-size:11px;font-weight:700;color:var(--mu);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:'Outfit',sans-serif;}
+input,select,textarea{width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:600;padding:10px 13px;border-radius:10px;outline:none;transition:all .2s;margin-bottom:10px;}
 input:focus,select:focus,textarea:focus{border-color:var(--pr);background:rgba(255,102,0,0.06);}
 select option{background:#1a1a2e;color:var(--tx);}
 textarea{resize:none;height:80px;font-size:16px;}
-.btn{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;padding:12px 18px;border-radius:10px;border:none;cursor:pointer;letter-spacing:1px;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-bottom:8px;}
+.btn{font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;padding:12px 18px;border-radius:10px;border:none;cursor:pointer;letter-spacing:1px;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-bottom:8px;}
 .bp{background:linear-gradient(135deg,#ff6600,#ff9500);color:#fff;box-shadow:0 0 14px rgba(255,102,0,0.4);}
 .bp:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(255,102,0,0.6);}
 .bs{background:rgba(0,170,255,0.1);border:1px solid rgba(0,170,255,0.3);color:var(--se);}
@@ -35,13 +35,13 @@ textarea{resize:none;height:80px;font-size:16px;}
 .div::before,.div::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.07);}
 .code-box{background:linear-gradient(135deg,rgba(255,102,0,0.1),rgba(255,230,0,0.07));border:2px solid rgba(255,102,0,0.3);border-radius:14px;padding:14px;text-align:center;margin-bottom:12px;width:100%;cursor:pointer;transition:all .2s;}
 .code-box:hover{border-color:rgba(255,102,0,0.5);}
-.code-val{font-family:'Orbitron',sans-serif;font-size:clamp(28px,7vw,44px);font-weight:900;letter-spacing:8px;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.code-val{font-family:'Outfit',sans-serif;font-size:clamp(28px,7vw,44px);font-weight:900;letter-spacing:8px;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .plist{display:flex;flex-direction:column;gap:6px;width:100%;}
 .pi{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:8px 12px;}
 .pi.host{border-color:rgba(255,102,0,0.3);background:rgba(255,102,0,0.06);}
 .av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:rgba(255,102,0,0.1);border:1px solid rgba(255,255,255,0.1);}
 .pn{font-weight:700;font-size:13px;flex:1;}
-.badge{font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:3px 7px;border-radius:6px;letter-spacing:1px;}
+.badge{font-family:'Outfit',sans-serif;font-size:8px;font-weight:700;padding:3px 7px;border-radius:6px;letter-spacing:1px;}
 .bh{background:rgba(255,102,0,0.2);color:var(--pr);border:1px solid rgba(255,102,0,0.3);}
 .ibox{background:rgba(0,170,255,0.07);border:1px solid rgba(0,170,255,0.2);border-radius:10px;padding:10px 13px;font-size:13px;color:var(--se);width:100%;line-height:1.6;}
 .loading::after{content:'';animation:dots 1.2s steps(4,end) infinite;}
@@ -49,9 +49,9 @@ textarea{resize:none;height:80px;font-size:16px;}
 
 /* Ronda info */
 .ronda-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;width:100%;}
-.ronda-num{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:var(--pr);}
-.timer-num{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:900;color:var(--ac);}
-.tipo-badge{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;padding:4px 12px;border-radius:8px;letter-spacing:1px;}
+.ronda-num{font-family:'Outfit',sans-serif;font-size:14px;font-weight:900;color:var(--pr);}
+.timer-num{font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:var(--ac);}
+.tipo-badge{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;padding:4px 12px;border-radius:8px;letter-spacing:1px;}
 .tb-texto{background:rgba(0,170,255,0.15);color:var(--se);border:1px solid rgba(0,170,255,0.3);}
 .tb-dibujo{background:rgba(255,102,0,0.15);color:var(--pr);border:1px solid rgba(255,102,0,0.3);}
 .timer-wrap{height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;margin-bottom:12px;width:100%;}
@@ -59,7 +59,7 @@ textarea{resize:none;height:80px;font-size:16px;}
 
 /* Contenido de la ronda */
 .prev-card{background:var(--sur2);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;text-align:center;margin-bottom:10px;width:100%;}
-.prev-lbl{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Orbitron',sans-serif;margin-bottom:8px;}
+.prev-lbl{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Outfit',sans-serif;margin-bottom:8px;}
 .prev-text{font-size:clamp(16px,4vw,22px);font-weight:700;color:var(--ac);padding:6px 0;}
 .prev-img{max-width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.1);}
 
@@ -67,7 +67,7 @@ textarea{resize:none;height:80px;font-size:16px;}
 .draw-toolbar{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:6px;padding:8px;background:var(--sur);border-radius:10px;border:1px solid rgba(255,255,255,0.07);}
 .cbtn{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,0.15);cursor:pointer;transition:all .15s;flex-shrink:0;}
 .cbtn.active,.cbtn:hover{border-color:#fff;transform:scale(1.25);box-shadow:0 0 6px rgba(255,255,255,0.3);}
-.sbtn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);color:var(--tx);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-weight:700;flex-shrink:0;transition:all .15s;}
+.sbtn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);color:var(--tx);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:700;flex-shrink:0;transition:all .15s;}
 .sbtn.active{background:rgba(255,102,0,0.2);border-color:var(--pr);color:var(--pr);}
 .szBtn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
 .szBtn:hover{background:rgba(255,255,255,0.12);}
@@ -76,7 +76,7 @@ textarea{resize:none;height:80px;font-size:16px;}
 .tsep{width:1px;height:22px;background:rgba(255,255,255,0.1);flex-shrink:0;}
 .ebtn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--tx);padding:4px 9px;border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap;transition:all .15s;}
 .ebtn.active{background:rgba(0,170,255,0.15);border-color:var(--se);}
-.clrbtn{background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.2);color:var(--da);padding:4px 9px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:1px;white-space:nowrap;}
+.clrbtn{background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.2);color:var(--da);padding:4px 9px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'Outfit',sans-serif;font-weight:700;letter-spacing:1px;white-space:nowrap;}
 #draw-canvas{width:100%;display:block;touch-action:none;background:#ffffff !important;cursor:crosshair;border:none;}
 
 /* Revelación */
@@ -84,11 +84,11 @@ textarea{resize:none;height:80px;font-size:16px;}
 .chain-step{border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.03);}
 .chain-step.step-text{border-color:rgba(0,170,255,0.2);background:rgba(0,170,255,0.05);}
 .chain-step.step-draw{border-color:rgba(255,102,0,0.2);background:rgba(255,102,0,0.05);}
-.chain-author{font-size:11px;color:var(--mu);margin-bottom:6px;font-family:'Orbitron',sans-serif;letter-spacing:1px;}
+.chain-author{font-size:11px;color:var(--mu);margin-bottom:6px;font-family:'Outfit',sans-serif;letter-spacing:1px;}
 .chain-text{font-size:17px;font-weight:700;color:var(--tx);}
 .chain-img{width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.08);}
 .chain-nav{display:flex;gap:8px;width:100%;margin-top:12px;justify-content:center;}
-.chain-btn{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;padding:9px 18px;border-radius:8px;border:none;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.chain-btn{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;padding:9px 18px;border-radius:8px;border:none;cursor:pointer;letter-spacing:1px;transition:all .2s;}
 .cb-prev{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:var(--mu);}
 .cb-prev:hover:not(:disabled){background:rgba(255,255,255,0.12);}
 .cb-next{background:linear-gradient(135deg,#ff6600,#ff9500);color:#fff;}
@@ -124,7 +124,7 @@ textarea{resize:none;height:80px;font-size:16px;}
     <button class="btn bp" onclick="createRoom()">📞 CREAR SALA</button>
     <div class="div">o tengo un código</div>
     <label>Código de sala</label>
-    <input type="text" id="inp-code" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-family:'Orbitron',sans-serif;font-size:18px;text-align:center">
+    <input type="text" id="inp-code" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-family:'Outfit',sans-serif;font-size:18px;text-align:center">
     <button class="btn bs" onclick="joinRoom()">🚪 UNIRSE</button>
   </div>
   <p style="color:var(--mu);font-size:12px;text-align:center">Mínimo 3 jugadores · Máximo 8</p>
@@ -134,12 +134,12 @@ textarea{resize:none;height:80px;font-size:16px;}
 <div id="s-lobby" class="screen">
   <h1>SALA DE ESPERA</h1>
   <div class="code-box" onclick="copyCode()">
-    <div style="font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Orbitron',sans-serif;margin-bottom:3px">Código de sala</div>
+    <div style="font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Outfit',sans-serif;margin-bottom:3px">Código de sala</div>
     <div class="code-val" id="d-code">----</div>
     <div style="font-size:11px;color:var(--mu);margin-top:3px">📋 Tocá para copiar y compartir</div>
   </div>
   <div class="card">
-    <div class="ct">Jugadores <span id="p-count" style="margin-left:auto;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:2px 10px;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--mu)">0</span></div>
+    <div class="ct">Jugadores <span id="p-count" style="margin-left:auto;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:2px 10px;font-family:'Outfit',sans-serif;font-size:11px;color:var(--mu)">0</span></div>
     <div class="plist" id="lobby-list"></div>
   </div>
   <div class="card" id="cfg-card" style="display:none">
@@ -274,8 +274,12 @@ textarea{resize:none;height:80px;font-size:16px;}
 <script>
 // ── Firebase ───────────────────────────────────────────────────────────────
 const FBC={apiKey:"AIzaSyACkFsE_0cBEsLEPQPc3GLeZD3KZ0i89RE",authDomain:"gor2games-657f7.firebaseapp.com",databaseURL:"https://gor2games-657f7-default-rtdb.firebaseio.com",projectId:"gor2games-657f7",storageBucket:"gor2games-657f7.firebasestorage.app",messagingSenderId:"91189543289",appId:"1:91189543289:web:2a6ffc41710279febb6fa8"};
-const fbApp=firebase.apps.length?firebase.apps[0]:firebase.initializeApp(FBC);
-const db=firebase.database();
+// Si el SDK de Firebase no cargó (bloqueador de anuncios, red filtrada) la sala no puede
+// funcionar: se avisa en vez de dejar la página rota en silencio.
+const FB_OK=typeof firebase!=="undefined";
+if(!FB_OK) document.addEventListener("DOMContentLoaded",()=>{const t=document.createElement("div");t.textContent="⚠️ No se pudo conectar al servidor de salas. Revisá tu conexión o desactivá el bloqueador de anuncios.";t.style.cssText="position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:9999;background:#2a1220;border:1px solid #ff3366;color:#fff;padding:12px 16px;border-radius:12px;font-weight:700;max-width:92vw;text-align:center";document.body.appendChild(t);});
+const fbApp=FB_OK?(firebase.apps.length?firebase.apps[0]:firebase.initializeApp(FBC)):null;
+const db=FB_OK?firebase.database():null;
 
 // ── Estado global ──────────────────────────────────────────────────────────
 let myId="",myName="",code="",isHost=false;
@@ -291,13 +295,24 @@ const COLORS=["#000000","#ffffff","#e63946","#ff6600","#ffd60a","#2dc653","#0096
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo(0,0);}
-function toast(msg,icon="ℹ️"){const c=document.getElementById("toast-c"),t=document.createElement("div");t.className="toast";t.innerHTML=`<span>${icon}</span><span>${msg}</span>`;c.appendChild(t);setTimeout(()=>t.remove(),3000);}
+// Escapa texto que viene de la sala (nombres, chat, palabras). Las salas se pueden escribir
+// sin cuenta, así que NUNCA se inserta texto de otro jugador como HTML: un nombre o mensaje
+// como <img onerror=...> ejecutaba código en el navegador de todos (y, como el juego corre en
+// el mismo dominio que el portal, podía robar la sesión de Google del jugador).
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function toast(msg,icon="ℹ️"){const c=document.getElementById("toast-c"),t=document.createElement("div");t.className="toast";t.innerHTML=`<span>${esc(icon)}</span><span>${esc(msg)}</span>`;c.appendChild(t);setTimeout(()=>t.remove(),3000);}
 function genCode(){const ch="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";return Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join("");}
 function genId(){return Math.random().toString(36).substr(2,10)+Date.now().toString(36);}
-function emj(n){const e=["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔"];let h=0;for(let i=0;i<n.length;i++)h=(h<<5)-h+n.charCodeAt(i);return e[Math.abs(h)%e.length];}
+function emj(n){n=String(n||"");const e=["🦊","🐺","🦁","🐯","🦅","🐲","🦋","🦄","🐉","🦈","🐼","🦝","🦜","🐸","🦔"];let h=0;for(let i=0;i<n.length;i++)h=(h<<5)-h+n.charCodeAt(i);return e[Math.abs(h)%e.length];}
 function rref(p){return db.ref(p);}
 
 // ── CREAR / UNIRSE ────────────────────────────────────────────────────────
+// ── Sala ↔ portal ─────────────────────────────────────────────────────────
+// Avisa al portal el código de sala para que los amigos vean "▶ Unirse" (null al salir)
+function avisarSala(c){try{if(window.parent!==window)window.parent.postMessage({type:"bg-room",code:c||null},"*");}catch(e){}}
+// Si se entra desde una invitación (?room=ABCD) se completa el código de la sala
+document.addEventListener("DOMContentLoaded",()=>{try{const r=new URLSearchParams(location.search).get("room");const i=document.getElementById("inp-code");if(r&&i&&/^[A-Za-z0-9]{4}$/.test(r))i.value=r.toUpperCase();}catch(e){}});
+
 async function createRoom(){
   const name=document.getElementById("inp-name").value.trim();
   if(!name||name.length<2){toast("Ingresá tu nombre","⚠️");return;}
@@ -310,7 +325,7 @@ async function createRoom(){
       players:{[myId]:{name:myName,id:myId,isHost:true,joinedAt:Date.now()}},
       round:0,totalRounds:0,playerOrder:null,chains:{},inputs:{}
     });
-    setupLobbyUI();show("s-lobby");subRoom();
+    setupLobbyUI();show("s-lobby");subRoom();avisarSala(code);
     toast("Sala creada","📞");
   }catch(e){toast("Error: "+e.message,"❌");}
   finally{if(btn){btn.disabled=false;btn.textContent="📞 CREAR SALA";}}
@@ -330,7 +345,7 @@ async function joinRoom(){
   if(Object.values(players).some(p=>p.name.toLowerCase()===name.toLowerCase())){toast("Nombre en uso","⚠️");return;}
   myName=name;myId=genId();isHost=false;code=c;
   await rref(`gor2phone/${code}/players/${myId}`).set({name:myName,id:myId,isHost:false,joinedAt:Date.now()});
-  setupLobbyUI();show("s-lobby");subRoom();toast(`Unido a ${code}`,"🚪");
+  setupLobbyUI();show("s-lobby");subRoom();toast(`Unido a ${code}`,"🚪");avisarSala(code);
 }
 
 function setupLobbyUI(){
@@ -351,6 +366,7 @@ function subRoom(){
 }
 
 function handleRoom(room){
+  revisarAnfitrion(room);
   const players=room.players||{};
   const pcount=Object.keys(players).length;
   const status=room.status;
@@ -403,7 +419,7 @@ function updateLobbyList(players){
   const list=document.getElementById("lobby-list");list.innerHTML="";
   Object.values(players).sort((a,b)=>a.joinedAt-b.joinedAt).forEach(p=>{
     const d=document.createElement("div");d.className=`pi ${p.isHost?"host":""}`;
-    d.innerHTML=`<div class="av">${emj(p.name)}</div><div class="pn">${p.name}</div>${p.isHost?'<span class="badge bh">HOST</span>':''}${p.id===myId?'<span class="badge" style="background:rgba(0,170,255,0.1);color:var(--se);border:1px solid rgba(0,170,255,0.2)">TÚ</span>':''}`;
+    d.innerHTML=`<div class="av">${emj(p.name)}</div><div class="pn">${esc(p.name)}</div>${p.isHost?'<span class="badge bh">HOST</span>':''}${p.id===myId?'<span class="badge" style="background:rgba(0,170,255,0.1);color:var(--se);border:1px solid rgba(0,170,255,0.2)">TÚ</span>':''}`;
     list.appendChild(d);
   });
 }
@@ -648,9 +664,9 @@ function renderChain(idx){
   chain.steps.forEach((step,i)=>{
     const d=document.createElement("div");
     d.className=`chain-step ${step.type==="draw"?"step-draw":"step-text"}`;
-    d.innerHTML=`<div class="chain-author">${step.type==="draw"?"🎨":"✍️"} ${step.author} — paso ${i+1}</div>`;
-    if(step.type==="text") d.innerHTML+=`<div class="chain-text">"${step.content}"</div>`;
-    else d.innerHTML+=`<img class="chain-img" src="${step.content}" alt="dibujo">`;
+    d.innerHTML=`<div class="chain-author">${step.type==="draw"?"🎨":"✍️"} ${esc(step.author)} — paso ${i+1}</div>`;
+    if(step.type==="text") d.innerHTML+=`<div class="chain-text">"${esc(step.content)}"</div>`;
+    else if(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(String(step.content||""))) d.innerHTML+=`<img class="chain-img" src="${step.content}" alt="dibujo">`;
     container.appendChild(d);
   });
   // Dots
@@ -726,10 +742,32 @@ async function nuevaPartida(){
   toast("¡Nueva partida!","🔄");
 }
 
+const RONDA_HOST_IDS=[["reveal-host","reveal-guest"]];
+// Si el anfitrión se va, el rol pasa al jugador que entró primero (antes se borraba la
+// sala entera y echaba a todos). Cada pantalla detecta si ahora es la anfitriona.
+async function traspasarAnfitrion(path){
+  const snap=await db.ref(`${path}/players`).once("value");
+  const pls=snap.val()||{}; delete pls[myId];
+  const resto=Object.values(pls).filter(p=>p&&p.id).sort((a,b)=>(a.joinedAt||0)-(b.joinedAt||0));
+  if(!resto.length){ await db.ref(path).remove(); return; }
+  const nh=resto[0].id;
+  await db.ref(path).update({[`players/${myId}`]:null,[`players/${nh}/isHost`]:true,host:nh});
+}
+function revisarAnfitrion(room){
+  if(!room||!room.host||!myId) return;
+  const soy=room.host===myId;
+  if(soy===isHost) return;
+  isHost=soy;
+  const v=(id,m)=>{const el=document.getElementById(id);if(el)el.style.display=m?"block":"none";};
+  v("cfg-card",isHost);v("host-btns",isHost);v("guest-btns",!isHost);
+  RONDA_HOST_IDS.forEach(([h,g])=>{const eh=document.getElementById(h);if(eh&&(eh.style.display!=="none"||document.getElementById(g)?.style.display!=="none")){v(h,isHost);v(g,!isHost);}});
+  if(isHost) toast("Ahora sos el anfitrión de la sala","👑");
+}
+
 async function leaveRoom(){
   clearInterval(timerInt);
   db.ref(`gor2phone/${code}`).off();
-  if(isHost) await rref(`gor2phone/${code}`).remove();
+  if(isHost) await traspasarAnfitrion(`gor2phone/${code}`);
   else await rref(`gor2phone/${code}/players/${myId}`).remove();
   backHome();
 }
@@ -737,6 +775,7 @@ async function leaveRoom(){
 function backHome(){
   clearInterval(timerInt);
   if(code) db.ref(`gor2phone/${code}`).off();
+  avisarSala(null);
   myId="";myName="";code="";isHost=false;yaEnvie=false;lastRound=-1;revealChains=[];
   document.getElementById("inp-name").value="";
   document.getElementById("inp-code").value="";
