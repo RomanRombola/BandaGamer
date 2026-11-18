@@ -10,8 +10,17 @@ service cloud.firestore {
     match /visitas/{uid}  { allow read, write: if isMe(uid); }
 
     // ── Perfil público (búsqueda social) y ranking global ─────────────────
-    match /users/{uid}   { allow read: if signedIn(); allow write: if isMe(uid); }
-    match /ranking/{uid} { allow read: if true;       allow write: if isMe(uid); }
+    // Límites de tamaño: estos documentos los descargan todos los que abren el ranking o
+    // buscan amigos. Una "foto" de 1 MB en un perfil hacía pesado el ranking para todos.
+    // (Las fotos que sube la página son de 200×200 y pesan ~15 KB.)
+    function perfilPublicoValido() {
+      let d = request.resource.data;
+      return (!('nombre' in d) || (d.nombre is string && d.nombre.size() <= 60))
+          && (!('fotoPerfil' in d) || d.fotoPerfil == null || (d.fotoPerfil is string && d.fotoPerfil.size() <= 120000))
+          && (!('xp' in d) || d.xp is number);
+    }
+    match /users/{uid}   { allow read: if signedIn(); allow delete: if isMe(uid); allow create, update: if isMe(uid) && perfilPublicoValido(); }
+    match /ranking/{uid} { allow read: if true;       allow delete: if isMe(uid); allow create, update: if isMe(uid) && perfilPublicoValido(); }
 
     // ── Ranking por juego: leaderboards/{juegoId__modo}/scores/{uid} ──────
     match /leaderboards/{board}/scores/{uid} {
