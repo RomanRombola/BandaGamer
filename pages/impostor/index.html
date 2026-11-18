@@ -558,23 +558,52 @@ async function startGame(){
   // Turnos aleatorios — se mezclan en cada nueva palabra
   const shuffled=[...ids].sort(()=>Math.random()-0.5);
 
-  // Roles (guardados en Firebase, cada jugador lee el suyo)
-  const roles={};
-  ids.forEach(id=>{ roles[id]={ role:id===impostorId?"impostor":"civil", hint:id===impostorId&&hintEnabled?hint:"" }; });
+  // Roles: cada jugador lee SOLO su carta (ver repartirRoles)
+  const ronda=await repartirRoles(ids,word,impostorId,hintEnabled?hint:"");
 
   await rref(`impost/${roomCode}`).update({
-    status:"playing", word, impostorId,
+    status:"playing", word:null, impostorId:null, roles:null, ronda,
     turnOrder:shuffled, currentTurn:shuffled[0],
-    roles, votes:{}, round:1, hintEnabled
+    votes:{}, round:1, hintEnabled
   });
+}
+
+// ── CARTAS SECRETAS ────────────────────────────────────────────────────────
+// Antes la palabra, el impostor y los roles de todos estaban en el nodo de la sala, que
+// todos los jugadores descargan: el impostor podía ver la palabra con las herramientas de
+// red. Ahora cada carta va a impost/{CODIGO}__sec/{jugador} y cada uno escucha solo la suya.
+// La palabra y el impostor se publican en la sala recién al mostrar el resultado.
+// (Sin cuentas no se puede impedir del todo que alguien lea el nodo a mano: para eso
+// hace falta login anónimo de Firebase + reglas por jugador.)
+function secPath(id){ return `impost/${roomCode}__sec${id?"/"+id:""}`; }
+async function repartirRoles(ids,word,impostorId,hint){
+  const ronda=Date.now();
+  const sec={ _host:{ word, impostorId, ronda } };
+  ids.forEach(id=>{
+    const imp=id===impostorId;
+    sec[id]={ role:imp?"impostor":"civil", word:imp?null:word, hint:imp?hint:"", ronda };
+  });
+  await rref(secPath()).set(sec);
+  return ronda;
 }
 
 // ── CARGAR ROL ─────────────────────────────────────────────────────────────
 async function loadMyRole(room){
-  const roleData=room.roles?.[myId];
-  if(!roleData) return;
+  let roleData=null, palabra=null;
+  if(room.roles && room.roles[myId]){
+    // Compatibilidad con salas creadas por la versión anterior
+    roleData=room.roles[myId]; palabra=room.word;
+  } else {
+    for(let i=0;i<5 && !roleData;i++){
+      const snap=await rref(secPath(myId)).once("value");
+      const v=snap.val();
+      if(v && (!room.ronda || v.ronda===room.ronda)){ roleData=v; palabra=v.word; }
+      else await new Promise(r=>setTimeout(r,300));
+    }
+  }
+  if(!roleData){ toast("No se pudo cargar tu carta. Pedile al host una nueva ronda.","⚠️"); return; }
   myRole=roleData.role;
-  myWord=myRole==="civil"?room.word:"???";
+  myWord=myRole==="civil"?(palabra||""):"???";
   myHint=roleData.hint||"";
 
   // Construir tarjeta de rol
@@ -584,7 +613,7 @@ async function loadMyRole(room){
       <div class="role-card civil">
         <div class="role-badge rb-civil">✅ ERES CIVIL</div>
         <div style="font-size:12px;color:var(--mu);margin-bottom:6px">La palabra secreta es:</div>
-        <div class="role-word">${esc(room.word)}</div>
+        <div class="role-word">${esc(myWord)}</div>
         <div class="role-desc">Dá pistas sin decir la palabra directamente.<br>Encontrá al impostor entre los demás.</div>
       </div>`;
   } else {
@@ -730,8 +759,15 @@ async function closeVoting(){
     return;
   }
   const elimId=top[0];
-  const wasImpostor=elimId===room.impostorId;
-  await rref(`impost/${roomCode}`).update({[`players/${elimId}/eliminated`]:true,status:"result",lastEliminated:elimId,civilsWin:wasImpostor});
+  // El impostor y la palabra están en el nodo secreto: se revelan junto con el resultado
+  let impostorId=room.impostorId, word=room.word;
+  if(!impostorId){
+    const hs=await rref(secPath("_host")).once("value");
+    const h=hs.val()||{};
+    impostorId=h.impostorId||null; word=h.word||null;
+  }
+  const wasImpostor=elimId===impostorId;
+  await rref(`impost/${roomCode}`).update({[`players/${elimId}/eliminated`]:true,status:"result",lastEliminated:elimId,civilsWin:wasImpostor,impostorId,word});
 }
 
 async function cancelVoting(){
@@ -783,13 +819,12 @@ async function newRound(){
   let hint="";
   if(hintEnabled){ hint=getPistaParaPalabra(word); }
   const shuffled=[...ids].sort(()=>Math.random()-0.5);
-  const roles={};
-  ids.forEach(id=>{ roles[id]={role:id===impostorId?"impostor":"civil",hint:id===impostorId&&hintEnabled?hint:""}; });
+  const ronda=await repartirRoles(ids,word,impostorId,hintEnabled?hint:"");
 
   Object.assign(updates,{
-    status:"playing", word, impostorId,
+    status:"playing", word:null, impostorId:null, roles:null, ronda,
     turnOrder:shuffled, currentTurn:shuffled[0],
-    roles, votes:{}, lastEliminated:null, civilsWin:null
+    votes:{}, lastEliminated:null, civilsWin:null
   });
   await rref(`impost/${roomCode}`).update(updates);
 }
@@ -812,6 +847,7 @@ async function leaveRoom(){
       await rref(`impost/${roomCode}/host`).set(nextHost);
     } else {
       await rref(`impost/${roomCode}`).remove();
+      await rref(secPath()).remove().catch(()=>{});
     }
   } else {
     await rref(`impost/${roomCode}/players/${myId}`).remove();
@@ -823,8 +859,9 @@ function backToHome(){
   if(!roomCode || !isHost){ _resetCompleto(); return; }
   myRole=""; myWord=""; myHint=""; lastStatus=null;
   // Resetear sala a estado lobby sin eliminarla
+  rref(secPath()).remove().catch(()=>{});
   rref(`impost/${roomCode}`).update({
-    status:"lobby", word:null, impostorId:null,
+    status:"lobby", word:null, impostorId:null, ronda:null,
     turnOrder:null, currentTurn:null, votes:null,
     roles:null, lastEliminated:null, civilsWin:null
   }).then(()=>{
