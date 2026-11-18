@@ -20,6 +20,15 @@ h1{font-family:'Outfit',sans-serif;font-size:clamp(18px,4vw,30px);font-weight:90
 .screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:500px;position:relative;z-index:1;}
 .screen.active{display:flex;animation:fu .3s ease;}
 @keyframes fu{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+/* Chat de la sala */
+.rc-msgs{max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+.rc-msg{background:var(--sur2);border-radius:10px;padding:7px 11px;font-size:14px;line-height:1.35;word-break:break-word;}
+.rc-msg b{color:var(--se);margin-right:4px;}
+.rc-msg.mio b{color:var(--pr);}
+.rc-vacio{color:var(--mu);font-size:13px;text-align:center;padding:6px 0;}
+.rc-form{display:flex;gap:8px;}
+.rc-form input{flex:1;font-size:15px;padding:10px 12px;}
+.rc-form .btn{width:auto;padding:0 18px;}
 .card{background:var(--sur);border:1px solid rgba(255,102,0,0.15);border-radius:var(--r);padding:20px;width:100%;margin-bottom:12px;}
 .ct{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:var(--pr);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
 .ct::before{content:'';width:3px;height:13px;background:var(--pr);border-radius:2px;flex-shrink:0;}
@@ -203,6 +212,15 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
     <div class="ct">Orden de turnos</div>
     <div class="plist" id="game-list"></div>
   </div>
+  <!-- Chat de la sala (se mueve entre la pantalla de juego y la de votación) -->
+  <div class="card" id="room-chat">
+    <div class="ct">Chat de la sala</div>
+    <div class="rc-msgs" id="rc-msgs"><div class="rc-vacio">Escribí tu pista o charlá con la sala 💬</div></div>
+    <form class="rc-form" onsubmit="enviarChatSala(event)">
+      <input type="text" id="rc-inp" maxlength="120" placeholder="Tu mensaje..." autocomplete="off">
+      <button class="btn bp" type="submit" title="Enviar">➤</button>
+    </form>
+  </div>
   <div id="game-host-btns" style="width:100%;display:none">
     <button class="btn bd" onclick="startVoting()">🗳️ INICIAR VOTACIÓN</button>
     <button class="btn bs" style="margin-top:8px" onclick="nextTurn()">⏭ SIGUIENTE TURNO</button>
@@ -376,14 +394,23 @@ function getPistaParaPalabra(word) {
 
 // ── Estado ─────────────────────────────────────────────────────────────────
 let myId="", myName="", roomCode="", isHost=false;
-let myRole="", myWord="", myHint="";
+let myRole="", myWord="", myHint="", rondaCargada=null;
 let wordHidden=true;
 let selectedCats=new Set(["mix"]);
 let roomListener=null;
 let lastStatus=null;
 
 // ── UI helpers ─────────────────────────────────────────────────────────────
-function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); document.getElementById(id).classList.add("active"); window.scrollTo(0,0); }
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  const scr=document.getElementById(id); scr.classList.add("active"); window.scrollTo(0,0);
+  // El chat de la sala acompaña al jugador en la pantalla de juego y en la de votación
+  const rc=document.getElementById("room-chat");
+  if(rc && (id==="s-game"||id==="s-vote") && rc.parentNode!==scr){
+    scr.insertBefore(rc, scr.querySelector('[id$="-host-btns"]'));
+    const box=document.getElementById("rc-msgs"); box.scrollTop=box.scrollHeight;
+  }
+}
 // Escapa texto que viene de la sala (nombres, chat, palabras). Las salas se pueden escribir
 // sin cuenta, así que NUNCA se inserta texto de otro jugador como HTML: un nombre o mensaje
 // como <img onerror=...> ejecutaba código en el navegador de todos (y, como el juego corre en
@@ -477,7 +504,34 @@ async function joinRoom(){
 function copyCode(){ navigator.clipboard?.writeText(roomCode).then(()=>toast("Código copiado","📋")).catch(()=>toast(`Código: ${roomCode}`,"📋")); }
 
 // ── SUSCRIBIR SALA ─────────────────────────────────────────────────────────
+// ── CHAT DE LA SALA ────────────────────────────────────────────────────────
+// Para quienes no están en llamada de voz. Va en impost/{CODIGO}__chat (fuera del nodo de
+// la sala, así cada mensaje no vuelve a dibujar toda la partida). Todo se muestra escapado.
+let chatRef=null, chatListener=null, ultimoChat=0;
+function subscribeChat(){
+  unsubscribeChat();
+  chatRef=rref(`impost/${roomCode}__chat`).limitToLast(40);
+  chatListener=chatRef.on("value",snap=>{
+    const msgs=Object.values(snap.val()||{}).filter(m=>m&&typeof m==="object").sort((a,b)=>(a.t||0)-(b.t||0));
+    const box=document.getElementById("rc-msgs");
+    box.innerHTML=msgs.length?msgs.map(m=>`<div class="rc-msg ${m.id===myId?"mio":""}"><b>${esc(m.name||"?")}:</b>${esc(m.text||"")}</div>`).join(""):'<div class="rc-vacio">Escribí tu pista o charlá con la sala 💬</div>';
+    box.scrollTop=box.scrollHeight;
+  });
+}
+function unsubscribeChat(){ if(chatRef&&chatListener) chatRef.off("value",chatListener); chatRef=null; chatListener=null; }
+async function enviarChatSala(e){
+  e.preventDefault();
+  const inp=document.getElementById("rc-inp");
+  const text=inp.value.trim().slice(0,120);
+  if(!text||!roomCode) return;
+  if(Date.now()-ultimoChat<700){ toast("Más despacio 🙂","⏳"); return; }
+  ultimoChat=Date.now(); inp.value="";
+  try{ await rref(`impost/${roomCode}__chat`).push({id:myId,name:myName,text,t:Date.now()}); }
+  catch(err){ inp.value=text; toast("No se pudo enviar","❌"); }
+}
+
 function subscribeRoom(){
+  subscribeChat();
   if(roomListener) rref(`impost/${roomCode}`).off("value",roomListener);
   roomListener=rref(`impost/${roomCode}`).on("value",snap=>{
     if(!snap.exists()){backToHome();return;}
@@ -485,7 +539,25 @@ function subscribeRoom(){
   });
 }
 
+// Muestra u oculta los controles de anfitrión en todas las pantallas
+function aplicarRolHost(){
+  const v=(id,mostrar,modo)=>{ const el=document.getElementById(id); if(el) el.style.display=mostrar?(modo||"block"):"none"; };
+  v("cfg-card",isHost); v("host-btns",isHost); v("guest-btns",!isHost);
+  v("game-host-btns",isHost); v("game-guest-info",!isHost);
+  v("vote-host-btns",isHost); v("vote-guest-info",!isHost);
+  v("result-host-btns",isHost); v("result-guest-info",!isHost);
+}
+
 function handleRoom(room){
+  // Si el anfitrión se fue, el que heredó el rol tiene que enterarse (antes nadie veía los
+  // botones para seguir y la sala quedaba trabada)
+  if(room.host && myId){
+    const soyHost=room.host===myId;
+    if(soyHost!==isHost){
+      isHost=soyHost; aplicarRolHost();
+      if(soyHost){ if(!document.getElementById("cat-grid").children.length) buildCats(); toast("Ahora sos el anfitrión de la sala","👑"); }
+    }
+  }
   const status=room.status;
   const statusChanged=status!==lastStatus;
   lastStatus=status;
@@ -499,13 +571,15 @@ function handleRoom(room){
     return;
   }
   if(status==="playing"){
-    if(statusChanged){
+    // La carta se muestra solo cuando empieza una ronda NUEVA. Antes, al cancelar una
+    // votación o empatar, a todos se les volvía a mostrar la carta y tenían que tocar "LISTO".
+    const claveRonda=room.ronda||room.word||null;
+    if(claveRonda!==rondaCargada || !myRole){
       loadMyRole(room);
+    } else if(statusChanged){
+      goToGame();
     } else if(document.getElementById("s-game").classList.contains("active")){
       updateGameScreen(room,players);
-    } else if(document.getElementById("s-result").classList.contains("active")){
-      // Nueva ronda iniciada
-      loadMyRole(room);
     }
     return;
   }
@@ -602,6 +676,7 @@ async function loadMyRole(room){
     }
   }
   if(!roleData){ toast("No se pudo cargar tu carta. Pedile al host una nueva ronda.","⚠️"); return; }
+  rondaCargada=room.ronda||room.word||null;
   myRole=roleData.role;
   myWord=myRole==="civil"?(palabra||""):"???";
   myHint=roleData.hint||"";
@@ -848,18 +923,22 @@ async function leaveRoom(){
     } else {
       await rref(`impost/${roomCode}`).remove();
       await rref(secPath()).remove().catch(()=>{});
+      await rref(`impost/${roomCode}__chat`).remove().catch(()=>{});
     }
   } else {
     await rref(`impost/${roomCode}/players/${myId}`).remove();
   }
-  backToHome();
+  // Antes llamaba a backToHome(): como el que salía seguía marcado como anfitrión, le
+  // reiniciaba la partida a todos y lo dejaba en el lobby de una sala que ya había dejado.
+  _resetCompleto();
 }
 
 function backToHome(){
   if(!roomCode || !isHost){ _resetCompleto(); return; }
-  myRole=""; myWord=""; myHint=""; lastStatus=null;
+  myRole=""; myWord=""; myHint=""; lastStatus=null; rondaCargada=null;
   // Resetear sala a estado lobby sin eliminarla
   rref(secPath()).remove().catch(()=>{});
+  rref(`impost/${roomCode}__chat`).remove().catch(()=>{});
   rref(`impost/${roomCode}`).update({
     status:"lobby", word:null, impostorId:null, ronda:null,
     turnOrder:null, currentTurn:null, votes:null,
@@ -884,7 +963,8 @@ function backToHome(){
 
 function _resetCompleto(){
   if(roomListener) rref(`impost/${roomCode}`).off("value",roomListener);
-  myId=""; myName=""; roomCode=""; isHost=false; myRole=""; myWord=""; myHint=""; lastStatus=null;
+  unsubscribeChat();
+  myId=""; myName=""; roomCode=""; isHost=false; myRole=""; myWord=""; myHint=""; lastStatus=null; rondaCargada=null;
   document.getElementById("inp-name").value="";
   document.getElementById("inp-code").value="";
   show("s-home");
