@@ -39,7 +39,7 @@ const Notifs = (() => {
       const s = document.createElement('style');
       s.id = 'social-toast-style';
       s.textContent = '@keyframes slideInToast{from{transform:translateX(110%);opacity:0}to{transform:none;opacity:1}}@keyframes fadeOutToast{to{transform:translateX(110%);opacity:0}}' +
-        '.social-toast{background:linear-gradient(135deg,#17172c,#22224a);border:1px solid rgba(0,170,255,.4);color:#fff;padding:12px 16px;border-radius:12px;font-family:Rajdhani,sans-serif;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.5),0 0 14px rgba(0,170,255,.15);cursor:pointer;pointer-events:auto;max-width:340px;animation:slideInToast .3s ease;line-height:1.3}' +
+        '.social-toast{background:linear-gradient(135deg,#17172c,#22224a);border:1px solid rgba(0,170,255,.4);color:#fff;padding:12px 16px;border-radius:12px;font-family:"Plus Jakarta Sans",sans-serif;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.5),0 0 14px rgba(0,170,255,.15);cursor:pointer;pointer-events:auto;max-width:340px;animation:slideInToast .3s ease;line-height:1.3}' +
         '.social-toast:hover{border-color:rgba(255,102,0,.6)}';
       document.head.appendChild(s);
     }

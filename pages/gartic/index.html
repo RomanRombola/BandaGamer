@@ -4,27 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Dibujá y Adiviná — AltoVicio</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 :root{--bg:#08080f;--sur:#111120;--sur2:#1a1a2e;--pr:#ff6600;--se:#00aaff;--ac:#ffe600;--da:#ff3366;--ok:#39ff14;--tx:#f0f0f0;--mu:#666688;--r:12px;}
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;}
-body{background:var(--bg);color:var(--tx);font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 12px 40px;overflow-x:hidden;}
+body{background:var(--bg);color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 12px 40px;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(255,102,0,0.05),transparent 60%);pointer-events:none;z-index:0;}
-h1{font-family:'Orbitron',sans-serif;font-size:clamp(18px,4vw,28px);font-weight:900;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:4px;filter:drop-shadow(0 0 10px rgba(255,102,0,0.4));}
+h1{font-family:'Outfit',sans-serif;font-size:clamp(18px,4vw,28px);font-weight:900;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:4px;filter:drop-shadow(0 0 10px rgba(255,102,0,0.4));}
 .sub{color:var(--mu);font-size:13px;text-align:center;margin-bottom:20px;letter-spacing:1px;}
 .screen{display:none;flex-direction:column;align-items:center;width:100%;max-width:560px;position:relative;z-index:1;}
 .screen.active{display:flex;animation:fu .3s ease;}
 @keyframes fu{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
 .card{background:var(--sur);border:1px solid rgba(255,102,0,0.15);border-radius:var(--r);padding:18px;width:100%;margin-bottom:12px;}
-.ct{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--pr);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.ct{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:var(--pr);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
 .ct::before{content:'';width:3px;height:13px;background:var(--pr);border-radius:2px;flex-shrink:0;}
-label{display:block;font-size:11px;font-weight:700;color:var(--mu);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:'Orbitron',sans-serif;}
-input,select{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--tx);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;padding:10px 13px;border-radius:10px;outline:none;transition:all .2s;margin-bottom:10px;}
+label{display:block;font-size:11px;font-weight:700;color:var(--mu);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:'Outfit',sans-serif;}
+input,select{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:600;padding:10px 13px;border-radius:10px;outline:none;transition:all .2s;margin-bottom:10px;}
 input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);box-shadow:0 0 12px rgba(255,102,0,0.2);}
-.btn{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;padding:12px 18px;border-radius:10px;border:none;cursor:pointer;letter-spacing:1px;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-bottom:8px;}
+.btn{font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;padding:12px 18px;border-radius:10px;border:none;cursor:pointer;letter-spacing:1px;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-bottom:8px;}
 .bp{background:linear-gradient(135deg,#ff6600,#ff9500);color:#fff;box-shadow:0 0 14px rgba(255,102,0,0.4);}
 .bp:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(255,102,0,0.6);}
 .bs{background:rgba(0,170,255,0.1);border:1px solid rgba(0,170,255,0.3);color:var(--se);}
@@ -37,8 +37,8 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
 .div::before,.div::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.07);}
 .code-box{background:linear-gradient(135deg,rgba(255,102,0,0.1),rgba(255,230,0,0.07));border:2px solid rgba(255,102,0,0.3);border-radius:14px;padding:14px;text-align:center;margin-bottom:12px;width:100%;cursor:pointer;transition:all .2s;}
 .code-box:hover{border-color:rgba(255,102,0,0.5);}
-.code-lbl{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Orbitron',sans-serif;margin-bottom:3px;}
-.code-val{font-family:'Orbitron',sans-serif;font-size:clamp(28px,7vw,44px);font-weight:900;letter-spacing:8px;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.code-lbl{font-size:10px;color:var(--mu);letter-spacing:2px;text-transform:uppercase;font-family:'Outfit',sans-serif;margin-bottom:3px;}
+.code-val{font-family:'Outfit',sans-serif;font-size:clamp(28px,7vw,44px);font-weight:900;letter-spacing:8px;background:linear-gradient(90deg,#ff6600,#ffe600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .plist{display:flex;flex-direction:column;gap:6px;width:100%;}
 .pi{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:8px 12px;}
 .pi.host{border-color:rgba(255,102,0,0.3);background:rgba(255,102,0,0.06);}
@@ -46,8 +46,8 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
 @keyframes dp{from{box-shadow:none;}to{box-shadow:0 0 10px rgba(255,230,0,0.25);}}
 .av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:linear-gradient(135deg,rgba(255,102,0,0.2),rgba(0,170,255,0.1));border:1px solid rgba(255,255,255,0.1);}
 .pn{font-weight:700;font-size:13px;flex:1;}
-.ps{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;color:var(--ac);}
-.badge{font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;padding:3px 7px;border-radius:6px;letter-spacing:1px;}
+.ps{font-family:'Outfit',sans-serif;font-size:13px;font-weight:900;color:var(--ac);}
+.badge{font-family:'Outfit',sans-serif;font-size:8px;font-weight:700;padding:3px 7px;border-radius:6px;letter-spacing:1px;}
 .bh{background:rgba(255,102,0,0.2);color:var(--pr);border:1px solid rgba(255,102,0,0.3);}
 .bdraw{background:rgba(255,230,0,0.15);color:var(--ac);border:1px solid rgba(255,230,0,0.3);}
 .bguess{background:rgba(57,255,20,0.1);color:var(--ok);border:1px solid rgba(57,255,20,0.2);}
@@ -60,18 +60,18 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
 @media(max-width:540px){#side-col{width:100%;}}
 
 .word-disp{background:var(--sur2);border:1px solid rgba(255,230,0,0.2);border-radius:10px;padding:12px;text-align:center;margin-bottom:8px;}
-.word-letters{font-family:'Orbitron',sans-serif;font-size:clamp(14px,4vw,22px);font-weight:900;letter-spacing:5px;color:var(--ac);min-height:28px;}
+.word-letters{font-family:'Outfit',sans-serif;font-size:clamp(14px,4vw,22px);font-weight:900;letter-spacing:5px;color:var(--ac);min-height:28px;}
 .word-hint{font-size:12px;color:var(--mu);margin-top:3px;}
 
 .toolbar{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:6px;padding:8px;background:var(--sur);border-radius:10px;border:1px solid rgba(255,255,255,0.07);}
 .cbtn{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,0.15);cursor:pointer;transition:all .15s;flex-shrink:0;}
 .cbtn.active,.cbtn:hover{border-color:#fff;transform:scale(1.25);box-shadow:0 0 8px rgba(255,255,255,0.4);}
-.sbtn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);color:var(--tx);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:'Orbitron',sans-serif;font-weight:700;flex-shrink:0;}
+.sbtn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);color:var(--tx);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:'Outfit',sans-serif;font-weight:700;flex-shrink:0;}
 .sbtn.active,.sbtn:hover{background:rgba(255,102,0,0.2);border-color:var(--pr);color:var(--pr);}
 .tsep{width:1px;height:22px;background:rgba(255,255,255,0.1);flex-shrink:0;}
 .ebtn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--tx);padding:4px 9px;border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap;}
 .ebtn.active{background:rgba(0,170,255,0.15);border-color:var(--se);}
-.clrbtn{background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.2);color:var(--da);padding:4px 9px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:1px;white-space:nowrap;}
+.clrbtn{background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.2);color:var(--da);padding:4px 9px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'Outfit',sans-serif;font-weight:700;letter-spacing:1px;white-space:nowrap;}
 
 #canvas{width:100%;border-radius:10px;border:2px solid rgba(255,102,0,0.2);display:block;touch-action:none;background:#1a1a1a;}
 
@@ -82,9 +82,9 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
 .cmsg.mine{color:var(--se);}
 .cname{color:var(--pr);font-weight:700;}
 .chat-row{display:flex;gap:6px;}
-.chat-inp{flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--tx);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;padding:8px 11px;border-radius:8px;outline:none;}
+.chat-inp{flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:600;padding:8px 11px;border-radius:8px;outline:none;}
 .chat-inp:focus{border-color:var(--se);}
-.chat-send{background:rgba(0,170,255,0.12);border:1px solid rgba(0,170,255,0.3);color:var(--se);font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;padding:8px 11px;border-radius:8px;cursor:pointer;letter-spacing:1px;white-space:nowrap;}
+.chat-send{background:rgba(0,170,255,0.12);border:1px solid rgba(0,170,255,0.3);color:var(--se);font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;padding:8px 11px;border-radius:8px;cursor:pointer;letter-spacing:1px;white-space:nowrap;}
 
 .timer-wrap{height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;margin-bottom:8px;}
 .timer-bar{height:100%;background:linear-gradient(90deg,var(--pr),var(--ac));border-radius:3px;transition:width 1s linear;}
@@ -121,7 +121,7 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
     <button class="btn bp" onclick="createRoom()">🎨 CREAR SALA</button>
     <div class="div">o</div>
     <label>Código de sala</label>
-    <input type="text" id="inp-code" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-family:'Orbitron',sans-serif;font-size:18px;text-align:center">
+    <input type="text" id="inp-code" placeholder="ABCD" maxlength="4" style="text-transform:uppercase;letter-spacing:4px;font-family:'Outfit',sans-serif;font-size:18px;text-align:center">
     <button class="btn bs" onclick="joinRoom()">🚪 UNIRSE</button>
   </div>
   <p style="color:var(--mu);font-size:12px;text-align:center">Mínimo 2 jugadores</p>
@@ -136,7 +136,7 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
     <div style="font-size:11px;color:var(--mu);margin-top:3px">📋 Tocá para copiar</div>
   </div>
   <div class="card">
-    <div class="ct">Jugadores <span id="p-count" style="margin-left:auto;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:2px 10px;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--mu)">0</span></div>
+    <div class="ct">Jugadores <span id="p-count" style="margin-left:auto;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:2px 10px;font-family:'Outfit',sans-serif;font-size:11px;color:var(--mu)">0</span></div>
     <div class="plist" id="lobby-list"></div>
   </div>
   <div id="cfg-card" class="card" style="display:none">
@@ -177,8 +177,8 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
 <div id="s-game" class="screen" style="max-width:none;width:100%">
   <div id="game-wrap">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px">
-      <div><span style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--mu)">RONDA </span><span id="round-d" style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--pr)">1/5</span></div>
-      <div id="timer-d" style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--ac)">90</div>
+      <div><span style="font-family:'Outfit',sans-serif;font-size:11px;color:var(--mu)">RONDA </span><span id="round-d" style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:var(--pr)">1/5</span></div>
+      <div id="timer-d" style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:900;color:var(--ac)">90</div>
       <div id="draw-badge" style="font-size:13px;font-weight:700;color:var(--ac)">🎨 —</div>
     </div>
     <div class="timer-wrap"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
@@ -222,7 +222,7 @@ input:focus,select:focus{border-color:var(--pr);background:rgba(255,102,0,0.05);
   <div class="card">
     <div style="text-align:center;margin-bottom:12px">
       <div style="font-size:12px;color:var(--mu);margin-bottom:5px">La palabra era:</div>
-      <div id="rr-word" style="font-family:'Orbitron',sans-serif;font-size:26px;font-weight:900;color:var(--ac)">—</div>
+      <div id="rr-word" style="font-family:'Outfit',sans-serif;font-size:26px;font-weight:900;color:var(--ac)">—</div>
     </div>
     <div class="ct">Puntajes</div>
     <div class="scores-list" id="rr-scores"></div>
@@ -563,7 +563,7 @@ function showRoundResult(room,players){
   const sc=document.getElementById("rr-scores");sc.innerHTML="";
   Object.values(players).sort((a,b)=>b.score-a.score).forEach((p,i)=>{
     const d=document.createElement("div");d.className="score-item";
-    d.innerHTML=`<span style="font-size:16px">${["🥇","🥈","🥉"][i]||i+1}</span><div class="av">${emj(p.name)}</div><span style="flex:1;font-weight:700">${esc(p.name)}</span><span style="font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;color:var(--ac)">${Number(p.score)||0}</span>`;
+    d.innerHTML=`<span style="font-size:16px">${["🥇","🥈","🥉"][i]||i+1}</span><div class="av">${emj(p.name)}</div><span style="flex:1;font-weight:700">${esc(p.name)}</span><span style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:900;color:var(--ac)">${Number(p.score)||0}</span>`;
     sc.appendChild(d);
   });
   if(isHost){document.getElementById("rr-host").style.display="block";document.getElementById("rr-guest").style.display="none";}
@@ -591,7 +591,7 @@ function showFinal(players){
   const sc=document.getElementById("final-scores");sc.innerHTML="";
   Object.values(players).sort((a,b)=>b.score-a.score).forEach((p,i)=>{
     const d=document.createElement("div");d.className="score-item";
-    d.innerHTML=`<span style="font-size:18px">${["🥇","🥈","🥉"][i]||i+1}</span><div class="av">${emj(p.name)}</div><span style="flex:1;font-weight:700;font-size:15px">${esc(p.name)}</span><span style="font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--ac)">${Number(p.score)||0}</span>`;
+    d.innerHTML=`<span style="font-size:18px">${["🥇","🥈","🥉"][i]||i+1}</span><div class="av">${emj(p.name)}</div><span style="flex:1;font-weight:700;font-size:15px">${esc(p.name)}</span><span style="font-family:'Outfit',sans-serif;font-size:18px;font-weight:900;color:var(--ac)">${Number(p.score)||0}</span>`;
     sc.appendChild(d);
   });
   show("s-final");
