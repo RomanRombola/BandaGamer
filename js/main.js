@@ -116,7 +116,12 @@ function iniciarInterfaz(usuario) {
 async function renderizarDestacados() {
   const contenedor = document.getElementById("destacados-grid");
   if (!contenedor) return;
-  const destacados = juegos.filter(j => j.tipo === "local").slice(0, 6);
+  // Antes eran los primeros 6 del catálogo (los mismos que aparecen arriba de todo en
+  // "Todos los juegos"). Ahora: primero los online con amigos y después los renovados.
+  const locales = juegos.filter(j => j.tipo === "local");
+  const online  = locales.filter(j => j.multi);
+  const nuevos  = locales.filter(j => !j.multi && j.nuevo);
+  const destacados = [...online, ...nuevos.slice(6), ...nuevos].filter((j, i, arr) => arr.indexOf(j) === i).slice(0, 6);
   contenedor.innerHTML = await crearCardsHTML(destacados);
 }
 
