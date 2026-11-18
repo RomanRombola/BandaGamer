@@ -478,7 +478,7 @@ function iniciarAmigos() {
   Social.onAmigos(async lista => {
     _amigosCache = lista.map(a => a.uid);
     _amigos = await Promise.all(lista.map(async a => {
-      try { const p = await Social.getPerfil(a.uid); return { uid: a.uid, nombre: (p && p.nombre) || "Jugador", avatar: (p && p.avatar) || "😊" }; }
+      try { const p = await Social.getPerfil(a.uid); return { uid: a.uid, nombre: (p && p.nombre) || "Jugador", avatar: (p && p.avatar) || "😊", accesorios: (p && p.accesorios) || null, fotoPerfil: (p && p.fotoPerfil) || null }; }
       catch (e) { return { uid: a.uid, nombre: "Jugador", avatar: "😊" }; }
     }));
     if (_unsubPres) _unsubPres();
@@ -498,7 +498,7 @@ function pintarAmigos() {
     else if (p.online) estado = '<span class="st on">● Online</span>';
     const unirse = (p.roomId && p.juegoId) ? `<button class="am-b join" data-act="unirse" data-juego="${esc(p.juegoId)}" data-room="${esc(p.roomId)}">▶ Unirse</button>` : "";
     return `<div class="am-fila">
-      <div class="am-av">${esc(a.avatar)}</div>
+      <div class="am-av">${Social.avatarHTML(a, 30)}</div>
       <div class="am-info"><div class="am-nom">${esc(a.nombre)}</div>${estado}</div>
       <div class="am-acc">${unirse}
         <button class="am-b" data-act="chat" data-uid="${esc(a.uid)}" title="Chatear">💬</button>

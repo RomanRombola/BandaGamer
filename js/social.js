@@ -421,9 +421,19 @@ async function Social_actualizarPerfilPublico(uid, data) {
     nivel:        data.nivel  || 1,
     xp:           data.xp    || 0,
     avatar:       data.avatar || '😊',
+    accesorios:   data.accesorios || null,
     fotoPerfil:   data.fotoPerfil || null,
     updatedAt:    firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true });
+}
+
+// Avatar de otro jugador con sus accesorios (si avatar.js está cargado), o su emoji
+function Social_avatarHTML(p, size) {
+  p = p || {};
+  if (typeof window !== 'undefined' && window.renderAvatar) {
+    return window.renderAvatar(p.avatar || '😊', p.accesorios, size || 36, p.fotoPerfil);
+  }
+  return String(p.avatar || '😊').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 async function Social_getPerfil(uid) {
@@ -607,6 +617,7 @@ window.Social = {
   getSalaDeAmigo:         Social_getSalaDeAmigo,
   actualizarPerfilPublico: Social_actualizarPerfilPublico,
   getPerfil:              Social_getPerfil,
+  avatarHTML:             Social_avatarHTML,
   estadoAmistad:          Social_estadoAmistad,
   get uid() { return _currentUid; }
 };
