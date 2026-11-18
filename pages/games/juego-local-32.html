@@ -34,7 +34,7 @@ function makeArt() {   // imagen abstracta generada (cambia en cada partida)
   for (let i = 0; i < 28; i++) { g.globalAlpha = .55; g.fillStyle = `hsl(${hue + U.randInt(-60, 160)},90%,${U.randInt(45, 70)}%)`; g.beginPath(); g.arc(U.rand(600), U.rand(600), U.rand(20, 130), 0, 7); g.fill(); }
   g.globalAlpha = 1; g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = 4;
   for (let i = 0; i < 6; i++) { g.beginPath(); g.moveTo(U.rand(600), 0); g.bezierCurveTo(U.rand(600), 200, U.rand(600), 400, U.rand(600), 600); g.stroke(); }
-  g.font = '900 120px Orbitron, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = 'rgba(255,255,255,.9)'; g.fillText(U.pick(['★', '♥', '☀', '☾', '✿', '♫', '⚡']), 300, 300);
+  g.font = '900 120px Outfit, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = 'rgba(255,255,255,.9)'; g.fillText(U.pick(['★', '♥', '☀', '☾', '✿', '♫', '⚡']), 300, 300);
   return c;
 }
 function solved() { for (let i = 0; i < N * N - 1; i++) if (tiles[i] !== i + 1) return false; return true; }

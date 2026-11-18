@@ -363,7 +363,6 @@ function drawRunner() {
   const tw = 14 + b * 16;
   ctx.fillStyle = st.col; ctx.beginPath(); ctx.ellipse(b * 5, hipY - 14, tw, 23 + b * 3, 0, 0, 7); ctx.fill();
   ctx.fillStyle = 'rgba(0,0,0,.14)'; ctx.beginPath(); ctx.ellipse(b * 5 - tw * .35, hipY - 10, tw * .5, 18, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,.85)'; D.text(ctx, 'BG', b * 5 + 2, hipY - 15, { size: 9 });
   ctx.fillStyle = '#20305a'; D.rr(ctx, -12 - b * 4, hipY - 6, 26 + b * 12, 12, 4); ctx.fill();
   limb(2, hipY, la, lb, 20, 19, '#223260', legW, shoe);
   // cabeza
