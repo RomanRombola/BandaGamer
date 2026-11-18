@@ -9,6 +9,33 @@
 - **Curve Fever HD (`pages/games/juego-local-26.html`, G5) y Color Flood HD (`pages/games/juego-local-21.html`, G5)**: arenas con grilla holográfica / tablero de cristal biselado, ondas animadas, estelas y paletas personalizables con VicioCoins (`bg-buy`), más celebración de fuegos artificiales al ganar.
 - **Piedra Papel Tijera Táctico (`pages/games/juego-local-22.html`, G6)**: IA adaptativa con memoria de Markov y radar en vivo de tendencias, habilidades tácticas con energía (*Golpe Crítico ×2*, *Escudo*, *Escáner*), emblemas vectoriales por `bg-buy` y **Salas Online 1v1** en Firebase Realtime Database con `asegurarIdentidad()` y soporte de invitación por `?room=`.
 
+---
+
+## 🚀 V15.3 — Gráficos detallados y nuevos niveles en juegos de acción (A4, A5, A6, A7)
+
+- **A4 · Maze Runner (`juego-local-31.html`)**: se amplió el radio de iluminación de la antorcha y el área revelada, se suavizó la penumbra para que el laberinto nunca quede totalmente negro, se agregaron baldosas de piedra con juntas y muros 3D con bloques, y se dibujaron los objetos (gemas, llaves, relojes de arena, antorchas y mapas) en canvas con destellos visibles aún en zonas oscuras.
+- **A5 · Tower Defense (`juego-local-16.html`)**: se dibujaron en canvas las 5 torres (cañón con retroceso y doble tubo en nivel máximo, aguja criogénica de hielo, emisor láser, búnker de mortero y bobina Tesla con rayos), los 5 tipos de enemigos orientados hacia su dirección de avance (dron de asalto, caza delta rápido, blindado con orugas, mutante regenerador y mecha jefe) y el castillo de la base. En celulares en vertical, el tablero transpone su grilla a `10×16` para aprovechar casi toda la pantalla (`386×617 px` en `390×844`).
+- **A6 · Geometry Dash (`juego-local-17.html`)**: se sumaron 5 niveles nuevos hechos a mano (8 niveles en total: *Primeros Pasos, Neón, Caos, Pulso Eléctrico, Gravedad Cero, Supernova, Hiperespacio* y *Demonio Vicio*) con velocidad, BPM y dificultad crecientes, más selector en grilla de 2 columnas.
+- **A7 · Space Shooter (`juego-local-4.html`) y Asteroids (`juego-local-14.html`)**: se reemplazaron las figuras geométricas simples por ilustraciones detalladas en canvas para las naves del jugador, drones de escolta, los 5 tipos de cazas/acorazados enemigos, el jefe insignia, los platillos voladores y los asteroides facetados con cráteres y vetas minerales (y se quitaron las scanlines de Asteroids).
+
+---
+
+## 🎨 V15.2 — Limpieza de marca vieja y fuentes Outfit (A8)
+
+- **Retro Racer (`juego-local-44.html`) y Endless Runner (`juego-local-5.html`)**: se quitó la sigla `"BG"` del auto y de la remera del corredor, y se cambió el cartel `"BANDA GAMER"` de la ruta por `"ALTO VICIO"`.
+- **Tipografía unificada (`Outfit` y `Plus Jakarta Sans`)**: se reemplazaron todas las referencias restantes a `Orbitron` y `Rajdhani` por `Outfit` en los 15 juegos que aún las nombraban (`juego-local-6, 8, 9, 16, 19, 20, 21, 22, 29, 30, 32, 35, 40, 42, 44`) y en la precarga de fuentes de `pages/games/kit/bg-kit.js`.
+
+---
+
+## 🎱 V15.1 — 8 Ball Pool: VicioCoins, salas con identidad y carteles en vertical (A1, A2, A3, A9)
+
+- **A1 · Carteles (`#toast`) en vertical**: ahora hacen salto de línea automático y achican la tipografía en pantallas angostas para que avisos largos (*"✋ Falta del rival… ¡Bola en mano!"*) nunca se salgan de la pantalla.
+- **A2 + A9 · Salas online de Pool (`gameRooms`) con identidad**: cada jugador entra con `asegurarIdentidad()` (cuenta de Google o anónima de Firebase Auth) usando su `uid` en lugar de `bg_anon_id`. En `firebase/database.rules.json`, `gameRooms` ahora exige `auth != null` (publicar la regla en la consola de Firebase **después** de aceptar el pull request).
+- **A3 · Tienda de Pool unificada con VicioCoins**: se eliminó la billetera propia del pool (`bg_pool_v2.coins`). Los tacos, mesas y bolas ahora se compran a través del portal con `{type: "bg-buy", item, price}` y se guardan en `usuario.items_juegos["game-055"]`. Los artículos comprados con la billetera vieja se conservan y sincronizan automáticamente al migrar.
+- **Vista previa (`?preview=1`)**: modo demostración automático sin sonido ni menús superpuestos para el catálogo.
+
+---
+
 ## 🛍️ V15 — Tienda ilustrada (estilo Plato)
 
 - **107 ítems nuevos dibujados**, a partir de las láminas de Román: 36 marcos, 13 fondos de perfil, 17 para la cabeza, 6 para los ojos, 7 para la cara, 3 para la boca, 6 para el cuello, 4 para la espalda (alas, espadas) y 15 pins.

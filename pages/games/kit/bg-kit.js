@@ -789,7 +789,7 @@
     BG.portal.send('bg-hello', { title: cfg.title });
     // Esperar fuentes para dibujar texto en canvas con la tipografía correcta
     BG.ready = (document.fonts && document.fonts.load)
-      ? Promise.race([Promise.all([document.fonts.load('700 16px Orbitron'), document.fonts.load('600 16px Rajdhani')]), new Promise(r => setTimeout(r, 1200))]).catch(() => { })
+      ? Promise.race([Promise.all([document.fonts.load('700 16px Outfit'), document.fonts.load('600 16px "Plus Jakarta Sans"')]), new Promise(r => setTimeout(r, 1200))]).catch(() => { })
       : Promise.resolve();
 
     if (BG.preview) {

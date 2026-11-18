@@ -10,7 +10,7 @@
       }
     },
 
-    "gameRooms":  { "$room": { ".read": true, ".write": true } },
+    "gameRooms":  { "$room": { ".read": "auth != null", ".write": "auth != null" } },
     "chessRooms": { "$room": { ".read": "auth != null", ".write": "auth != null" } },
 
     "impost": {

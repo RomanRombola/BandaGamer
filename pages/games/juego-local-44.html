@@ -57,7 +57,7 @@ const SPR = {
     g.fillStyle = '#555'; g.fillRect(40, 110, 12, 90); g.fillRect(188, 110, 12, 90);
     const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#ff3d6e'); gr.addColorStop(1, '#ffd400');
     g.fillStyle = '#111'; g.fillRect(4, 4, w - 8, 116); g.fillStyle = gr; g.fillRect(10, 10, w - 20, 104);
-    g.fillStyle = '#fff'; g.font = '900 34px Orbitron, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('BANDA', w / 2, 44); g.fillText('GAMER', w / 2, 84);
+    g.fillStyle = '#fff'; g.font = '900 34px Outfit, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('ALTO', w / 2, 44); g.fillText('VICIO', w / 2, 84);
   }),
   lamp: mk(120, 300, (g, w, h) => { g.fillStyle = '#333'; g.fillRect(20, 30, 10, h - 30); g.fillRect(20, 30, 80, 8); g.fillStyle = '#ff2bd6'; g.shadowColor = '#ff2bd6'; g.shadowBlur = 20; g.fillRect(80, 36, 26, 10); }),
   tower: mk(200, 360, (g, w, h) => {
@@ -65,7 +65,7 @@ const SPR = {
     for (let y = 60; y < h - 20; y += 24) for (let x = 34; x < 170; x += 22) { g.fillStyle = Math.random() < .45 ? cols[(x + y) % 3] : 'rgba(255,255,255,.05)'; g.globalAlpha = .8; g.fillRect(x, y, 12, 12); }
     g.globalAlpha = 1; g.strokeStyle = '#2ef2ff'; g.lineWidth = 3; g.strokeRect(20, 40, 160, h - 40);
   }),
-  nitro: mk(80, 110, (g, w, h) => { const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#2a7aff'); gr.addColorStop(.5, '#9ad0ff'); gr.addColorStop(1, '#1a4ab0'); g.fillStyle = gr; D.rr(g, 10, 20, 60, 86, 14); g.fill(); g.fillStyle = '#ddd'; g.fillRect(28, 4, 24, 18); g.fillStyle = '#fff'; g.font = '900 30px Orbitron'; g.textAlign = 'center'; g.fillText('N', 40, 76); }),
+  nitro: mk(80, 110, (g, w, h) => { const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#2a7aff'); gr.addColorStop(.5, '#9ad0ff'); gr.addColorStop(1, '#1a4ab0'); g.fillStyle = gr; D.rr(g, 10, 20, 60, 86, 14); g.fill(); g.fillStyle = '#ddd'; g.fillRect(28, 4, 24, 18); g.fillStyle = '#fff'; g.font = '900 30px Outfit, sans-serif'; g.textAlign = 'center'; g.fillText('N', 40, 76); }),
 };
 const CAR_COLS = ['#ffd400', '#2ef2ff', '#39ff88', '#a855f7', '#ff9a1f', '#ffffff'];
 const CARS = CAR_COLS.map(col => mk(160, 110, (g) => drawCarRear(g, 80, 104, 150, col, false, 0)));
@@ -81,7 +81,6 @@ function drawCarRear(g, cx, by, w, col, player, tilt, nitro, brake) {
   g.fillStyle = brake ? '#ff2020' : '#b01020'; if (brake) { g.shadowColor = '#ff2020'; g.shadowBlur = 18; }
   g.fillRect(x + w * .08, by - h * .42, w * .2, h * .1); g.fillRect(x + w * .72, by - h * .42, w * .2, h * .1); g.shadowBlur = 0;
   g.fillStyle = '#222'; g.fillRect(x + w * .38, by - h * .3, w * .24, h * .1);
-  if (player) { g.fillStyle = '#fff'; g.font = `900 ${w * .07}px Orbitron`; g.textAlign = 'center'; g.fillText('BG', cx, by - h * .17); }
   if (nitro) { for (const ex of [x + w * .4, x + w * .6]) { const fl = g.createRadialGradient(ex, by - h * .14, 1, ex, by - h * .14, w * .12); fl.addColorStop(0, '#fff'); fl.addColorStop(.4, '#4ab0ff'); fl.addColorStop(1, 'rgba(40,120,255,0)'); g.fillStyle = fl; g.beginPath(); g.arc(ex, by - h * .14 + w * .03, w * .12 * (.8 + Math.random() * .4), 0, 7); g.fill(); } }
   g.restore();
 }

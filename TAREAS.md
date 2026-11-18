@@ -17,25 +17,25 @@ Estado: ✅ hecho · 🔄 en curso · ⬜ pendiente
 - ➡️ Las tareas pendientes de Claude pasaron a **Antigravity** (A9 a A13), porque Román necesita sus tokens en otro proyecto.
 
 ## Antigravity — 8 Ball Pool y juegos de acción
-- ⬜ **A1 · Pool, cartel largo:** en vertical, los carteles ("Falta del rival… ¡Bola en mano!") se salen de la pantalla. Que hagan salto de línea o achiquen la letra.
-- ⬜ **A2 · Pool, identidad en las salas** (`gameRooms`): igual que Impostor y Ajedrez.
+- [x] ✅ **A1 · Pool, cartel largo:** en vertical, los carteles ("Falta del rival… ¡Bola en mano!") se salen de la pantalla. Que hagan salto de línea o achiquen la letra.
+- [x] ✅ **A2 · Pool, identidad en las salas** (`gameRooms`): igual que Impostor y Ajedrez.
   - Cargar `firebase-auth-compat.js` y entrar con `asegurarIdentidad()`: Google o anónima, `signInAnonymously()`.
   - Usar el `uid` como id del jugador, en lugar de `bg_anon_id`.
   - Cuando esté, avisar: Claude cierra la regla de `gameRooms`.
-- ⬜ **A3 · Pool con VicioCoins:** sacar la billetera propia (`bg_pool_v2.coins`).
+- [x] ✅ **A3 · Pool con VicioCoins:** sacar la billetera propia (`bg_pool_v2.coins`).
   - Los tacos, mesas y bolas se compran con `{type:"bg-buy", item, price}`, y lo comprado llega en `bg-hello-ack.items`.
   - El ejemplo completo está en `pages/games/juego-local-37.html` (ajedrez), en la sección "COSMÉTICOS".
   - Las victorias ya dan monedas por `bg-score`: el juego no debe sumar monedas.
   - Los tacos que la gente ya compró con la billetera vieja se pueden regalar una sola vez al migrar.
-- ⬜ **A4 · Maze Runner** (`juego-local-31.html`): la pantalla es casi toda negra. Hace falta más luz alrededor del jugador, piso con textura y objetos visibles.
-- ⬜ **A5 · Tower Defense** (`juego-local-16.html`): enemigos y torres dibujados (hoy son círculos), y que se vea más grande en el celular.
-- ⬜ **A6 · Geometry Dash** (`juego-local-17.html`): tiene solo 3 niveles. Sumar al menos 5 más, con dificultad creciente.
-- ⬜ **A7 · Space Shooter (`juego-local-4.html`) y Asteroids (`juego-local-14.html`):** naves, enemigos y asteroides dibujados, en lugar de formas geométricas.
-- ⬜ **A8 · Marca vieja:**
+- [x] ✅ **A4 · Maze Runner** (`juego-local-31.html`): la pantalla es casi toda negra. Hace falta más luz alrededor del jugador, piso con textura y objetos visibles.
+- [x] ✅ **A5 · Tower Defense** (`juego-local-16.html`): enemigos y torres dibujados (hoy son círculos), y que se vea más grande en el celular.
+- [x] ✅ **A6 · Geometry Dash** (`juego-local-17.html`): tiene solo 3 niveles. Sumar al menos 5 más, con dificultad creciente.
+- [x] ✅ **A7 · Space Shooter (`juego-local-4.html`) y Asteroids (`juego-local-14.html`):** naves, enemigos y asteroides dibujados, en lugar de formas geométricas.
+- [x] ✅ **A8 · Marca vieja:**
   - Sacar el texto "BG" del auto y "BANDA GAMER" del cartel en Retro Racer (`juego-local-44.html`), y el "BG" de Endless Runner (`juego-local-5.html`).
   - Reemplazar `Orbitron` y `Rajdhani` por `Outfit` en los 15 juegos que todavía los nombran (`grep -l Orbitron pages/games/*.html`).
 
-- ⬜ **A9 · Cerrar `gameRooms`** (después de A2). En `firebase/database.rules.json`, `gameRooms` pasa a `".read": "auth != null", ".write": "auth != null"`, igual que `chessRooms`.
+- [x] ✅ **A9 · Cerrar `gameRooms`** (después de A2). En `firebase/database.rules.json`, `gameRooms` pasa a `".read": "auth != null", ".write": "auth != null"`, igual que `chessRooms`.
   - Avisarle a Román que la publique en la consola **después** de aceptar el pull request.
 - [x] ✅ **A10 · Integrar lo que mande Gemini** (G1 a G6). Román te pasa el HTML; antes de subirlo, revisá:
   - que no haya scripts que hagan `git push`, pisen `.gitignore` o cambien los `?v=N`;
