@@ -3,187 +3,518 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Memory Match</title>
+<title>Memory Match HD — AltoVicio</title>
 <link rel="stylesheet" href="kit/bg-kit.css">
+<style>
+  #mm-wrap {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    gap: 10px;
+    position: relative;
+  }
+  #mm-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: min(760px, 100%);
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .mm-badge {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--bg-line);
+    border-radius: 10px;
+    padding: 5px 12px;
+    font-family: var(--bg-font-d);
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--bg-text);
+  }
+  #mm-shop-btn {
+    background: linear-gradient(135deg, var(--bg-accent), var(--bg-accent2));
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-family: var(--bg-font-d);
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  }
+  body.bg-thumb #mm-top-bar { display: none !important; }
+
+  #mm-grid {
+    display: grid;
+    gap: 10px;
+    width: min(760px, 100%);
+    flex: 1;
+    max-height: min(640px, calc(100% - 46px));
+    align-content: center;
+    justify-content: center;
+  }
+  .mm-card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 58px;
+    perspective: 900px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    padding: 0;
+  }
+  .mm-inner {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    transform-style: preserve-3d;
+    transition: transform 0.34s cubic-bezier(0.2, 0.85, 0.3, 1.15);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  }
+  .mm-card.flipped .mm-inner,
+  .mm-card.matched .mm-inner {
+    transform: rotateY(180deg);
+  }
+  .mm-card.matched .mm-inner {
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.55);
+  }
+  .mm-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .mm-back {
+    border: 2px solid rgba(255, 255, 255, 0.16);
+  }
+  .mm-front {
+    transform: rotateY(180deg);
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    padding: 12%;
+  }
+  .mm-card.matched .mm-front {
+    border-color: #10b981;
+    background: linear-gradient(145deg, rgba(16, 185, 129, 0.22), #0f172a);
+  }
+  .mm-front svg, .mm-back svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Temas de dorsos oficiales AltoVicio */
+  .back-clasico { background: linear-gradient(135deg, #1b2438, #0f172a); border-color: rgba(255, 102, 0, 0.5); }
+  .back-solar   { background: linear-gradient(135deg, #7c2d12, #451a03); border-color: #ffb800; }
+  .back-cyber   { background: linear-gradient(135deg, #0c4a6e, #1e1b4b); border-color: #00b4ff; }
+  .back-imperial{ background: linear-gradient(135deg, #3b0764, #1e1b4b); border-color: #fde047; }
+
+  .mm-cos-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 6px 0 12px; }
+  .mm-cos-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid var(--bg-line);
+    border-radius: 12px;
+    padding: 9px 8px;
+    color: var(--bg-text);
+    font-family: var(--bg-font-d);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mm-cos-btn.sel { border-color: var(--bg-accent); background: rgba(255, 102, 0, 0.18); }
+  .mm-cos-btn small { display: block; font-size: 10px; margin-top: 2px; color: var(--bg-accent2); }
+  .mm-cos-btn.sel small { color: var(--bg-good); }
+  .mm-aviso { font-size: 12px; color: var(--bg-accent2); min-height: 16px; margin-bottom: 6px; font-weight: 700; }
+
+  @media (max-width: 560px) {
+    #mm-wrap { padding: 6px 8px; gap: 6px; }
+    #mm-grid { gap: 7px; }
+    .mm-inner, .mm-face { border-radius: 11px; }
+  }
+</style>
 </head>
 <body>
 <script src="kit/bg-kit.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  MEMORY MATCH — AltoVicio
-//  Encontrá todos los pares en el menor tiempo. 4 dificultades, 4 temas de cartas,
-//  combos, estrellas según intentos, control con teclado (flechas + Espacio) y
-//  "juego rápido": si fallás, tocá otra carta y las dos anteriores se dan vuelta al toque.
+//  G3 · MEMORY MATCH HD — AltoVicio
+//  Nuevo dorso oficial AltoVicio (AV) + 18 ilustraciones SVG propias
+//  4 dificultades con ranking por tiempo (asc) + Cosméticos vía bg-buy
 // ═══════════════════════════════════════════════════════════════════════════
-const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
-const W = 600, H = 760;
-const MODES = { easy: { cols: 3, rows: 4, n: 'FÁCIL', s: '3×4 · 6 pares' }, medium: { cols: 4, rows: 4, n: 'MEDIO', s: '4×4 · 8 pares' }, hard: { cols: 4, rows: 6, n: 'DIFÍCIL', s: '4×6 · 12 pares' }, expert: { cols: 5, rows: 6, n: 'EXPERTO', s: '5×6 · 15 pares' } };
-const THEMES = [
-  ['🎮', '🕹️', '👾', '🚀', '🎯', '🔥', '⚡', '💎', '🎲', '🏆', '🧩', '🎨', '🎭', '🌟', '💀', '🦄'],
-  ['🐶', '🐱', '🦊', '🐼', '🐸', '🐵', '🦁', '🐯', '🐨', '🐷', '🐙', '🦉', '🐧', '🦋', '🐢', '🦖'],
-  ['🍕', '🍔', '🌮', '🍩', '🍎', '🍓', '🍉', '🍇', '🧁', '🍦', '🥑', '🍒', '🥨', '🍿', '🍣', '🍪'],
-  ['⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏓', '🥊', '⛳', '🏒', '🎳', '🛹', '🥇', '🎿', '🏄', '🚴'],
+const { util: U, sfx: SFX } = BG;
+
+const MODOS = {
+  easy:   { id: 'easy',   nombre: 'Fácil (4×3)',   pares: 6,  cols: 4, rows: 3 },
+  medium: { id: 'medium', nombre: 'Medio (4×4)',   pares: 8,  cols: 4, rows: 4 },
+  hard:   { id: 'hard',   nombre: 'Difícil (5×4)', pares: 10, cols: 5, rows: 4 },
+  expert: { id: 'expert', nombre: 'Experto (6×4)', pares: 12, cols: 6, rows: 4 }
+};
+
+// 18 Caras ilustradas en SVG (divididas o combinadas por colección)
+const ILUSTRACIONES_SVG = [
+  // 0: Cohete Espacial
+  `<svg viewBox="0 0 100 100"><defs><linearGradient id="ic0" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#2563eb"/></linearGradient></defs><path d="M50 12 C68 28, 72 54, 66 74 L34 74 C28 54, 32 28, 50 12 Z" fill="url(#ic0)" stroke="#fff" stroke-width="3"/><polygon points="34,56 18,76 34,74" fill="#ff6600"/><polygon points="66,56 82,76 66,74" fill="#ff6600"/><circle cx="50" cy="44" r="10" fill="#f8fafc" stroke="#0f172a" stroke-width="3"/><path d="M40 76 L50 92 L60 76 Z" fill="#ffb800"/></svg>`,
+  // 1: Corona Real
+  `<svg viewBox="0 0 100 100"><polygon points="14,74 22,30 40,50 50,22 60,50 78,30 86,74" fill="#ffb800" stroke="#fde047" stroke-width="3" stroke-linejoin="round"/><rect x="16" y="72" width="68" height="10" rx="5" fill="#d97706"/><circle cx="50" cy="54" r="6" fill="#ff2a5f"/><circle cx="30" cy="58" r="4.5" fill="#00b4ff"/><circle cx="70" cy="58" r="4.5" fill="#00b4ff"/></svg>`,
+  // 2: Diamante Celeste
+  `<svg viewBox="0 0 100 100"><polygon points="30,20 70,20 88,42 50,86 12,42" fill="#00b4ff" stroke="#bae6fd" stroke-width="3" stroke-linejoin="round"/><polygon points="30,20 70,20 62,42 38,42" fill="#7dd3fc"/><polygon points="38,42 62,42 50,86" fill="#38bdf8"/></svg>`,
+  // 3: Planeta Anillado
+  `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="24" fill="#a855f7"/><ellipse cx="50" cy="50" rx="42" ry="12" fill="none" stroke="#fde047" stroke-width="6" transform="rotate(-22 50 50)"/><circle cx="43" cy="43" r="6" fill="#d8b4fe" opacity="0.6"/></svg>`,
+  // 4: Rayo Voltaico
+  `<svg viewBox="0 0 100 100"><polygon points="56,10 24,54 48,54 40,90 76,44 52,44" fill="#fde047" stroke="#ff6600" stroke-width="3" stroke-linejoin="round"/></svg>`,
+  // 5: Escudo Esmeralda
+  `<svg viewBox="0 0 100 100"><path d="M50 14 L82 26 V52 C82 72 50 88 50 88 C50 88 18 72 18 52 V26 Z" fill="#10b981" stroke="#a7f3d0" stroke-width="3.5"/><path d="M50 24 L72 33 V50 C72 64 50 76 50 76 Z" fill="#34d399"/></svg>`,
+  // 6: Poción Mágica
+  `<svg viewBox="0 0 100 100"><rect x="42" y="14" width="16" height="10" rx="3" fill="#d97706"/><path d="M44 24 H56 V36 L78 68 C82 76 76 86 66 86 H34 C24 86 18 76 22 68 L44 36 Z" fill="#ec4899" stroke="#fbcfe8" stroke-width="3"/><circle cx="42" cy="68" r="5" fill="#fff" opacity="0.6"/><circle cx="56" cy="60" r="3.5" fill="#fff" opacity="0.6"/></svg>`,
+  // 7: Espada Láser
+  `<svg viewBox="0 0 100 100"><line x1="22" y1="78" x2="78" y2="22" stroke="#00e5ff" stroke-width="10" stroke-linecap="round"/><line x1="22" y1="78" x2="78" y2="22" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/><rect x="14" y="70" width="18" height="10" rx="3" fill="#94a3b8" transform="rotate(-45 23 75)"/></svg>`,
+  // 8: Estrella Dorada
+  `<svg viewBox="0 0 100 100"><polygon points="50,12 61,36 88,39 68,58 73,85 50,72 27,85 32,58 12,39 39,36" fill="#ffb800" stroke="#fef08a" stroke-width="3" stroke-linejoin="round"/><circle cx="42" cy="46" r="4" fill="#0f172a"/><circle cx="58" cy="46" r="4" fill="#0f172a"/></svg>`,
+  // 9: Fantasmita Neón
+  `<svg viewBox="0 0 100 100"><path d="M24 48 C24 20, 76 20, 76 48 V82 L64 72 L50 82 L36 72 L24 82 Z" fill="#38bdf8" stroke="#e0f2fe" stroke-width="3"/><circle cx="40" cy="46" r="5.5" fill="#0f172a"/><circle cx="60" cy="46" r="5.5" fill="#0f172a"/></svg>`,
+  // 10: Corazón Rubí
+  `<svg viewBox="0 0 100 100"><path d="M50 84 L20 52 A18 18 0 0 1 50 28 A18 18 0 0 1 80 52 Z" fill="#ff2a5f" stroke="#fecdd3" stroke-width="3"/><circle cx="36" cy="40" r="5" fill="#fff" opacity="0.5"/></svg>`,
+  // 11: Joystick Gamer
+  `<svg viewBox="0 0 100 100"><rect x="14" y="30" width="72" height="44" rx="22" fill="#6366f1" stroke="#c7d2fe" stroke-width="3"/><circle cx="34" cy="52" r="8" fill="#1e1b4b"/><circle cx="64" cy="46" r="4.5" fill="#ffb800"/><circle cx="72" cy="56" r="4.5" fill="#ff2a5f"/></svg>`,
+  // 12: Sol Radiante
+  `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="24" fill="#ff6600" stroke="#fde047" stroke-width="4"/><g stroke="#ffb800" stroke-width="5" stroke-linecap="round"><line x1="50" y1="10" x2="50" y2="18"/><line x1="50" y1="82" x2="50" y2="90"/><line x1="10" y1="50" x2="18" y2="50"/><line x1="82" y1="50" x2="90" y2="50"/><line x1="22" y1="22" x2="28" y2="28"/><line x1="72" y1="72" x2="78" y2="78"/><line x1="78" y1="22" x2="72" y2="28"/><line x1="28" y1="72" x2="22" y2="78"/></g></svg>`,
+  // 13: Luna Creciente
+  `<svg viewBox="0 0 100 100"><path d="M64 20 A32 32 0 1 0 76 74 A26 26 0 1 1 64 20 Z" fill="#fde047" stroke="#fef9c3" stroke-width="3"/></svg>`,
+  // 14: Nota Musical
+  `<svg viewBox="0 0 100 100"><path d="M38 72 V24 L76 16 V64" fill="none" stroke="#34d399" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="72" r="11" fill="#10b981"/><circle cx="68" cy="64" r="11" fill="#10b981"/></svg>`,
+  // 15: Trofeo Dorado
+  `<svg viewBox="0 0 100 100"><path d="M28 20 H72 V46 C72 62 50 68 50 68 C50 68 28 62 28 46 Z" fill="#ffb800" stroke="#fef08a" stroke-width="3"/><rect x="44" y="68" width="12" height="12" fill="#d97706"/><rect x="30" y="80" width="40" height="8" rx="4" fill="#fde047"/></svg>`
 ];
-const PCOL = ['#ff2b6e', '#ff8a1f', '#ffd400', '#39ff88', '#2ef2ff', '#a855f7', '#ff6ab0', '#4d7cff', '#b8ff3e', '#ff4d4d', '#00d1b2', '#ffb347', '#c77dff', '#7cffcb', '#ffd6a5', '#9ad0ff'];
+
+// Nuevo dorso oficial de AltoVicio (AV) — reemplaza el antiguo "BG"
+function svgDorsoAltoVicio(colorA, colorB) {
+  return `<svg viewBox="0 0 100 120">
+    <rect x="7" y="7" width="86" height="106" rx="10" fill="none" stroke="${colorA}" stroke-width="2" stroke-dasharray="6,4" opacity="0.55"/>
+    <circle cx="50" cy="60" r="28" fill="rgba(255,255,255,0.04)" stroke="${colorB}" stroke-width="2"/>
+    <path d="M29 72 L41 44 L51 72 M33 64 H47" stroke="${colorA}" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M51 44 L61 72 L72 44" stroke="${colorB}" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+const CATALOGO_MM = {
+  dorsos: [
+    { id: 'bk_clasico',  nombre: 'AltoVicio Oficial', precio: 0,   cls: 'back-clasico',  cA: '#ff6600', cB: '#ffb800' },
+    { id: 'bk_cyber',    nombre: 'Pulso Cian',        precio: 100, cls: 'back-cyber',    cA: '#00b4ff', cB: '#38bdf8' },
+    { id: 'bk_solar',    nombre: 'Fuego Solar',       precio: 160, cls: 'back-solar',    cA: '#ffb800', cB: '#ff2a5f' },
+    { id: 'bk_imperial', nombre: 'Realeza VIP',       precio: 240, cls: 'back-imperial', cA: '#fde047', cB: '#c084fc' }
+  ]
+};
+let dorsoEquip = BG.load('dorso_v2', 'bk_clasico');
+let portalCoins = 0, portalItems = [], portalConectado = false, compraPendiente = null;
 
 BG.init({
-  id: 'memory', title: 'MEMORY MATCH', icon: '🧠', accent: '#a855f7', accent2: '#2ef2ff', order: 'asc',
-  post: { bloom: .22, vignette: .3, thumbFx: true },
-  subtitle: 'Encontrá todos los pares lo más rápido que puedas. Menos intentos = más estrellas.',
-  hud: [{ id: 'time', label: 'Tiempo', value: '0s' }, { id: 'pairs', label: 'Pares', color: '#39ff88', value: '0/0' }, { id: 'tries', label: 'Intentos', color: '#ffd400', value: '0' }],
-  help: 'Clic en las cartas · o <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> + <kbd>Espacio</kbd> · <kbd>P</kbd> pausa',
-  helpTouch: 'Tocá las cartas para darlas vuelta',
-  onRestart: () => start(mode), onMenu: () => showMenu(),
+  id: 'memory',
+  title: 'MEMORY MATCH',
+  icon: '🃏',
+  accent: '#ff6600',
+  accent2: '#00b4ff',
+  order: 'asc',
+  subtitle: 'Encontrá todos los pares ilustrados en el menor tiempo posible.',
+  hud: [
+    { id: 'time',  label: 'Tiempo', color: '#00b4ff', value: '0:00' },
+    { id: 'moves', label: 'Turnos', color: '#ff6600', value: '0' },
+    { id: 'combo', label: 'Combo',  color: '#10b981', value: 'x1' },
+    { id: 'best',  label: 'Récord', color: '#ffb800', value: '—' }
+  ],
+  help: 'Tocá dos cartas para darlas vuelta y encontrar su pareja.',
+  onRestart: () => iniciarJuego(modoActual),
+  onMenu: () => mostrarMenu()
 });
-const view = BG.canvas(W, H);
-const ctx = view.ctx;
-const bokeh = Array.from({ length: 18 }, () => ({ x: U.rand(W), y: U.rand(H), r: U.rand(20, 70), vy: U.rand(-12, -4), c: U.pick(PCOL) }));
 
-let mode = 'easy', cards = [], open = [], state = 'menu', t = 0, time = 0, timerOn = false, tries = 0, pairs = 0, total = 0, combo = 0, bestCombo = 0;
-let matchT = 0, missT = 0, cursor = 0, hover = -1, showCursor = false, theme = THEMES[0], winT = 0;
+const wrap = U.el('div', { id: 'mm-wrap' });
+const topBar = U.el('div', { id: 'mm-top-bar' });
+const infoBadge = U.el('div', { class: 'mm-badge', id: 'mm-info-badge' }, 'Pares: 0/6');
+const shopBtn = U.el('button', { id: 'mm-shop-btn' }, 'Personalizar Dorso');
+shopBtn.addEventListener('click', () => abrirTiendaDorsos());
+topBar.append(infoBadge, shopBtn);
+const gridEl = U.el('div', { id: 'mm-grid' });
+wrap.append(topBar, gridEl);
+BG.stage.appendChild(wrap);
 
-function layout(cfg) {
-  const top = 70, pad = 14, gw = W - 40, gh = H - top - 30;
-  const cw = Math.min((gw - pad * (cfg.cols - 1)) / cfg.cols, ((gh - pad * (cfg.rows - 1)) / cfg.rows) * .8);
-  const ch = cw * 1.25, ox = (W - (cw * cfg.cols + pad * (cfg.cols - 1))) / 2, oy = top + (gh - (ch * cfg.rows + pad * (cfg.rows - 1))) / 2;
-  return { cw, ch, ox, oy, pad };
-}
-function deal(m) {
-  const cfg = MODES[m], L = layout(cfg), n = cfg.cols * cfg.rows / 2;
-  theme = U.pick(THEMES);
-  const vals = U.shuffle(theme.slice()).slice(0, n);
-  const deck = U.shuffle([...vals.map((v, i) => [v, PCOL[i]]), ...vals.map((v, i) => [v, PCOL[i]])]);
-  cards = deck.map(([v, col], i) => {
-    const r = Math.floor(i / cfg.cols), c = i % cfg.cols;
-    return { v, col, i, x: L.ox + c * (L.cw + L.pad), y: L.oy + r * (L.ch + L.pad), w: L.cw, h: L.ch, flip: 0, target: 0, matched: false, shake: 0, pop: 0, deal: -i * .045, dx: W / 2, dy: H + 100 };
+function itemDorso(id) { return CATALOGO_MM.dorsos.find(x => x.id === id); }
+function loTengo(id) { const it = itemDorso(id); return !!it && (it.precio === 0 || portalItems.includes(id)); }
+
+window.addEventListener('message', e => {
+  if (e.source !== window.parent) return;
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+  if (d.type === 'bg-hello-ack') {
+    portalConectado = true;
+    portalCoins = Number(d.coins) || 0;
+    portalItems = Array.isArray(d.items) ? d.items.map(String) : [];
+    if (!loTengo(dorsoEquip)) dorsoEquip = 'bk_clasico';
+    aplicarDorsoActual();
+  } else if (d.type === 'bg-buy-result') {
+    portalCoins = Number(d.coins) || portalCoins;
+    if (Array.isArray(d.items)) portalItems = d.items.map(String);
+    const pend = compraPendiente;
+    compraPendiente = null;
+    if (d.ok && pend === d.item) {
+      dorsoEquip = pend;
+      BG.save('dorso_v2', dorsoEquip);
+      aplicarDorsoActual();
+      SFX.play('power');
+      abrirTiendaDorsos();
+    } else if (!d.ok) {
+      SFX.play('error');
+      const av = document.getElementById('mm-cos-aviso');
+      if (av) av.textContent = d.error || 'No se pudo completar la compra';
+    }
+  }
+});
+
+function aplicarDorsoActual() {
+  const d = itemDorso(dorsoEquip) || CATALOGO_MM.dorsos[0];
+  const svg = svgDorsoAltoVicio(d.cA, d.cB);
+  gridEl.querySelectorAll('.mm-back').forEach(el => {
+    el.className = 'mm-face mm-back ' + d.cls;
+    el.innerHTML = svg;
   });
-  return n;
 }
-function start(m) {
-  mode = m; total = deal(m); open = []; tries = 0; pairs = 0; combo = 0; bestCombo = 0; time = 0; timerOn = false; matchT = 0; missT = 0; cursor = 0; winT = 0;
-  BG.hud.setAll({ time: '0s', pairs: `0/${total}`, tries: 0 });
-  FX.clear(); state = 'play'; BG.start(); SFX.play('whoosh');
+
+function abrirTiendaDorsos() {
+  const estabaJugando = (Jugando && !BG.paused);
+  if (estabaJugando) BG.paused = true;
+
+  const btns = CATALOGO_MM.dorsos.map(it => {
+    const owned = loTengo(it.id);
+    const sel = dorsoEquip === it.id;
+    const lbl = sel ? '✓ Equipado' : (owned ? 'Equipar' : `${it.precio} VicioCoins`);
+    return `<button class="mm-cos-btn ${sel ? 'sel' : ''}" data-id="${it.id}">
+      ${U.esc(it.nombre)}<small>${U.esc(lbl)}</small>
+    </button>`;
+  }).join('');
+
+  BG.ui.show({
+    title: 'DORSOS ALTOVICIO',
+    sub: 'Personalizá el reverso de tus cartas con tus VicioCoins.',
+    html: `
+      <div style="font-size:12px;color:var(--bg-muted);margin-bottom:4px">Tus VicioCoins: <b style="color:var(--bg-accent2)">${U.fmt(portalCoins)}</b></div>
+      <div class="mm-aviso" id="mm-cos-aviso">${portalConectado ? '' : 'Abrí el juego desde AltoVicio para comprar con tus VicioCoins.'}</div>
+      <div class="mm-cos-grid">${btns}</div>
+    `,
+    buttons: [{
+      label: estabaJugando ? '▶ CONTINUAR' : '← VOLVER AL MENÚ',
+      primary: true,
+      onClick: () => { if (estabaJugando) { BG.paused = false; BG.ui.hide(); } else mostrarMenu(); }
+    }],
+    onShow: card => {
+      card.querySelectorAll('.mm-cos-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const id = b.dataset.id;
+          const it = itemDorso(id);
+          if (!it) return;
+          if (loTengo(id)) {
+            dorsoEquip = id;
+            BG.save('dorso_v2', id);
+            aplicarDorsoActual();
+            SFX.play('select');
+            abrirTiendaDorsos();
+            return;
+          }
+          const av = card.querySelector('#mm-cos-aviso');
+          if (!portalConectado) { if (av) av.textContent = 'Conectate desde AltoVicio para comprar.'; return; }
+          if (portalCoins < it.precio) { if (av) av.textContent = 'No tenés suficientes VicioCoins.'; SFX.play('error'); return; }
+          if (av) av.textContent = 'Comprando…';
+          compraPendiente = id;
+          BG.portal.send('bg-buy', { item: id, price: it.precio });
+        });
+      });
+    }
+  });
 }
-function showMenu() {
-  state = 'menu'; BG.stop();
-  if (!cards.length) deal('medium');
-  const fmt = k => { const b = BG.getBest(k); return b != null ? `récord ${b}s` : MODES[k].s; };
-  BG.ui.menu({ stats: null, buttons: Object.keys(MODES).map((k, i) => ({ label: MODES[k].n, small: fmt(k), primary: k === mode, onClick: () => start(k) })) });
+
+// ── Lógica de Memory Match ────────────────────────────────────────────────
+let modoActual = BG.load('modo', 'easy');
+let mazo = [], primera = null, segunda = null, bloqueado = false;
+let paresEncontrados = 0, totalPares = 6, turnos = 0, combo = 1, maxCombo = 1;
+let segTranscurridos = 0, timerId = null, Jugando = false;
+
+function iniciarJuego(m) {
+  modoActual = m || modoActual;
+  BG.save('modo', modoActual);
+  const cfg = MODOS[modoActual] || MODOS.easy;
+  totalPares = cfg.pares;
+  paresEncontrados = 0; turnos = 0; combo = 1; maxCombo = 1;
+  segTranscurridos = 0; primera = null; segunda = null; bloqueado = false;
+
+  // En celular vertical (390x844), rotar grilla (ej. 3x4 en vez de 4x3) para cartas más grandes
+  const esVert = window.innerHeight > window.innerWidth;
+  const cols = esVert ? Math.min(cfg.cols, cfg.rows) : Math.max(cfg.cols, cfg.rows);
+  const rows = esVert ? Math.max(cfg.cols, cfg.rows) : Math.min(cfg.cols, cfg.rows);
+  gridEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+  const indices = U.shuffle([...Array(ILUSTRACIONES_SVG.length).keys()]).slice(0, totalPares);
+  mazo = U.shuffle([...indices, ...indices]).map((iconIdx, i) => ({ id: i, iconIdx, matched: false }));
+
+  const d = itemDorso(dorsoEquip) || CATALOGO_MM.dorsos[0];
+  const backSvg = svgDorsoAltoVicio(d.cA, d.cB);
+
+  gridEl.innerHTML = mazo.map((c, i) => `
+    <button class="mm-card" data-idx="${i}" aria-label="Carta ${i + 1}">
+      <div class="mm-inner">
+        <div class="mm-face mm-back ${d.cls}">${backSvg}</div>
+        <div class="mm-face mm-front">${ILUSTRACIONES_SVG[c.iconIdx]}</div>
+      </div>
+    </button>
+  `).join('');
+
+  gridEl.querySelectorAll('.mm-card').forEach(btn => {
+    btn.addEventListener('click', () => tocarCarta(Number(btn.dataset.idx), btn));
+  });
+
+  actualizarMarcadores();
+  if (timerId) clearInterval(timerId);
+  Jugando = true;
+  BG.start();
+  timerId = setInterval(() => {
+    if (!Jugando || BG.paused) return;
+    segTranscurridos++;
+    BG.hud.set('time', U.fmtTime(segTranscurridos));
+  }, 1000);
 }
-function flip(c) {
-  if (state !== 'play' || !c || c.matched || c.target === 1 || c.deal < 1) return;
-  if (missT > 0) resolveMiss();
-  if (open.length >= 2) return;
-  timerOn = true; c.target = 1; open.push(c);
+
+function actualizarMarcadores() {
+  BG.hud.set('time', U.fmtTime(segTranscurridos));
+  BG.hud.set('moves', turnos);
+  BG.hud.set('combo', 'x' + combo);
+  const best = BG.getBest(modoActual);
+  BG.hud.set('best', best ? U.fmtTime(best) : '—');
+  infoBadge.textContent = `${MODOS[modoActual].nombre} · Pares: ${paresEncontrados}/${totalPares}`;
+}
+
+function tocarCarta(idx, btnEl) {
+  if (!Jugando || bloqueado || BG.paused) return;
+  const carta = mazo[idx];
+  if (!carta || carta.matched || (primera && primera.idx === idx)) return;
+
   SFX.play('flip');
-  if (open.length === 2) {
-    tries++; BG.hud.set('tries', tries, true);
-    if (open[0].v === open[1].v) matchT = .32; else missT = .85;
+  btnEl.classList.add('flipped');
+
+  if (!primera) {
+    primera = { idx, carta, el: btnEl };
+    return;
   }
-}
-function resolveMatch() {
-  const [a, b] = open; open = [];
-  a.matched = b.matched = true; a.pop = b.pop = 1; pairs++; combo++; bestCombo = Math.max(bestCombo, combo);
-  BG.hud.set('pairs', `${pairs}/${total}`, true);
-  SFX.play(combo > 1 ? 'combo' : 'coin', combo);
-  for (const c of [a, b]) { FX.burst(c.x + c.w / 2, c.y + c.h / 2, { n: 16, color: [c.col, '#fff'], speed: 220, life: .55 }); FX.ring(c.x + c.w / 2, c.y + c.h / 2, { color: c.col, max: c.w * .8 }); }
-  if (combo >= 2) FX.text((a.x + b.x) / 2 + a.w / 2, Math.min(a.y, b.y), `¡COMBO ×${combo}!`, { color: '#ffd400', size: 18 + Math.min(10, combo * 2) });
-  if (pairs === total) win();
-}
-function resolveMiss() {
-  missT = 0;
-  for (const c of open) { c.target = 0; }
-  open = []; combo = 0;
-}
-function win() {
-  state = 'won'; winT = 0; timerOn = false; BG.stop();
-  const secs = Math.max(1, Math.round(time));
-  const stars = tries <= total * 1.35 ? 3 : tries <= total * 2 ? 2 : 1;
-  SFX.play('win');
-  for (let i = 0; i < 6; i++) setTimeout(() => FX.burst(U.rand(80, W - 80), U.rand(100, 400), { n: 30, color: PCOL, speed: 280, life: 1, gravity: 300 }), i * 140);
-  const r = BG.submitScore(secs, { mode, order: 'asc', won: true });
-  setTimeout(() => BG.ui.gameOver({
-    win: true, icon: '🧠', title: '¡COMPLETADO!', scoreText: secs + ' s', scoreLabel: 'tiempo · ' + MODES[mode].n, isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : '★ ¡NUEVO RÉCORD! ★',
-    stats: [{ label: 'Estrellas', value: '★'.repeat(stars) + '☆'.repeat(3 - stars) }, { label: 'Intentos', value: tries }, { label: 'Mejor combo', value: '×' + bestCombo }, { label: 'Récord', value: (BG.getBest(mode) || secs) + 's' }],
-    retryLabel: '↻ OTRA VEZ', onRetry: () => start(mode), onMenu: showMenu,
-  }), 1200);
-}
-function update(dt) {
-  t += dt;
-  for (const b of bokeh) { b.y += b.vy * dt; if (b.y < -80) { b.y = H + 80; b.x = U.rand(W); } }
-  for (const c of cards) {
-    if (c.deal < 1) c.deal = Math.min(1, c.deal + dt * 3.2);
-    c.flip += (c.target - c.flip) * Math.min(1, dt * 14);
-    if (Math.abs(c.target - c.flip) < .01) c.flip = c.target;
-    c.shake = Math.max(0, c.shake - dt * 2.5); c.pop = Math.max(0, c.pop - dt * 2.2);
-  }
-  if (state !== 'play') return;
-  if (timerOn) { time += dt; BG.hud.set('time', Math.floor(time) + 's'); }
-  if (matchT > 0) { matchT -= dt; if (matchT <= 0) resolveMatch(); }
-  if (missT > 0) { const pre = missT; missT -= dt; if (pre > .55 && missT <= .55) { open.forEach(c => c.shake = 1); SFX.play('error'); } if (missT <= 0) resolveMiss(); }
-  // teclado
-  const I = BG.input, cfg = MODES[mode];
-  const mv = (dx, dy) => { showCursor = true; const r = Math.floor(cursor / cfg.cols), c = cursor % cfg.cols; cursor = ((r + dy + cfg.rows) % cfg.rows) * cfg.cols + (c + dx + cfg.cols) % cfg.cols; SFX.play('tick'); };
-  if (I.pressed('left')) mv(-1, 0); if (I.pressed('right')) mv(1, 0); if (I.pressed('up')) mv(0, -1); if (I.pressed('down')) mv(0, 1);
-  const a = I.pressed('action'), b = I.pressed('confirm');
-  if (a || b) { showCursor = true; flip(cards[cursor]); }
-}
-function drawCard(c) {
-  const e = 1 - Math.pow(1 - Math.max(0, c.deal), 3);
-  if (c.deal <= 0) return;
-  const x = U.lerp(c.dx - c.w / 2, c.x, e), y = U.lerp(c.dy, c.y, e);
-  const sx = Math.abs(Math.cos(c.flip * Math.PI)), face = c.flip > .5;
-  const shake = c.shake > 0 ? Math.sin(c.shake * 40) * 6 * c.shake : 0, pop = 1 + c.pop * .12;
-  ctx.save(); ctx.translate(x + c.w / 2 + shake, y + c.h / 2); ctx.scale(Math.max(.02, sx) * pop, pop);
-  if (!face && !c.matched) { const lift = c.i === hover ? -4 : 0; ctx.translate(0, lift); }
-  const w = c.w, h = c.h, r = Math.min(14, w * .14);
-  ctx.fillStyle = 'rgba(0,0,0,.35)'; D.rr(ctx, -w / 2 + 3, -h / 2 + 6, w, h, r); ctx.fill();
-  if (face) {
-    const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#e6e1f5');
-    ctx.fillStyle = g; D.rr(ctx, -w / 2, -h / 2, w, h, r); ctx.fill();
-    ctx.lineWidth = c.matched ? 5 : 3; ctx.strokeStyle = c.col; D.rr(ctx, -w / 2 + 2, -h / 2 + 2, w - 4, h - 4, r - 2); ctx.stroke();
-    if (c.matched) { ctx.fillStyle = c.col; ctx.globalAlpha = .14; D.rr(ctx, -w / 2, -h / 2, w, h, r); ctx.fill(); ctx.globalAlpha = 1; }
-    if (c.shake > 0) { ctx.fillStyle = `rgba(255,40,80,${c.shake * .25})`; D.rr(ctx, -w / 2, -h / 2, w, h, r); ctx.fill(); }
-    D.text(ctx, c.v, 0, 2, { size: w * .52, family: 'body' });
+
+  segunda = { idx, carta, el: btnEl };
+  turnos++;
+  bloqueado = true;
+
+  if (primera.carta.iconIdx === segunda.carta.iconIdx) {
+    primera.carta.matched = true;
+    segunda.carta.matched = true;
+    primera.el.classList.add('matched');
+    segunda.el.classList.add('matched');
+    paresEncontrados++;
+    combo++;
+    maxCombo = Math.max(maxCombo, combo);
+    SFX.play('coin');
+    if (combo >= 3) BG.ui.toast(`¡COMBO x${combo}!`, '#10b981');
+    primera = null;
+    segunda = null;
+    bloqueado = false;
+    actualizarMarcadores();
+
+    if (paresEncontrados >= totalPares) {
+      if (BG.preview) { setTimeout(() => iniciarJuego(modoActual), 600); return; }
+      victoria();
+    }
   } else {
-    const g = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2); g.addColorStop(0, '#5b2bd6'); g.addColorStop(1, '#1a8fd6');
-    ctx.fillStyle = g; D.rr(ctx, -w / 2, -h / 2, w, h, r); ctx.fill();
-    ctx.save(); D.rr(ctx, -w / 2, -h / 2, w, h, r); ctx.clip();
-    ctx.strokeStyle = 'rgba(255,255,255,.10)'; ctx.lineWidth = 2;
-    for (let k = -h; k < w + h; k += 16) { ctx.beginPath(); ctx.moveTo(-w / 2 + k, -h / 2); ctx.lineTo(-w / 2 + k - h, h / 2); ctx.stroke(); }
-    const sh = ((t * .5 + c.i * .07) % 2.4) - .7; ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.beginPath(); ctx.moveTo(-w / 2 + sh * w, -h / 2); ctx.lineTo(-w / 2 + sh * w + 18, -h / 2); ctx.lineTo(-w / 2 + sh * w - h * .4 + 18, h / 2); ctx.lineTo(-w / 2 + sh * w - h * .4, h / 2); ctx.fill();
-    ctx.restore();
-    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2; D.rr(ctx, -w / 2 + 5, -h / 2 + 5, w - 10, h - 10, r - 4); ctx.stroke();
-    D.glowCircle(ctx, 0, 0, w * .2, 'rgba(255,255,255,.15)', 10);
-    D.text(ctx, 'BG', 0, 1, { size: w * .2, color: '#fff', glow: '#2ef2ff' });
+    combo = 1;
+    actualizarMarcadores();
+    setTimeout(() => {
+      if (primera) primera.el.classList.remove('flipped');
+      if (segunda) segunda.el.classList.remove('flipped');
+      primera = null;
+      segunda = null;
+      bloqueado = false;
+    }, 620);
   }
-  ctx.restore();
-  if (showCursor && c.i === cursor && state === 'play') { ctx.strokeStyle = '#ffd400'; ctx.lineWidth = 3; ctx.shadowColor = '#ffd400'; ctx.shadowBlur = 12; D.rr(ctx, c.x - 5, c.y - 5, c.w + 10, c.h + 10, 16); ctx.stroke(); ctx.shadowBlur = 0; }
 }
-function render() {
-  const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#120a2e'); g.addColorStop(1, '#071a2e');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  for (const b of bokeh) { ctx.globalAlpha = .08; ctx.fillStyle = b.c; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7); ctx.fill(); }
-  ctx.globalAlpha = 1;
-  D.text(ctx, state === 'menu' ? 'MEMORY MATCH' : MODES[mode].n, W / 2, 34, { size: 18, color: 'rgba(255,255,255,.8)', glow: '#a855f7' });
-  if (state === 'play' && combo >= 2) D.text(ctx, `🔥 COMBO ×${combo}`, W - 20, 34, { size: 14, color: '#ffd400', align: 'right' });
-  ctx.save(); FX.applyShake(ctx);
-  for (const c of cards) drawCard(c);
-  FX.draw(ctx);
-  ctx.restore();
-  FX.drawFlash(ctx, W, H);
+
+function victoria() {
+  Jugando = false;
+  if (timerId) clearInterval(timerId);
+  BG.stop();
+  SFX.play('win');
+  const tiempoFinal = Math.max(1, segTranscurridos);
+  const r = BG.submitScore(tiempoFinal, { mode: modoActual, order: 'asc', won: true });
+
+  setTimeout(() => {
+    BG.ui.gameOver({
+      win: true,
+      title: '¡MEMORIA PERFECTA!',
+      sub: `Completaste el modo ${MODOS[modoActual].nombre}`,
+      score: tiempoFinal,
+      scoreText: U.fmtTime(tiempoFinal),
+      scoreLabel: 'TIEMPO TOTAL',
+      isRecord: r.isRecord || r.first,
+      stats: [
+        { label: 'Turnos', value: turnos },
+        { label: 'Combo Máx', value: 'x' + maxCombo },
+        { label: 'Récord', value: U.fmtTime(BG.getBest(modoActual) || tiempoFinal) }
+      ],
+      onRetry: () => iniciarJuego(modoActual),
+      onMenu: () => mostrarMenu()
+    });
+  }, 450);
 }
-function cardAt(e) { const p = view.toLocal(e.clientX, e.clientY); return cards.find(c => p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h); }
-view.canvas.addEventListener('pointerdown', e => { const c = cardAt(e); if (c) { cursor = c.i; showCursor = false; flip(c); } });
-view.canvas.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; const c = cardAt(e); hover = c && !c.matched && c.target === 0 ? c.i : -1; view.canvas.style.cursor = hover >= 0 ? 'pointer' : ''; });
+
+function mostrarMenu() {
+  Jugando = false;
+  if (timerId) clearInterval(timerId);
+  BG.stop();
+  BG.ui.show({
+    title: 'MEMORY MATCH',
+    sub: BG.game.subtitle,
+    buttons: Object.values(MODOS).map(m => {
+      const b = BG.getBest(m.id);
+      return {
+        label: m.nombre.toUpperCase(),
+        small: `${m.pares} pares ilustrados · ${b ? 'Mejor tiempo: ' + U.fmtTime(b) : 'Sin récord'}`,
+        primary: m.id === modoActual,
+        onClick: () => { BG.ui.hide(); iniciarJuego(m.id); }
+      };
+    }),
+    help: BG.game.help
+  });
+}
+
+iniciarJuego(modoActual);
 if (BG.thumb) {
-  mode = 'hard'; deal('hard'); state = 'thumb';
-  cards.forEach(c => c.deal = 1);
-  [0, 5, 9, 14, 3, 20].forEach((i, k) => { const c = cards[i]; c.flip = c.target = 1; if (k < 2) c.matched = true; });
-  cards[5].v = cards[0].v; cards[5].col = cards[0].col;
-  update = () => { t += 1 / 60; };
-} else BG.ready.then(showMenu);
-BG.loop(dt => update(dt), render);
+  gridEl.querySelectorAll('.mm-card').forEach((el, i) => {
+    if (i % 3 === 0) el.classList.add('flipped');
+    if (i === 1 || i === 4) el.classList.add('matched');
+  });
+  if (BG.preview) {
+    setInterval(() => {
+      if (bloqueado) return;
+      const libres = [...gridEl.querySelectorAll('.mm-card:not(.matched):not(.flipped)')];
+      if (!libres.length) { iniciarJuego('easy'); return; }
+      const c = U.pick(libres);
+      tocarCarta(Number(c.dataset.idx), c);
+    }, 550);
+  }
+} else {
+  BG.ready.then(mostrarMenu);
+}
 </script>
 </body>
 </html>

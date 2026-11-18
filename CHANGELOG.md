@@ -1,5 +1,16 @@
 # AltoVicio — Changelog
 
+## 🎨 V15.4 — Rediseño e integración de juegos casuales y de lógica (A10 · G1 a G6)
+
+- **Ahorcado HD (`pages/games/juego-local-40.html`, G1)**: diseño vertical completo (560×820) que aprovecha toda la pantalla en celular (`390×844`), escenario de cápsula de contención energética con personaje guardián ilustrado que reacciona y pierde piezas de escudo con cada error, más de 240 palabras en 8 categorías con pistas y cosméticos desbloqueables con VicioCoins vía `bg-buy` (sin leer `bandagamer_usuario_v2`).
+- **Snake HD (`pages/games/juego-local-1.html`, G2)**: pradera orgánica con mosaico de césped, flores y bordes de piedra redondeada, serpiente con cuerpo de curva continua, escamas, ojos que siguen la fruta y lengua bífida animada, 5 frutas ilustradas en Canvas, cosméticos por `bg-buy` y demo automática en `?preview=1`.
+- **Memory Match HD (`pages/games/juego-local-3.html`, G3)**: nuevo dorso de cartas con emblema **AV · AltoVicio** (reemplaza el antiguo "BG"), 18 íconos SVG vectoriales propios a todo color, 4 dificultades con ranking por tiempo y dorsos desbloqueables por `bg-buy`.
+- **Doodle Jump HD (`pages/games/juego-local-13.html`, G4)**: cielo dinámico que asciende desde el atardecer hasta el espacio profundo con nubes y estrellas, personaje ilustrado con gorro hélice / cohete, resortes animados, monstruos alados y cosméticos por `bg-buy`.
+- **Curve Fever HD (`pages/games/juego-local-26.html`, G5) y Color Flood HD (`pages/games/juego-local-21.html`, G5)**: arenas con grilla holográfica / tablero de cristal biselado, ondas animadas, estelas y paletas personalizables con VicioCoins (`bg-buy`), más celebración de fuegos artificiales al ganar.
+- **Piedra Papel Tijera Táctico (`pages/games/juego-local-22.html`, G6)**: IA adaptativa con memoria de Markov y radar en vivo de tendencias, habilidades tácticas con energía (*Golpe Crítico ×2*, *Escudo*, *Escáner*), emblemas vectoriales por `bg-buy` y **Salas Online 1v1** en Firebase Realtime Database con `asegurarIdentidad()` y soporte de invitación por `?room=`.
+
+---
+
 ## 🚀 V15.3 — Gráficos detallados y nuevos niveles en juegos de acción (A4, A5, A6, A7)
 
 - **A4 · Maze Runner (`juego-local-31.html`)**: se amplió el radio de iluminación de la antorcha y el área revelada, se suavizó la penumbra para que el laberinto nunca quede totalmente negro, se agregaron baldosas de piedra con juntas y muros 3D con bloques, y se dibujaron los objetos (gemas, llaves, relojes de arena, antorchas y mapas) en canvas con destellos visibles aún en zonas oscuras.

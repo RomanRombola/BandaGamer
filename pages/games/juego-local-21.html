@@ -3,16 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Color Flood</title>
+<title>Color Flood HD — AltoVicio</title>
 <link rel="stylesheet" href="kit/bg-kit.css">
 <style>
-#wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-#pal { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.cb { width: 54px; height: 54px; border-radius: 14px; border: 3px solid rgba(255,255,255,.15); cursor: pointer; transition: transform .1s, border-color .15s, opacity .15s; position: relative; }
-.cb:hover { transform: translateY(-3px); border-color: #fff; }
-.cb:active { transform: scale(.92); }
-.cb.dis { opacity: .2; cursor: not-allowed; transform: none; }
-.cb kbd { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #8b8ba3; font-family: 'Outfit', sans-serif; }
+  #wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+  #pal { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 2px 8px; }
+  .cb {
+    width: 52px; height: 52px; border-radius: 15px;
+    border: 3px solid rgba(255,255,255,.22); cursor: pointer;
+    transition: transform .12s, border-color .15s, opacity .15s, box-shadow .15s;
+    position: relative;
+  }
+  .cb:hover { transform: translateY(-3px) scale(1.04); border-color: #fff; }
+  .cb:active { transform: scale(.92); }
+  .cb.dis { opacity: .22; cursor: not-allowed; transform: none; }
+  .cb kbd {
+    position: absolute; bottom: -17px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; color: #94a3b8; font-family: 'Outfit', sans-serif; font-weight: 700;
+  }
+  #cf2-shop-btn {
+    position: absolute; top: 8px; right: 10px; z-index: 30;
+    background: linear-gradient(135deg, var(--bg-accent), var(--bg-accent2));
+    color: #fff; border: none; border-radius: 10px; padding: 6px 11px;
+    font-family: var(--bg-font-d); font-size: 11px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  body.bg-thumb #cf2-shop-btn { display: none !important; }
+  .cos-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 6px 0 12px; }
+  .cos-btn {
+    background: rgba(255,255,255,0.05); border: 1.5px solid var(--bg-line);
+    border-radius: 12px; padding: 9px 8px; color: var(--bg-text);
+    font-family: var(--bg-font-d); font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .cos-btn.sel { border-color: var(--bg-accent); background: rgba(46,139,255,0.18); }
+  .cos-btn small { display: block; font-size: 10px; margin-top: 2px; color: var(--bg-accent2); }
+  .cos-btn.sel small { color: var(--bg-good); }
+  .cos-aviso { font-size: 12px; color: var(--bg-accent2); min-height: 16px; margin-bottom: 6px; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -20,49 +46,166 @@
 <script src="kit/bg-kit.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  COLOR FLOOD — AltoVicio
-//  Solitario: inundá todo con un color en los movimientos disponibles (3 tamaños)
-//  Diario: el mismo tablero para todos ese día · Duelo: vos desde arriba a la
-//  izquierda contra la CPU desde abajo a la derecha (no podés elegir su color)
+//  G5 · COLOR FLOOD HD — AltoVicio
+//  Ambientación cristal/mosaico, ondas animadas, celebración cromática al ganar
+//  y paletas desbloqueables con VicioCoins vía bg-buy.
 // ═══════════════════════════════════════════════════════════════════════════
 const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
-const COLORS = ['#ff3d5a', '#ff9a1f', '#ffd400', '#22e06b', '#2e8bff', '#c04dff'];
-const MODES = {
-  s12: { name: '12×12', n: 12, moves: 22, kind: 'solo' },
-  s16: { name: '16×16', n: 16, moves: 29, kind: 'solo' },
-  s20: { name: '20×20', n: 20, moves: 36, kind: 'solo' },
-  daily: { name: 'DESAFÍO DEL DÍA', n: 14, moves: 25, kind: 'solo', daily: true },
-  duel: { name: 'DUELO VS CPU', n: 16, kind: 'duel' },
+
+const CATALOGO_FLOOD = {
+  paletas: [
+    { id: 'pal_prisma',  nombre: 'Prisma Clásico', precio: 0,   cols: ['#ff3d5a', '#ff9a1f', '#ffd400', '#22e06b', '#2e8bff', '#c04dff'] },
+    { id: 'pal_aurora',  nombre: 'Aurora Boreal',  precio: 130, cols: ['#00f5d4', '#00bbf9', '#fee440', '#f15bb5', '#9b5de5', '#38b000'] },
+    { id: 'pal_sunset',  nombre: 'Atardecer Tropical', precio: 200, cols: ['#ff4d6d', '#ff758f', '#ffb703', '#fb8500', '#8ecae6', '#7209b7'] },
+    { id: 'pal_imperial',nombre: 'Joyas Reales',   precio: 290, cols: ['#e63946', '#f4a261', '#e9c46a', '#2a9d8f', '#457b9d', '#b5179e'] }
+  ],
+  estilos: [
+    { id: 'st_cristal',  nombre: 'Cristal Biselado', precio: 0,   radius: 0.22, gloss: true },
+    { id: 'st_gemas',    nombre: 'Gemas Redondas',   precio: 150, radius: 0.42, gloss: true },
+    { id: 'st_mosaico',  nombre: 'Mosaico Puro',     precio: 220, radius: 0.08, gloss: false }
+  ]
 };
+
+const DEF_COSM = { paletas: 'pal_prisma', estilos: 'st_cristal' };
+let cosmEquip = Object.assign({}, DEF_COSM, BG.load('cosm', {}));
+let portalCoins = 0, portalItems = [], portalConectado = false, compraPendiente = null;
+
+function itemCat(catKey, id) { return CATALOGO_FLOOD[catKey].find(x => x.id === id); }
+function loTengo(catKey, id) { const it = itemCat(catKey, id); return !!it && (it.precio === 0 || portalItems.includes(id)); }
+function paletaActiva() { return (itemCat('paletas', cosmEquip.paletas) || CATALOGO_FLOOD.paletas[0]).cols; }
+function estiloActivo() { return itemCat('estilos', cosmEquip.estilos) || CATALOGO_FLOOD.estilos[0]; }
+
+const MODES = {
+  s12:   { name: '12×12', n: 12, moves: 22, kind: 'solo' },
+  s16:   { name: '16×16', n: 16, moves: 29, kind: 'solo' },
+  s20:   { name: '20×20', n: 20, moves: 36, kind: 'solo' },
+  daily: { name: 'DESAFÍO DEL DÍA', n: 14, moves: 25, kind: 'solo', daily: true },
+  duel:  { name: 'DUELO VS CPU', n: 16, kind: 'duel' }
+};
+
 BG.init({
-  post: { vignette: .2 },
-  id: 'colorflood', title: 'COLOR FLOOD', icon: '🎨', accent: '#2e8bff', accent2: '#ff3d5a', pausable: false,
-  subtitle: 'Elegí colores para que tu mancha (arriba a la izquierda) se coma todo el tablero.',
-  hud: [{ id: 'moves', label: 'Movimientos' }, { id: 'pct', label: 'Dominado', color: '#22e06b', value: '0%' }, { id: 'mode', label: 'Modo', color: '#ffd400', value: '—' }],
-  help: 'Tocá un color (o teclas <kbd>1</kbd>-<kbd>6</kbd>). Tu zona se expande a todas las casillas vecinas de ese color.',
+  post: { vignette: .18 },
+  id: 'colorflood', title: 'COLOR FLOOD HD', icon: '🎨', accent: '#2e8bff', accent2: '#ff3d5a', pausable: false,
+  subtitle: 'Elegí colores para que tu territorio absorba todo el tablero de cristal.',
+  hud: [
+    { id: 'moves', label: 'Movimientos' },
+    { id: 'pct', label: 'Dominado', color: '#22e06b', value: '0%' },
+    { id: 'mode', label: 'Modo', color: '#ffd400', value: '—' }
+  ],
+  help: 'Tocá un color (o teclas <kbd>1</kbd>-<kbd>6</kbd>). Tu zona se expande a todas las casillas vecinas de ese color.'
 });
-const SIZE = 520;
-const view = BG.canvas(SIZE, SIZE, { pad: 6, parent: document.getElementById('wrap'), prepend: true, reserveH: 96 });
+
+const SIZE = 540;
+const view = BG.canvas(SIZE, SIZE, { pad: 6, parent: document.getElementById('wrap'), prepend: true, reserveH: 102 });
 const ctx = view.ctx;
-let mk = BG.load('mode', 's12'), M, N, grid, own, moves, used, over, wave = [], waveT = 0, cpuOwn, turn = 'p';
+
+const shopBtn = U.el('button', { id: 'cf2-shop-btn' }, 'Personalizar');
+shopBtn.addEventListener('click', () => abrirTiendaFlood());
+BG.stage.appendChild(shopBtn);
+
+window.addEventListener('message', e => {
+  if (e.source !== window.parent) return;
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+  if (d.type === 'bg-hello-ack') {
+    portalConectado = true;
+    portalCoins = Number(d.coins) || 0;
+    portalItems = Array.isArray(d.items) ? d.items.map(String) : [];
+    for (const k of Object.keys(DEF_COSM)) if (!loTengo(k, cosmEquip[k])) cosmEquip[k] = DEF_COSM[k];
+    buildPal();
+  } else if (d.type === 'bg-buy-result') {
+    portalCoins = Number(d.coins) || portalCoins;
+    if (Array.isArray(d.items)) portalItems = d.items.map(String);
+    const pend = compraPendiente;
+    compraPendiente = null;
+    if (d.ok && pend && pend.id === d.item) {
+      cosmEquip[pend.catKey] = pend.id;
+      BG.save('cosm', cosmEquip);
+      SFX.play('power');
+      buildPal();
+      abrirTiendaFlood();
+    } else if (!d.ok) {
+      SFX.play('error');
+      const av = document.getElementById('cf2-cos-aviso');
+      if (av) av.textContent = d.error || 'No se pudo completar la compra';
+    }
+  }
+});
+
+function abrirTiendaFlood() {
+  const sec = (titulo, catKey) => {
+    const btns = CATALOGO_FLOOD[catKey].map(it => {
+      const tengo = loTengo(catKey, it.id);
+      const sel = cosmEquip[catKey] === it.id;
+      const tag = sel ? 'Equipado' : (tengo ? 'Equipar' : `${it.precio} VicioCoins`);
+      return `<button class="cos-btn ${sel ? 'sel' : ''}" data-cat="${catKey}" data-id="${it.id}">${U.esc(it.nombre)}<small>${tag}</small></button>`;
+    }).join('');
+    return `<div class="bg-label">${U.esc(titulo)}</div><div class="cos-grid">${btns}</div>`;
+  };
+  BG.ui.show({
+    title: 'ESTILO CROMÁTICO',
+    sub: `VicioCoins disponibles: ${U.fmt(portalCoins)}`,
+    html: `<div class="cos-aviso" id="cf2-cos-aviso"></div>${sec('Paleta de Colores', 'paletas')}${sec('Acabado de Piezas', 'estilos')}`,
+    buttons: [{ label: '← Volver', primary: true, onClick: () => BG.ui.hide() }],
+    onShow: card => {
+      card.querySelectorAll('.cos-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const catKey = b.dataset.cat, id = b.dataset.id;
+          const it = itemCat(catKey, id);
+          if (!it) return;
+          if (loTengo(catKey, id)) {
+            cosmEquip[catKey] = id;
+            BG.save('cosm', cosmEquip);
+            SFX.play('select');
+            buildPal();
+            abrirTiendaFlood();
+          } else {
+            if (!portalConectado) {
+              card.querySelector('#cf2-cos-aviso').textContent = 'Abrí el juego desde AltoVicio para usar tus VicioCoins.';
+              return;
+            }
+            compraPendiente = { catKey, id };
+            card.querySelector('#cf2-cos-aviso').textContent = 'Comprando…';
+            BG.portal.send('bg-buy', { item: id, price: it.precio });
+          }
+        });
+      });
+    }
+  });
+}
+
+let mk = BG.load('mode', 's12'), M, N, grid, own, moves, used, over, wave = [], cpuOwn, turn = 'p', winAnimT = 0;
 
 function build() {
-  M = MODES[mk]; N = M.n; over = false; used = 0; turn = 'p';
+  const COLS = paletaActiva();
+  M = MODES[mk]; N = M.n; over = false; used = 0; turn = 'p'; winAnimT = 0;
   const rnd = M.daily ? U.rng(U.hash('flood' + U.today())) : Math.random;
-  grid = Array.from({ length: N * N }, () => Math.floor(rnd() * COLORS.length));
+  grid = Array.from({ length: N * N }, () => Math.floor(rnd() * COLS.length));
   own = new Uint8Array(N * N);
   cpuOwn = new Uint8Array(N * N);
-  if (M.kind === 'duel') { if (grid[N * N - 1] === grid[0]) grid[N * N - 1] = (grid[0] + 1) % COLORS.length; flood(cpuOwn, N * N - 1, grid[N * N - 1], true); }
+  if (M.kind === 'duel') {
+    if (grid[N * N - 1] === grid[0]) grid[N * N - 1] = (grid[0] + 1) % COLS.length;
+    flood(cpuOwn, N * N - 1, grid[N * N - 1], true);
+  }
   flood(own, 0, grid[0], true);
   moves = M.moves || 0;
   BG.hud.set('mode', M.name.length > 10 ? (M.daily ? 'DIARIO' : 'DUELO') : M.name);
   buildPal(); hud(); BG.start();
 }
-function neighbors(i) { const x = i % N, y = (i / N) | 0, o = []; if (x > 0) o.push(i - 1); if (x < N - 1) o.push(i + 1); if (y > 0) o.push(i - N); if (y < N - 1) o.push(i + N); return o; }
-// Expande la zona "mine" al color c. Devuelve las celdas nuevas con su distancia (para la animación)
+
+function neighbors(i) {
+  const x = i % N, y = (i / N) | 0, o = [];
+  if (x > 0) o.push(i - 1);
+  if (x < N - 1) o.push(i + 1);
+  if (y > 0) o.push(i - N);
+  if (y < N - 1) o.push(i + N);
+  return o;
+}
+
 function flood(mine, start, c, init) {
   const other = mine === own ? cpuOwn : own;
-  const owned = []; for (let i = 0; i < N * N; i++) if (mine[i]) owned.push(i);
+  const owned = [];
+  for (let i = 0; i < N * N; i++) if (mine[i]) owned.push(i);
   if (init) { mine[start] = 1; owned.push(start); }
   owned.forEach(i => grid[i] = c);
   const q = owned.map(i => [i, 0]), added = [], seen = new Set(owned);
@@ -75,39 +218,65 @@ function flood(mine, start, c, init) {
   }
   return added;
 }
+
 function count(a) { let n = 0; for (let i = 0; i < a.length; i++) n += a[i]; return n; }
+
+function lanzarCelebracionVictoria() {
+  winAnimT = 2.5;
+  const COLS = paletaActiva();
+  for (let k = 0; k < 5; k++) {
+    setTimeout(() => {
+      const col = U.pick(COLS);
+      FX.burst(U.rand(80, SIZE - 80), U.rand(80, SIZE - 80), { n: 26, color: col, speed: 240, size: 5, life: 0.85 });
+    }, k * 150);
+  }
+}
+
 function play(c) {
   if (over || BG.ui.open || turn !== 'p') return;
+  const COLS = paletaActiva();
   const curP = grid[own.indexOf(1)];
   if (c === curP) return;
-  if (M.kind === 'duel' && c === grid[cpuOwn.indexOf(1)]) { SFX.play('error'); BG.ui.toast('Ese color es de la CPU', '#ff3d5a'); return; }
+  if (M.kind === 'duel' && c === grid[cpuOwn.indexOf(1)]) {
+    SFX.play('error');
+    BG.ui.toast('Ese color pertenece a la CPU', '#ff3d5a');
+    return;
+  }
   const added = flood(own, 0, c);
-  used++; if (M.kind === 'solo') moves--;
+  used++;
+  if (M.kind === 'solo') moves--;
   addWave(added, c);
   SFX.tone({ f: 300 + Math.min(added.length, 40) * 15, dur: .12, type: 'triangle', vol: .2 });
-  if (added.length > 20) FX.burst(SIZE / 2, SIZE / 2, { n: 12, color: COLORS[c], speed: 160 });
+  if (added.length > 14) {
+    const cs = (SIZE - 24) / N;
+    const sample = added[Math.floor(added.length / 2)][0];
+    const bx = 12 + (sample % N + 0.5) * cs;
+    const by = 12 + (((sample / N) | 0) + 0.5) * cs;
+    FX.burst(bx, by, { n: 16, color: COLS[c], speed: 180, size: 4 });
+  }
   hud();
   if (M.kind === 'solo') {
     if (count(own) === N * N) return win();
     if (moves <= 0) return lose();
   } else {
     if (count(own) + count(cpuOwn) === N * N || noMoves()) return duelEnd();
-    turn = 'cpu'; buildPal(); setTimeout(cpuPlay, 520);
+    turn = 'cpu'; buildPal(); setTimeout(cpuPlay, 480);
   }
   buildPal();
 }
+
 function noMoves() {
-  // ¿quedan casillas libres alcanzables?
   for (let i = 0; i < N * N; i++) if (!own[i] && !cpuOwn[i]) return false;
   return true;
 }
+
 function cpuPlay() {
   if (over) return;
+  const COLS = paletaActiva();
   const pc = grid[own.indexOf(1)], cc = grid[cpuOwn.indexOf(1)];
   let best = -1, bestN = -1;
-  for (let c = 0; c < COLORS.length; c++) {
+  for (let c = 0; c < COLS.length; c++) {
     if (c === pc || c === cc) continue;
-    // simulación barata: cuántas celdas ganaría
     const g2 = grid.slice(), o2 = cpuOwn.slice(), saveG = grid, saveO = cpuOwn;
     grid = g2; cpuOwn = o2;
     const n = flood(cpuOwn, 0, c).length + Math.random() * .5;
@@ -115,87 +284,221 @@ function cpuPlay() {
     if (n > bestN) { bestN = n; best = c; }
   }
   const added = flood(cpuOwn, 0, best);
-  addWave(added, best); SFX.tone({ f: 200 + Math.min(added.length, 40) * 10, dur: .12, type: 'square', vol: .1 });
+  addWave(added, best);
+  SFX.tone({ f: 200 + Math.min(added.length, 40) * 10, dur: .12, type: 'square', vol: .1 });
   hud(); turn = 'p'; buildPal();
   if (count(own) + count(cpuOwn) === N * N || noMoves()) duelEnd();
 }
-function addWave(added, c) { const t0 = performance.now(); added.forEach(([i, d]) => wave.push({ i, t: t0 + d * 35, c })); }
+
+function addWave(added, c) {
+  const t0 = performance.now();
+  added.forEach(([i, d]) => wave.push({ i, t: t0 + d * 32, c }));
+}
+
 function hud() {
   const p = Math.round(count(own) / (N * N) * 100);
   BG.hud.set('pct', p + '%');
   BG.hud.set('moves', M.kind === 'solo' ? `${moves}` : `${count(own)} vs ${count(cpuOwn)}`);
-  document.querySelector('[data-hud="moves"] span').textContent = M.kind === 'solo' ? 'Quedan' : 'Casillas';
+  const span = document.querySelector('[data-hud="moves"] span');
+  if (span) span.textContent = M.kind === 'solo' ? 'Quedan' : 'Casillas';
 }
+
 function win() {
   over = true; BG.stop(); SFX.play('win');
+  lanzarCelebracionVictoria();
   const r = BG.submitScore(used, { mode: mk, order: 'asc', won: true });
-  setTimeout(() => BG.ui.gameOver({ win: true, icon: '🎨', title: '¡INUNDADO!', score: used, scoreLabel: 'MOVIMIENTOS USADOS', isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
-    stats: [{ label: 'Récord', value: BG.getBest(mk) + ' mov.' }, { label: 'Sobraron', value: moves }], onRetry: () => build(), onMenu: showMenu }), 900);
+  setTimeout(() => BG.ui.gameOver({
+    win: true, icon: '🎨', title: '¡TABLERO CONQUISTADO!',
+    score: used, scoreLabel: 'MOVIMIENTOS USADOS',
+    isRecord: r.isRecord || r.first,
+    recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
+    stats: [{ label: 'Récord', value: BG.getBest(mk) + ' mov.' }, { label: 'Sobraron', value: moves }],
+    onRetry: () => build(), onMenu: showMenu
+  }), 1050);
 }
+
 function lose() {
   over = true; BG.stop(); SFX.play('lose');
   const p = Math.round(count(own) / (N * N) * 100);
-  setTimeout(() => BG.ui.gameOver({ icon: '🎨', title: 'SIN MOVIMIENTOS', sub: `Llegaste al ${p}% del tablero.`, onRetry: () => build(), onMenu: showMenu, stats: [{ label: 'Modo', value: M.name }] }), 700);
+  setTimeout(() => BG.ui.gameOver({
+    icon: '🎨', title: 'SIN MOVIMIENTOS',
+    sub: `Dominaste el ${p}% del tablero.`,
+    onRetry: () => build(), onMenu: showMenu,
+    stats: [{ label: 'Modo', value: M.name }]
+  }), 750);
 }
+
 function duelEnd() {
   over = true; BG.stop();
   const a = count(own), b = count(cpuOwn), won = a > b;
   SFX.play(won ? 'win' : 'lose');
+  if (won) lanzarCelebracionVictoria();
   const r = won ? BG.submitScore(a, { mode: 'duel', won: true }) : null;
-  setTimeout(() => BG.ui.gameOver({ win: won, icon: won ? '🏆' : '🤖', title: won ? '¡GANASTE EL DUELO!' : a === b ? 'EMPATE' : 'GANÓ LA CPU', score: a, scoreLabel: 'TUS CASILLAS',
-    isRecord: r && (r.isRecord || r.first), stats: [{ label: 'CPU', value: b }, { label: 'Turnos', value: used }], onRetry: () => build(), onMenu: showMenu }), 900);
+  setTimeout(() => BG.ui.gameOver({
+    win: won, icon: won ? '🏆' : '🤖',
+    title: won ? '¡GANASTE EL DUELO!' : a === b ? 'EMPATE' : 'GANÓ LA CPU',
+    score: a, scoreLabel: 'TUS CASILLAS',
+    isRecord: r && (r.isRecord || r.first),
+    stats: [{ label: 'CPU', value: b }, { label: 'Turnos', value: used }],
+    onRetry: () => build(), onMenu: showMenu
+  }), 1050);
 }
+
 function buildPal() {
-  const pal = document.getElementById('pal'); pal.innerHTML = '';
-  const pc = grid ? grid[own.indexOf(1)] : -1, cc = grid && M.kind === 'duel' ? grid[cpuOwn.indexOf(1)] : -1;
-  COLORS.forEach((col, i) => {
-    const b = document.createElement('button'); b.className = 'cb' + (i === pc || i === cc || turn !== 'p' ? ' dis' : '');
-    b.style.background = col; b.style.boxShadow = `0 6px 18px ${col}55`;
+  const pal = document.getElementById('pal');
+  if (!pal) return;
+  pal.innerHTML = '';
+  const COLS = paletaActiva();
+  const pc = grid ? grid[own.indexOf(1)] : -1;
+  const cc = grid && M && M.kind === 'duel' ? grid[cpuOwn.indexOf(1)] : -1;
+  COLS.forEach((col, i) => {
+    const b = document.createElement('button');
+    b.className = 'cb' + (i === pc || i === cc || turn !== 'p' ? ' dis' : '');
+    b.style.background = `linear-gradient(145deg, ${col}, ${col}cc)`;
+    b.style.boxShadow = `0 6px 18px ${col}55, inset 0 2px 4px rgba(255,255,255,0.35)`;
     if (!BG.isTouch) b.innerHTML = `<kbd>${i + 1}</kbd>`;
-    b.onclick = () => play(i); pal.appendChild(b);
+    b.onclick = () => play(i);
+    pal.appendChild(b);
   });
 }
+
 function showMenu() {
-  BG.ui.show({ icon: '🎨', title: 'COLOR FLOOD', sub: BG.game.subtitle,
-    buttons: Object.entries(MODES).map(([k, m]) => { const b = BG.getBest(k); return { label: m.name, small: m.kind === 'duel' ? 'Vos contra la CPU, cada uno desde su esquina' + (b ? ` · Récord ${b}` : '') : `${m.moves} movimientos${m.daily ? ' · igual para todos hoy' : ''} · ${b ? 'Récord ' + b + ' mov.' : 'sin récord'}`, primary: k === mk, onClick: () => { mk = k; BG.save('mode', k); BG.ui.hide(); build(); } }; }),
-    help: BG.game.help });
+  BG.ui.show({
+    icon: '🎨', title: 'COLOR FLOOD HD', sub: BG.game.subtitle,
+    buttons: [
+      ...Object.entries(MODES).map(([k, m]) => {
+        const b = BG.getBest(k);
+        return {
+          label: m.name,
+          small: m.kind === 'duel'
+            ? 'Vos contra la CPU, cada uno desde su esquina' + (b ? ` · Récord ${b}` : '')
+            : `${m.moves} movimientos${m.daily ? ' · igual para todos hoy' : ''} · ${b ? 'Récord ' + b + ' mov.' : 'sin récord'}`,
+          primary: k === mk,
+          onClick: () => { mk = k; BG.save('mode', k); BG.ui.hide(); build(); }
+        };
+      }),
+      { label: '🎨 Personalizar Paleta y Cristal', onClick: () => abrirTiendaFlood() }
+    ],
+    help: BG.game.help
+  });
 }
-function render() {
-  ctx.fillStyle = '#0b0b18'; ctx.fillRect(0, 0, SIZE, SIZE);
+
+function render(dt) {
+  if (winAnimT > 0) winAnimT = Math.max(0, winAnimT - (dt || 0.016));
+  const COLS = paletaActiva();
+  const est = estiloActivo();
+
+  // Marco exterior del tablero
+  const gBg = ctx.createLinearGradient(0, 0, 0, SIZE);
+  gBg.addColorStop(0, '#0d1528');
+  gBg.addColorStop(1, '#070b16');
+  ctx.fillStyle = gBg;
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
   if (!grid) return;
-  const cs = SIZE / N, now = performance.now();
+
+  const pad = 12;
+  const boardSz = SIZE - pad * 2;
+  const cs = boardSz / N;
+  const now = performance.now();
+  const pulse = 0.5 + 0.5 * Math.sin(now * 0.005);
+
   for (let i = 0; i < N * N; i++) {
-    const x = (i % N) * cs, y = ((i / N) | 0) * cs;
-    ctx.fillStyle = COLORS[grid[i]]; ctx.fillRect(x, y, cs + .5, cs + .5);
+    const x = pad + (i % N) * cs;
+    const y = pad + ((i / N) | 0) * cs;
+    const col = COLS[grid[i] % COLS.length];
+    const gap = Math.max(1, cs * 0.05);
+    const r = cs * est.radius;
+
+    D.rr(ctx, x + gap * 0.5, y + gap * 0.5, cs - gap, cs - gap, r);
+    ctx.fillStyle = col;
+    ctx.fill();
+
+    // Brillo biselado superior en cada pieza
+    if (est.gloss) {
+      D.rr(ctx, x + gap + 1.5, y + gap + 1.5, cs - gap * 2 - 3, (cs - gap * 2) * 0.36, Math.max(1, r * 0.6));
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.fill();
+    }
   }
-  // ondas de la inundación
-  wave = wave.filter(w => now - w.t < 300);
+
+  // Ondas de inundación animadas
+  wave = wave.filter(w => now - w.t < 340);
   for (const w of wave) {
-    const k = (now - w.t) / 300; if (k < 0) continue;
-    const x = (w.i % N) * cs, y = ((w.i / N) | 0) * cs;
-    ctx.fillStyle = `rgba(255,255,255,${(1 - k) * .55})`; ctx.fillRect(x, y, cs, cs);
+    const k = (now - w.t) / 340;
+    if (k < 0) continue;
+    const x = pad + (w.i % N) * cs;
+    const y = pad + ((w.i / N) | 0) * cs;
+    const scale = 1 + Math.sin(k * Math.PI) * 0.14;
+    ctx.save();
+    ctx.translate(x + cs / 2, y + cs / 2);
+    ctx.scale(scale, scale);
+    D.rr(ctx, -cs * 0.48, -cs * 0.48, cs * 0.96, cs * 0.96, cs * est.radius);
+    ctx.fillStyle = `rgba(255,255,255,${(1 - k) * 0.65})`;
+    ctx.fill();
+    ctx.restore();
   }
-  // borde de las zonas
-  const edge = (arr, col) => {
-    ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath();
+
+  // Borde luminoso del territorio conquistado
+  const edge = (arr, col, glowCol) => {
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.shadowColor = glowCol;
+    ctx.shadowBlur = 6 + pulse * 5;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
     for (let i = 0; i < N * N; i++) {
       if (!arr[i]) continue;
-      const x = (i % N) * cs, y = ((i / N) | 0) * cs;
+      const x = pad + (i % N) * cs, y = pad + ((i / N) | 0) * cs;
       if (i % N === 0 || !arr[i - 1]) { ctx.moveTo(x, y); ctx.lineTo(x, y + cs); }
       if (i % N === N - 1 || !arr[i + 1]) { ctx.moveTo(x + cs, y); ctx.lineTo(x + cs, y + cs); }
       if (i < N || !arr[i - N]) { ctx.moveTo(x, y); ctx.lineTo(x + cs, y); }
       if (i >= N * N - N || !arr[i + N]) { ctx.moveTo(x, y + cs); ctx.lineTo(x + cs, y + cs); }
     }
     ctx.stroke();
+    ctx.restore();
   };
-  edge(own, 'rgba(255,255,255,.95)');
-  if (M && M.kind === 'duel') edge(cpuOwn, 'rgba(0,0,0,.75)');
+  edge(own, 'rgba(255,255,255,0.95)', '#ffffff');
+  if (M && M.kind === 'duel') edge(cpuOwn, 'rgba(15,23,42,0.9)', '#ff3d5a');
+
+  FX.update(dt || 0.016);
   FX.draw(ctx);
 }
-BG.input.onKey((e, code, down) => { if (!down || e.repeat) return; const m = /^(?:Digit|Numpad)([1-6])$/.exec(code); if (m) play(+m[1] - 1); });
-if (BG.thumb) { mk = 's16'; build(); for (const c of [3, 1, 4, 2, 5, 0, 3]) play(c); BG.stop(); document.getElementById('pal').style.display = 'none'; }
-else BG.ready.then(showMenu);
-BG.loop(() => {}, render);
+
+BG.input.onKey((e, code, down) => {
+  if (!down || e.repeat) return;
+  const m = /^(?:Digit|Numpad)([1-6])$/.exec(code);
+  if (m) play(+m[1] - 1);
+});
+
+if (BG.thumb) {
+  mk = 's12';
+  build();
+  for (const c of [3, 1, 4, 2, 5]) play(c);
+  if (BG.preview) {
+    setInterval(() => {
+      if (over) build();
+      const cur = grid[own.indexOf(1)];
+      let bestC = (cur + 1) % 6, bestGain = -1;
+      for (let c = 0; c < 6; c++) {
+        if (c === cur) continue;
+        const g2 = grid.slice(), o2 = own.slice(), sG = grid, sO = own;
+        grid = g2; own = o2;
+        const gain = flood(own, 0, c).length;
+        grid = sG; own = sO;
+        if (gain > bestGain) { bestGain = gain; bestC = c; }
+      }
+      play(bestC);
+    }, 620);
+  } else {
+    BG.stop();
+    document.getElementById('pal').style.display = 'none';
+  }
+} else {
+  BG.ready.then(showMenu);
+}
+
+BG.loop(dt => render(dt), () => {});
 </script>
 </body>
 </html>

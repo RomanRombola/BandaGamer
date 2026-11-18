@@ -37,7 +37,7 @@ Estado: ✅ hecho · 🔄 en curso · ⬜ pendiente
 
 - [x] ✅ **A9 · Cerrar `gameRooms`** (después de A2). En `firebase/database.rules.json`, `gameRooms` pasa a `".read": "auth != null", ".write": "auth != null"`, igual que `chessRooms`.
   - Avisarle a Román que la publique en la consola **después** de aceptar el pull request.
-- ⬜ **A10 · Integrar lo que mande Gemini** (G1 a G6). Román te pasa el HTML; antes de subirlo, revisá:
+- [x] ✅ **A10 · Integrar lo que mande Gemini** (G1 a G6). Román te pasa el HTML; antes de subirlo, revisá:
   - que no haya scripts que hagan `git push`, pisen `.gitignore` o cambien los `?v=N`;
   - que las monedas pasen solo por `bg-score` y `bg-buy`, sin tocar `bandagamer_usuario_v2`;
   - que el texto de otros jugadores no se meta con `innerHTML`;
@@ -54,12 +54,12 @@ Si Antigravity necesita tocar archivos del área de Claude (`js/`, `firebase/`, 
 
 ## Gemini (Argon 4) — rediseño gráfico de juegos de lógica y casuales (los integra Antigravity, A10)
 - ✅ Ajedrez HD (lo integró Claude).
-- ⬜ **G1 · Ahorcado** (`juego-local-40.html`): hoy es un muñequito de palitos y ocupa el 21% de la pantalla del celular. Hace falta un escenario ilustrado, un personaje con animación por cada error y que ocupe la pantalla.
-- ⬜ **G2 · Snake** (`juego-local-1.html`): tablero con estilo (pasto, piedras), serpiente y frutas dibujadas.
-- ⬜ **G3 · Memory Match** (`juego-local-3.html`): el dorso de las cartas dice "BG". Hacer un dorso nuevo de AltoVicio y caras ilustradas.
-- ⬜ **G4 · Doodle Jump** (`juego-local-13.html`): personaje, plataformas y fondos con más vida.
-- ⬜ **G5 · Curve Fever (`juego-local-26.html`) y Color Flood (`juego-local-21.html`):** ambientación, animaciones y recompensa visual al ganar.
-- ⬜ **G6 · Piedra Papel Tijera** (`juego-local-22.html`): hoy es pura suerte. Agregar algo de estrategia (por ejemplo, la CPU aprende tus patrones y se ven sus tendencias), o un modo online.
+- [x] ✅ **G1 · Ahorcado** (`juego-local-40.html`): hoy es un muñequito de palitos y ocupa el 21% de la pantalla del celular. Hace falta un escenario ilustrado, un personaje con animación por cada error y que ocupe la pantalla.
+- [x] ✅ **G2 · Snake** (`juego-local-1.html`): tablero con estilo (pasto, piedras), serpiente y frutas dibujadas.
+- [x] ✅ **G3 · Memory Match** (`juego-local-3.html`): el dorso de las cartas dice "BG". Hacer un dorso nuevo de AltoVicio y caras ilustradas.
+- [x] ✅ **G4 · Doodle Jump** (`juego-local-13.html`): personaje, plataformas y fondos con más vida.
+- [x] ✅ **G5 · Curve Fever (`juego-local-26.html`) y Color Flood (`juego-local-21.html`):** ambientación, animaciones y recompensa visual al ganar.
+- [x] ✅ **G6 · Piedra Papel Tijera** (`juego-local-22.html`): hoy es pura suerte. Agregar algo de estrategia (por ejemplo, la CPU aprende tus patrones y se ven sus tendencias), o un modo online.
 
 ---
 

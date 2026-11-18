@@ -3,272 +3,568 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Doodle Jump</title>
+<title>Doodle Jump HD — AltoVicio</title>
 <link rel="stylesheet" href="kit/bg-kit.css">
+<style>
+  #dj-shop-btn {
+    position: absolute; top: 8px; right: 10px; z-index: 30;
+    background: linear-gradient(135deg, var(--bg-accent), var(--bg-accent2));
+    color: #fff; border: none; border-radius: 10px; padding: 6px 11px;
+    font-family: var(--bg-font-d); font-size: 11px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  body.bg-thumb #dj-shop-btn { display: none !important; }
+  .cos-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 6px 0 12px; }
+  .cos-btn {
+    background: rgba(255,255,255,0.05); border: 1.5px solid var(--bg-line);
+    border-radius: 12px; padding: 9px 8px; color: var(--bg-text);
+    font-family: var(--bg-font-d); font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .cos-btn.sel { border-color: var(--bg-accent); background: rgba(255,102,0,0.18); }
+  .cos-btn small { display: block; font-size: 10px; margin-top: 2px; color: var(--bg-accent2); }
+  .cos-btn.sel small { color: var(--bg-good); }
+  .cos-aviso { font-size: 12px; color: var(--bg-accent2); min-height: 16px; margin-bottom: 6px; font-weight: 700; }
+</style>
 </head>
 <body>
 <script src="kit/bg-kit.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-//  DOODLE SALTO — AltoVicio
-//  Plataformas: normal · móvil · frágil · de un uso · con resorte
-//  Jetpack y hélice · monstruos (pisalos o dispará hacia arriba)
-//  El fondo pasa de cuaderno de día → atardecer → noche → espacio
+//  G4 · DOODLE JUMP HD — AltoVicio
+//  Personaje ilustrado con squash & stretch, plataformas con pasto/resortes/propulsores,
+//  cielo dinámico que sube hasta el espacio y cosméticos por bg-buy.
 // ═══════════════════════════════════════════════════════════════════════════
 const { util: U, draw: D, fx: FX, sfx: SFX } = BG;
-const W = 400, H = 640, GRAV = 1500, JUMP = -760, SPRING = -1250, PLW = 64, PLH = 14;
-const THEMES = [
-  { at: 0, bg: ['#fdf6e3', '#f3ead0'], line: 'rgba(80,140,220,.18)', ink: '#2b2b40' },
-  { at: 3000, bg: ['#ffd7a8', '#ff9e7a'], line: 'rgba(160,60,60,.15)', ink: '#3a1f2a' },
-  { at: 7000, bg: ['#22264d', '#0f1230'], line: 'rgba(120,140,255,.15)', ink: '#e8e8ff' },
-  { at: 12000, bg: ['#0a0018', '#000000'], line: 'rgba(200,100,255,.12)', ink: '#ffffff' },
-];
+const W = 440, H = 720;
+
+const CATALOGO_DJ = {
+  personaje: [
+    { id: 'dj_astro',  nombre: 'Astro Saltarín', precio: 0,   c1: '#38bdf8', c2: '#0284c7', visor: '#0f172a', ear: '#ffb800' },
+    { id: 'dj_slime',  nombre: 'Gelatina Neón',  precio: 90,  c1: '#34d399', c2: '#059669', visor: '#064e3b', ear: '#a7f3d0' },
+    { id: 'dj_fuego',  nombre: 'Espíritu Solar', precio: 160, c1: '#ff6600', c2: '#e11d48', visor: '#1e1b4b', ear: '#fde047' },
+    { id: 'dj_mecha',  nombre: 'Mecha Dorado',   precio: 240, c1: '#fde047', c2: '#b45309', visor: '#0f172a', ear: '#00b4ff' }
+  ],
+  mundo: [
+    { id: 'wm_cielo',  nombre: 'Cielo a Espacio', precio: 0,   low: '#1e3a5f', mid: '#172554', high: '#090d1a' },
+    { id: 'wm_aurora', nombre: 'Aurora Boreal',   precio: 120, low: '#064e3b', mid: '#1e1b4b', high: '#0f0722' },
+    { id: 'wm_ocaso',  nombre: 'Ocaso Carmesí',   precio: 180, low: '#7c2d12', mid: '#4c1d95', high: '#090a14' }
+  ]
+};
+const DEF_COSM = { personaje: 'dj_astro', mundo: 'wm_cielo' };
+let cosmEquip = Object.assign({}, DEF_COSM, BG.load('cosm', {}));
+let portalCoins = 0, portalItems = [], portalConectado = false, compraPendiente = null;
 
 BG.init({
-  post: { bloom: .1, vignette: .2 },
-  id: 'doodle', title: 'DOODLE SALTO', icon: '🐸', accent: '#39d353', accent2: '#ffd400',
-  subtitle: 'Saltá de plataforma en plataforma lo más alto que puedas.',
-  hud: [{ id: 'score', label: 'Altura' }, { id: 'best', label: 'Récord', color: '#2ef2ff' }],
-  help: '<kbd>←</kbd><kbd>→</kbd> o <kbd>A</kbd><kbd>D</kbd> moverte · <kbd>Espacio</kbd>/<kbd>↑</kbd> disparar · <kbd>P</kbd> pausa',
-  helpTouch: 'Tocá a la izquierda o derecha para moverte · tocá ● para disparar.',
-  touch: { dpad: 'h', buttons: [{ action: 'action', label: '●' }] },
-  onRestart: () => start(), onMenu: () => showMenu(),
+  id: 'doodle',
+  title: 'DOODLE JUMP',
+  icon: '🚀',
+  accent: '#38bdf8',
+  accent2: '#ffb800',
+  music: true,
+  subtitle: 'Saltá entre plataformas flotantes, agarrá resortes y propulsores hasta el espacio.',
+  hud: [
+    { id: 'score', label: 'Altura', color: '#38bdf8' },
+    { id: 'best',  label: 'Récord', color: '#ffb800' }
+  ],
+  help: '<kbd>←</kbd><kbd>→</kbd> o <kbd>A</kbd><kbd>D</kbd> para moverte en el aire · cruzás de un borde al otro',
+  helpTouch: 'Usá las flechas táctiles o arrastrá el dedo para guiar el salto.',
+  touch: { dpad: 'h', buttons: [] },
+  onRestart: () => start(),
+  onMenu: () => showMenu()
 });
+
 const view = BG.canvas(W, H);
 const ctx = view.ctx;
 
-let pl, plats, monsters, shots, items, camY, maxH, state = 'menu', t = 0, genY, touchDir = 0, deadT = 0;
+const shopBtn = U.el('button', { id: 'dj-shop-btn' }, 'Personalizar');
+shopBtn.addEventListener('click', () => abrirTiendaDJ());
+BG.stage.appendChild(shopBtn);
 
-function theme() { let th = THEMES[0]; for (const x of THEMES) if (maxH >= x.at) th = x; return th; }
-function makePlat(y) {
-  const h = maxH;
-  const r = Math.random();
-  let type = 'normal';
-  if (h > 600 && r < Math.min(.28, h / 12000)) type = 'move';
-  else if (h > 1200 && r < .38 + Math.min(.12, h / 30000)) type = 'break';
-  else if (h > 2500 && r < .48) type = 'once';
-  const p = { x: U.rand(6, W - PLW - 6), y, type, vx: type === 'move' ? U.pick([-1, 1]) * U.rand(50, 90 + Math.min(80, h / 100)) : 0, broken: false, used: false, fall: 0 };
-  if (type !== 'break' && Math.random() < .08) p.spring = { x: U.rand(8, PLW - 22), comp: 0 };
-  else if (type === 'normal' && h > 400 && Math.random() < .025) items.push({ type: U.chance(.5) ? 'jet' : 'heli', x: p.x + PLW / 2, y: y - 18, plat: p });
-  return p;
-}
-function genUpTo(top) {
-  while (genY > top) {
-    const gap = U.clamp(52 + maxH / 90, 52, 150) * U.rand(.75, 1.15);
-    genY -= gap;
-    const p = makePlat(genY);
-    plats.push(p);
-    // las frágiles no cuentan: garantizar que siempre haya una plataforma real alcanzable
-    if (p.type === 'break') { genY += gap * .45; plats.push({ ...makePlat(genY), type: 'normal', vx: 0, spring: null }); }
-    if (maxH > 1500 && Math.random() < Math.min(.06, maxH / 60000)) monsters.push({ x: U.rand(30, W - 30), y: genY - 70, vx: U.rand(-40, 40), t: U.rand(6), alive: true, kind: U.pick(['blob', 'eye', 'bat']) });
+function itemCat(catKey, id) { return CATALOGO_DJ[catKey].find(x => x.id === id); }
+function loTengo(catKey, id) { const it = itemCat(catKey, id); return !!it && (it.precio === 0 || portalItems.includes(id)); }
+
+window.addEventListener('message', e => {
+  if (e.source !== window.parent) return;
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+  if (d.type === 'bg-hello-ack') {
+    portalConectado = true;
+    portalCoins = Number(d.coins) || 0;
+    portalItems = Array.isArray(d.items) ? d.items.map(String) : [];
+    for (const k of Object.keys(DEF_COSM)) if (!loTengo(k, cosmEquip[k])) cosmEquip[k] = DEF_COSM[k];
+  } else if (d.type === 'bg-buy-result') {
+    portalCoins = Number(d.coins) || portalCoins;
+    if (Array.isArray(d.items)) portalItems = d.items.map(String);
+    const pend = compraPendiente;
+    compraPendiente = null;
+    if (d.ok && pend && pend.id === d.item) {
+      cosmEquip[pend.catKey] = pend.id;
+      BG.save('cosm', cosmEquip);
+      SFX.play('power');
+      abrirTiendaDJ();
+    } else if (!d.ok) {
+      SFX.play('error');
+      const av = document.getElementById('dj-cos-aviso');
+      if (av) av.textContent = d.error || 'No se pudo completar la compra';
+    }
   }
+});
+
+function abrirTiendaDJ() {
+  const estabaJugando = (state === 'play' && !BG.paused);
+  if (estabaJugando) BG.paused = true;
+
+  const armar = (titulo, catKey) => {
+    const btns = CATALOGO_DJ[catKey].map(it => {
+      const owned = loTengo(catKey, it.id);
+      const sel = cosmEquip[catKey] === it.id;
+      const lbl = sel ? '✓ Equipado' : (owned ? 'Equipar' : `${it.precio} VicioCoins`);
+      return `<button class="cos-btn ${sel ? 'sel' : ''}" data-cat="${catKey}" data-id="${it.id}">
+        ${U.esc(it.nombre)}<small>${U.esc(lbl)}</small>
+      </button>`;
+    }).join('');
+    return `<div class="bg-label">${U.esc(titulo)}</div><div class="cos-grid">${btns}</div>`;
+  };
+
+  BG.ui.show({
+    title: 'PERSONALIZAR DOODLE',
+    sub: 'Desbloqueá personajes y cielos con tus VicioCoins.',
+    html: `
+      <div style="font-size:12px;color:var(--bg-muted);margin-bottom:4px">Tus VicioCoins: <b style="color:var(--bg-accent2)">${U.fmt(portalCoins)}</b></div>
+      <div class="cos-aviso" id="dj-cos-aviso">${portalConectado ? '' : 'Abrí el juego desde AltoVicio para usar tus VicioCoins.'}</div>
+      ${armar('Personaje', 'personaje')}
+      ${armar('Cielo y Atmósfera', 'mundo')}
+    `,
+    buttons: [{
+      label: estabaJugando ? '▶ CONTINUAR' : '← VOLVER AL MENÚ',
+      primary: true,
+      onClick: () => { if (estabaJugando) { BG.paused = false; BG.ui.hide(); } else showMenu(); }
+    }],
+    onShow: card => {
+      card.querySelectorAll('.cos-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const catKey = b.dataset.cat, id = b.dataset.id;
+          const it = itemCat(catKey, id);
+          if (!it) return;
+          if (loTengo(catKey, id)) {
+            cosmEquip[catKey] = id;
+            BG.save('cosm', cosmEquip);
+            SFX.play('select');
+            abrirTiendaDJ();
+            return;
+          }
+          const av = card.querySelector('#dj-cos-aviso');
+          if (!portalConectado) { if (av) av.textContent = 'Conectate desde AltoVicio para comprar.'; return; }
+          if (portalCoins < it.precio) { if (av) av.textContent = 'No tenés suficientes VicioCoins.'; SFX.play('error'); return; }
+          if (av) av.textContent = 'Comprando…';
+          compraPendiente = { catKey, id };
+          BG.portal.send('bg-buy', { item: id, price: it.precio });
+        });
+      });
+    }
+  });
 }
+
+// ── Estado y Físicas ──────────────────────────────────────────────────────
+let player, plats = [], clouds = [], stars = D.stars(55, W, H, 11);
+let score = 0, state = 'menu', t = 0, pointerX = null;
+
+function makePlat(y, forceNormal) {
+  const diff = Math.min(1, score / 8000);
+  const w = U.rand(72, 92) - diff * 12;
+  const x = U.rand(14, W - w - 14);
+  let type = 'normal';
+  if (!forceNormal) {
+    const r = Math.random();
+    if (r < 0.16 + diff * 0.18) type = 'moving';
+    else if (r < 0.30 + diff * 0.15) type = 'fragile';
+  }
+  let item = null;
+  if (type !== 'fragile') {
+    const ir = Math.random();
+    if (ir < 0.12) item = 'spring';
+    else if (ir < 0.155 && score > 400) item = 'jetpack';
+    else if (ir < 0.24) item = 'coin';
+  }
+  return { x, y, w, h: 18, type, vx: type === 'moving' ? (U.chance(0.5) ? 95 : -95) * (1 + diff * 0.6) : 0, item, broken: false, by: 0, springAnim: 0 };
+}
+
 function start() {
-  pl = { x: W / 2, y: H - 100, vx: 0, vy: JUMP, face: 1, jet: 0, heli: 0, squash: 0, shootT: 0, dead: false };
-  plats = [{ x: W / 2 - PLW / 2, y: H - 40, type: 'normal', vx: 0 }];
-  monsters = []; shots = []; items = []; camY = 0; maxH = 0; genY = H - 40; deadT = 0;
-  genUpTo(-H);
-  BG.hud.setAll({ score: 0, best: BG.getBest() || 0 });
-  FX.clear(); state = 'play'; BG.start();
+  score = 0;
+  pointerX = null;
+  player = { x: W / 2, y: H - 140, vx: 0, vy: -640, r: 22, dir: 1, squash: 1, jetT: 0 };
+  plats = [{ x: W / 2 - 50, y: H - 70, w: 100, h: 18, type: 'normal', vx: 0, item: null, broken: false, by: 0, springAnim: 0 }];
+  for (let y = H - 155; y > -60; y -= U.rand(58, 82)) {
+    plats.push(makePlat(y, y > H - 260));
+  }
+  clouds = Array.from({ length: 7 }, (_, i) => ({ x: U.rand(20, W - 20), y: i * 110, r: U.rand(26, 48), sp: U.rand(8, 22) }));
+  BG.hud.set('score', 0);
+  BG.hud.set('best', BG.getBest() || 0);
+  FX.clear();
+  state = 'play';
+  BG.start();
+  if (!BG.music.playing) BG.music.play(SONG);
 }
+
 function showMenu() {
-  state = 'menu'; BG.stop();
-  if (!plats) { start(); BG.stop(); state = 'menu'; }
-  BG.ui.menu({ buttons: [{ label: '▶ JUGAR', primary: true, onClick: start }] });
+  state = 'menu';
+  BG.stop();
+  BG.music.stop();
+  if (!player) start(), state = 'menu', BG.stop(), BG.music.stop();
+  BG.ui.menu({
+    buttons: [{ label: '▶ JUGAR AHORA', primary: true, onClick: start }]
+  });
 }
-function die(reason) {
-  if (pl.dead) return;
-  pl.dead = true; state = 'dead'; deadT = 0; BG.stop();
-  SFX.play(reason === 'monster' ? 'hurt' : 'lose');
-  if (reason === 'monster') { pl.vy = -300; FX.shake(6, .3); }
-  const score = Math.floor(maxH / 10);
-  const r = BG.submitScore(score);
-  setTimeout(() => BG.ui.gameOver({
-    icon: reason === 'monster' ? '👾' : '🐸', title: reason === 'monster' ? '¡TE ATRAPARON!' : '¡TE CAÍSTE!', score, scoreLabel: 'ALTURA',
-    isRecord: r.isRecord || r.first, recordText: r.first ? '★ ¡PRIMER RÉCORD! ★' : null,
-    stats: [{ label: 'Récord', value: U.fmt(BG.getBest() || score) }], onRetry: start, onMenu: showMenu,
-  }), 1100);
-}
-function shoot() {
-  if (pl.dead || pl.shootT > 0) return;
-  pl.shootT = .22;
-  shots.push({ x: pl.x, y: pl.y - 26, vy: -900 });
-  SFX.play('shoot');
-}
-BG.input.on('action', () => state === 'play' && shoot()).on('up', () => state === 'play' && shoot());
+
+view.canvas.addEventListener('pointermove', e => {
+  if (e.pointerType === 'mouse' || e.buttons) pointerX = view.toLocal(e.clientX, e.clientY).x;
+});
+view.canvas.addEventListener('pointerdown', e => {
+  pointerX = view.toLocal(e.clientX, e.clientY).x;
+});
 
 function update(dt) {
   t += dt;
-  if (state === 'menu') return;
-  const I = BG.input;
-  // movimiento horizontal (con inercia suave) y aparición del otro lado
-  const ax = touchDir || I.axisX();
-  if (!pl.dead) { if (ax) pl.face = ax; pl.vx = U.lerp(pl.vx, ax * 340, Math.min(1, dt * 10)); }
-  pl.x += pl.vx * dt;
-  if (pl.x < -20) pl.x = W + 20; if (pl.x > W + 20) pl.x = -20;
-  // vuelo
-  if (pl.jet > 0) { pl.jet -= dt; pl.vy = -950; if (Math.random() < .9) FX.burst(pl.x - pl.face * 10, pl.y + 20, { n: 2, color: ['#ff9a1f', '#ffd400', '#888'], speed: 120, angle: Math.PI / 2, spread: .4, life: .4, size: 4 }); if (pl.jet <= 0) pl.vy = -400; }
-  else if (pl.heli > 0) { pl.heli -= dt; pl.vy = -620; if (pl.heli <= 0) pl.vy = -300; }
-  else pl.vy += GRAV * dt;
-  const prevY = pl.y;
-  pl.y += pl.vy * dt;
-  pl.squash = Math.max(0, pl.squash - dt * 6); pl.shootT = Math.max(0, pl.shootT - dt);
-  // aterrizaje en plataformas (solo cayendo)
-  if (!pl.dead && pl.vy > 0 && !pl.jet && !pl.heli) {
+  if (state !== 'play') return;
+
+  // Bot inteligente en modo vista previa (?preview=1)
+  if (BG.preview) {
+    let target = plats[0];
+    let bestScore = Infinity;
     for (const p of plats) {
-      if (p.broken || p.used && p.type === 'once') continue;
-      const feetPrev = prevY + 22, feet = pl.y + 22;
-      if (feetPrev <= p.y + 2 && feet >= p.y && pl.x + 14 > p.x && pl.x - 14 < p.x + PLW) {
-        if (p.type === 'break') { p.broken = true; SFX.play('flip'); FX.burst(p.x + PLW / 2, p.y, { n: 10, color: ['#8b5a2b', '#c08040'], speed: 120, life: .5, gravity: 600, shape: 'square' }); continue; }
-        pl.y = p.y - 22;
-        if (p.spring && pl.x > p.x + p.spring.x - 6 && pl.x < p.x + p.spring.x + 20) { pl.vy = SPRING; p.spring.comp = 1; SFX.play('jump'); SFX.tone({ f: 200, f2: 900, dur: .3, type: 'sine', vol: .2 }); }
-        else { pl.vy = JUMP; SFX.tone({ f: 320, f2: 640, dur: .1, type: 'square', vol: .09 }); }
-        pl.squash = 1;
-        if (p.type === 'once') { p.used = true; FX.burst(p.x + PLW / 2, p.y, { n: 14, color: ['#fff', '#cfe8ff'], speed: 110, life: .4 }); }
-        break;
+      if (p.broken || p.y < player.y - 170 || p.y > H) continue;
+      const d = Math.abs(p.y - (player.y + 40)) + Math.abs((p.x + p.w / 2) - player.x) * 0.4;
+      if (d < bestScore) { bestScore = d; target = p; }
+    }
+    if (target) {
+      const tx = target.x + target.w / 2;
+      player.vx = U.clamp((tx - player.x) * 6, -340, 340);
+      if (Math.abs(player.vx) > 10) player.dir = player.vx > 0 ? 1 : -1;
+    }
+  } else {
+    const ax = BG.input.axisX();
+    if (ax) {
+      pointerX = null;
+      player.vx = U.lerp(player.vx, ax * 360, dt * 14);
+      player.dir = ax;
+    } else if (pointerX != null) {
+      const diff = pointerX - player.x;
+      player.vx = U.clamp(diff * 8, -380, 380);
+      if (Math.abs(diff) > 6) player.dir = diff > 0 ? 1 : -1;
+    } else {
+      player.vx *= Math.pow(0.08, dt);
+    }
+  }
+
+  player.squash = U.lerp(player.squash, 1, dt * 10);
+
+  if (player.jetT > 0) {
+    player.jetT -= dt;
+    player.vy = -880;
+    FX.burst(player.x, player.y + 22, { n: 2, color: ['#ff6600', '#fde047', '#38bdf8'], speed: 120, life: 0.25 });
+  } else {
+    player.vy += 1350 * dt;
+  }
+
+  const prevY = player.y;
+  player.x += player.vx * dt;
+  player.y += player.vy * dt;
+
+  // Wrap horizontal suave
+  if (player.x < -10) player.x = W + 10;
+  if (player.x > W + 10) player.x = -10;
+
+  // Plataformas móviles y colisión al caer
+  for (const p of plats) {
+    if (p.type === 'moving') {
+      p.x += p.vx * dt;
+      if (p.x < 10) { p.x = 10; p.vx *= -1; }
+      if (p.x + p.w > W - 10) { p.x = W - 10 - p.w; p.vx *= -1; }
+    }
+    if (p.broken) p.by += 420 * dt;
+    if (p.springAnim > 0) p.springAnim = Math.max(0, p.springAnim - dt * 4);
+
+    // Recoger moneda o jetpack en el aire
+    if (p.item === 'coin' && Math.hypot(player.x - (p.x + p.w / 2), player.y - (p.y - 16)) < 32) {
+      p.item = null;
+      score += 50;
+      BG.hud.set('score', Math.floor(score), true);
+      SFX.play('coin');
+      FX.burst(p.x + p.w / 2, p.y - 16, { n: 12, color: ['#fde047', '#fff'], speed: 150, life: 0.4 });
+      FX.text(p.x + p.w / 2, p.y - 26, '+50', { color: '#fde047', size: 15 });
+    } else if (p.item === 'jetpack' && Math.hypot(player.x - (p.x + p.w / 2), player.y - (p.y - 18)) < 34) {
+      p.item = null;
+      player.jetT = 1.45;
+      SFX.play('power');
+      BG.ui.toast('¡PROPULSOR ACTIVADO!', '#ff6600');
+    }
+
+    // Colisión solo cuando cae
+    if (player.vy > 0 && !p.broken) {
+      const footPrev = prevY + player.r;
+      const footNow  = player.y + player.r;
+      if (footPrev <= p.y + 10 && footNow >= p.y && player.x + 14 > p.x && player.x - 14 < p.x + p.w) {
+        if (p.type === 'fragile') {
+          p.broken = true;
+          SFX.play('hit');
+          FX.burst(p.x + p.w / 2, p.y, { n: 10, color: ['#d97706', '#fde047'], speed: 140, life: 0.35 });
+        } else {
+          player.y = p.y - player.r;
+          const hitSpring = p.item === 'spring' && Math.abs(player.x - (p.x + p.w / 2)) < 26;
+          player.vy = hitSpring ? -980 : -650;
+          player.squash = hitSpring ? 1.45 : 1.28;
+          if (hitSpring) {
+            p.springAnim = 1;
+            SFX.play('power');
+            FX.burst(p.x + p.w / 2, p.y, { n: 16, color: ['#34d399', '#38bdf8', '#fff'], speed: 180, life: 0.45 });
+          } else {
+            SFX.play('jump');
+            FX.burst(player.x, p.y, { n: 7, color: ['#fff', '#38bdf8'], speed: 90, life: 0.25 });
+          }
+        }
       }
     }
   }
-  // plataformas que se mueven / caen
-  for (const p of plats) {
-    if (p.type === 'move') { p.x += p.vx * dt; if (p.x < 4 || p.x > W - PLW - 4) p.vx *= -1; }
-    if (p.broken) { p.fall += dt; p.y += 500 * dt * p.fall * 3; }
-    if (p.spring) p.spring.comp = Math.max(0, p.spring.comp - dt * 4);
-  }
-  // ítems
-  for (const it of items) { if (it.plat && it.plat.type === 'move') it.x = it.plat.x + PLW / 2; if (!it.got && !pl.dead && Math.abs(it.x - pl.x) < 22 && Math.abs(it.y - pl.y) < 30) { it.got = true; if (it.type === 'jet') pl.jet = 2.6; else pl.heli = 2.2; SFX.play('power'); BG.ui.toast(it.type === 'jet' ? '¡JETPACK!' : '¡HÉLICE!', '#ffd400'); } }
-  // monstruos
-  for (const m of monsters) {
-    if (!m.alive) continue;
-    m.t += dt; m.x += m.vx * dt; if (m.x < 24 || m.x > W - 24) m.vx *= -1;
-    const my = m.y + Math.sin(m.t * 3) * 8;
-    if (!pl.dead && Math.abs(m.x - pl.x) < 30 && Math.abs(my - pl.y) < 30) {
-      if (pl.jet > 0 || pl.heli > 0) { m.alive = false; FX.burst(m.x, my, { n: 20, color: ['#c04dff', '#fff'], speed: 200 }); SFX.play('hit'); }
-      else if (pl.vy > 0 && pl.y < my - 6) { m.alive = false; pl.vy = JUMP * 1.1; SFX.play('pop'); FX.burst(m.x, my, { n: 20, color: ['#c04dff', '#39ff88', '#fff'], speed: 200 }); maxH += 100; }
-      else die('monster');
+
+  // Cámara que acompaña hacia arriba
+  const camLimit = H * 0.44;
+  if (player.y < camLimit) {
+    const dy = camLimit - player.y;
+    player.y = camLimit;
+    score += dy * 0.45;
+    BG.hud.set('score', Math.floor(score));
+    for (const p of plats) p.y += dy;
+    for (const c of clouds) {
+      c.y += dy * 0.35;
+      if (c.y > H + 60) { c.y = -50; c.x = U.rand(20, W - 20); }
     }
-    for (const s of shots) if (m.alive && Math.abs(s.x - m.x) < 24 && Math.abs(s.y - my) < 24) { m.alive = false; s.dead = true; SFX.play('hit'); FX.burst(m.x, my, { n: 18, color: ['#c04dff', '#fff'], speed: 200 }); FX.text(m.x, my, '+50', { color: '#c04dff' }); maxH += 50; }
   }
-  for (const s of shots) s.y += s.vy * dt;
-  shots = shots.filter(s => !s.dead && s.y > camY - 40);
-  // cámara: sube con el jugador (nunca baja)
-  const target = pl.y - H * .42;
-  if (target < camY) camY = target;
-  const h = Math.max(maxH, Math.floor(-(camY) + 0));
-  if (h > maxH) maxH = h;
-  BG.hud.set('score', Math.floor(maxH / 10));
-  genUpTo(camY - H);
-  plats = plats.filter(p => p.y < camY + H + 60);
-  monsters = monsters.filter(m => m.y < camY + H + 80);
-  items = items.filter(i => !i.got && i.y < camY + H + 60);
-  // caída
-  if (!pl.dead && pl.y > camY + H + 40) die('fall');
-  if (pl.dead) { deadT += dt; if (pl.y < camY + H * 2) camY = U.lerp(camY, pl.y - H * .5, dt * 2); }
+
+  // Generar nuevas plataformas arriba
+  plats = plats.filter(p => p.y < H + 60);
+  let highestY = plats.reduce((min, p) => Math.min(min, p.y), H);
+  while (highestY > -40) {
+    const stepY = U.rand(58, Math.min(108, 72 + score * 0.004));
+    highestY -= stepY;
+    // Evitar dos frágiles seguidas
+    const lastWasFragile = plats[plats.length - 1] && plats[plats.length - 1].type === 'fragile';
+    plats.push(makePlat(highestY, lastWasFragile));
+  }
+
+  // Caída fuera de la pantalla
+  if (player.y - player.r > H + 40) {
+    if (BG.preview) { start(); return; }
+    state = 'over';
+    BG.stop();
+    BG.music.stop();
+    SFX.play('lose');
+    const finalScore = Math.floor(score);
+    const r = BG.submitScore(finalScore);
+    BG.ui.gameOver({
+      title: '¡CAÍSTE AL VACÍO!',
+      score: finalScore,
+      scoreLabel: 'METROS DE ALTURA',
+      isRecord: r.isRecord || r.first,
+      stats: [{ label: 'Récord', value: U.fmt(BG.getBest() || finalScore) }],
+      onRetry: start,
+      onMenu: showMenu
+    });
+  }
 }
 
-// ── Dibujo ────────────────────────────────────────────────────────────────
-function drawPlayer() {
-  const x = pl.x, y = pl.y - camY;
-  ctx.save(); ctx.translate(x, y); ctx.scale(pl.face, 1);
-  const sq = 1 + pl.squash * .2; ctx.scale(1 / sq, sq * (pl.squash ? .92 : 1));
-  const th = theme();
-  // patas
-  ctx.strokeStyle = th.ink; ctx.lineWidth = 3; ctx.lineCap = 'round';
-  const leg = pl.vy < 0 ? 4 : 8;
-  for (const lx of [-8, -1, 6]) { ctx.beginPath(); ctx.moveTo(lx, 12); ctx.lineTo(lx - 2, 12 + leg); ctx.stroke(); }
-  // cuerpo
-  ctx.fillStyle = '#9be15d'; ctx.strokeStyle = th.ink; ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.moveTo(-15, 14); ctx.quadraticCurveTo(-18, -18, 2, -20); ctx.quadraticCurveTo(18, -18, 14, 4); ctx.lineTo(14, 14); ctx.closePath(); ctx.fill(); ctx.stroke();
-  // franjas
-  ctx.strokeStyle = 'rgba(40,120,40,.6)'; ctx.lineWidth = 2;
-  for (const sy of [4, 9]) { ctx.beginPath(); ctx.moveTo(-14, sy); ctx.lineTo(14, sy); ctx.stroke(); }
-  // trompa / cañón
-  ctx.fillStyle = '#9be15d'; ctx.strokeStyle = th.ink; ctx.lineWidth = 2.5;
-  if (pl.shootT > 0) { ctx.beginPath(); ctx.rect(-3, -34, 8, 16); ctx.fill(); ctx.stroke(); }
-  else { ctx.beginPath(); ctx.rect(12, -10, 14, 8); ctx.fill(); ctx.stroke(); }
-  // ojo
-  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(4, -9, 4.5, 0, 7); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(5.5, -9, 2, 0, 7); ctx.fill();
-  // accesorios de vuelo
-  if (pl.jet > 0) { ctx.fillStyle = '#9aa0b5'; ctx.fillRect(-24, -8, 9, 22); ctx.strokeRect(-24, -8, 9, 22); }
-  if (pl.heli > 0) { ctx.strokeStyle = th.ink; ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(0, -28); ctx.stroke(); const w = Math.cos(t * 40) * 18; ctx.beginPath(); ctx.moveTo(-w, -29); ctx.lineTo(w, -29); ctx.stroke(); }
-  if (pl.dead && state === 'dead') { ctx.strokeStyle = '#ff3d6e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(1, -12); ctx.lineTo(8, -6); ctx.moveTo(8, -12); ctx.lineTo(1, -6); ctx.stroke(); }
-  ctx.restore();
+// ── Renderizado Vectorial Ilustrado ───────────────────────────────────────
+function mixHex(c1, c2, k) {
+  const p = c => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+  const a = p(c1), b = p(c2);
+  return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * U.clamp(k, 0, 1))).join(',')})`;
 }
-function drawPlat(p) {
-  const y = p.y - camY; if (y < -20 || y > H + 20) return;
-  const col = { normal: ['#7ed957', '#3f9c2a'], move: ['#5ec8ff', '#2a7fc0'], break: ['#c08a4a', '#7a5226'], once: ['#ffffff', '#b9c8d8'] }[p.type];
-  ctx.save(); ctx.translate(p.x, y);
-  if (p.broken) { ctx.rotate(p.fall * 2); ctx.globalAlpha = Math.max(0, 1 - p.fall * 1.5); }
-  const g = ctx.createLinearGradient(0, 0, 0, PLH); g.addColorStop(0, col[0]); g.addColorStop(1, col[1]);
-  ctx.fillStyle = g; ctx.strokeStyle = theme().ink; ctx.lineWidth = 2;
-  D.rr(ctx, 0, 0, PLW, PLH, 7); ctx.fill(); ctx.stroke();
-  if (p.type === 'break') { ctx.beginPath(); ctx.moveTo(PLW * .35, 0); ctx.lineTo(PLW * .45, PLH * .6); ctx.lineTo(PLW * .4, PLH); ctx.moveTo(PLW * .65, 0); ctx.lineTo(PLW * .58, PLH); ctx.stroke(); }
-  if (p.spring) {
-    const c = p.spring.comp, sx = p.spring.x;
-    ctx.strokeStyle = '#888'; ctx.lineWidth = 2; ctx.beginPath();
-    const hgt = 14 - c * 6 + (c ? 0 : 0);
-    for (let i = 0; i <= 4; i++) { const yy = -i * hgt / 4; ctx.lineTo(sx + (i % 2 ? 14 : 0), yy); }
-    ctx.stroke(); ctx.fillStyle = '#ffd400'; ctx.fillRect(sx - 2, -hgt - 4, 18, 4);
+
+function dibujarPlataforma(p) {
+  const y = p.y + p.by;
+  ctx.save();
+  // Sombra
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  D.rr(ctx, p.x + 2, y + 4, p.w, p.h, 9);
+  ctx.fill();
+
+  if (p.type === 'normal') {
+    const g = ctx.createLinearGradient(p.x, y, p.x, y + p.h);
+    g.addColorStop(0, '#34d399'); g.addColorStop(1, '#059669');
+    ctx.fillStyle = g;
+    D.rr(ctx, p.x, y, p.w, p.h, 9);
+    ctx.fill();
+    // Brillo superior de pasto
+    ctx.fillStyle = 'rgba(255,255,255,0.32)';
+    D.rr(ctx, p.x + 6, y + 3, p.w - 12, 4, 2);
+    ctx.fill();
+  } else if (p.type === 'moving') {
+    const g = ctx.createLinearGradient(p.x, y, p.x, y + p.h);
+    g.addColorStop(0, '#38bdf8'); g.addColorStop(1, '#0284c7');
+    ctx.fillStyle = g;
+    D.rr(ctx, p.x, y, p.w, p.h, 9);
+    ctx.fill();
+    // Luces propulsoras laterales
+    D.glowCircle(ctx, p.x + 10, y + p.h / 2, 3.5, '#fde047', 8);
+    D.glowCircle(ctx, p.x + p.w - 10, y + p.h / 2, 3.5, '#fde047', 8);
+  } else if (p.type === 'fragile') {
+    const g = ctx.createLinearGradient(p.x, y, p.x, y + p.h);
+    g.addColorStop(0, '#fbbf24'); g.addColorStop(1, '#b45309');
+    ctx.fillStyle = g;
+    if (p.broken) {
+      D.rr(ctx, p.x - 6, y, p.w * 0.46, p.h, 6); ctx.fill();
+      D.rr(ctx, p.x + p.w * 0.54 + 6, y + 4, p.w * 0.46, p.h, 6); ctx.fill();
+    } else {
+      D.rr(ctx, p.x, y, p.w, p.h, 9); ctx.fill();
+      // Grieta central
+      ctx.strokeStyle = '#451a03'; ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(p.x + p.w / 2, y + 1);
+      ctx.lineTo(p.x + p.w / 2 - 4, y + 9);
+      ctx.lineTo(p.x + p.w / 2 + 3, y + p.h - 1);
+      ctx.stroke();
+    }
+  }
+
+  // Ítems sobre la plataforma
+  const cx = p.x + p.w / 2;
+  if (p.item === 'spring') {
+    const sh = 10 + p.springAnim * 10;
+    ctx.fillStyle = '#94a3b8';
+    D.rr(ctx, cx - 10, y - sh, 20, sh, 4); ctx.fill();
+    ctx.fillStyle = '#ff2a5f';
+    D.rr(ctx, cx - 12, y - sh - 5, 24, 6, 3); ctx.fill();
+  } else if (p.item === 'jetpack') {
+    const jy = y - 16 + Math.sin(t * 6) * 2;
+    ctx.fillStyle = '#ff6600';
+    D.rr(ctx, cx - 10, jy - 10, 20, 22, 6); ctx.fill();
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath(); ctx.arc(cx, jy, 4.5, 0, Math.PI * 2); ctx.fill();
+  } else if (p.item === 'coin') {
+    const cy = y - 16 + Math.sin(t * 5 + p.x) * 2.5;
+    D.glowCircle(ctx, cx, cy, 9, '#ffb800', 10);
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 }
-function drawMonster(m) {
-  const y = m.y - camY + Math.sin(m.t * 3) * 8; if (y < -40 || y > H + 40) return;
-  ctx.save(); ctx.translate(m.x, y);
-  const wob = Math.sin(m.t * 8) * 3;
-  if (m.kind === 'blob') { ctx.fillStyle = '#c04dff'; ctx.beginPath(); ctx.ellipse(0, 0, 26 + wob, 20 - wob * .5, 0, 0, 7); ctx.fill(); }
-  else if (m.kind === 'eye') { ctx.fillStyle = '#ff3d6e'; ctx.beginPath(); ctx.arc(0, 0, 22, 0, 7); ctx.fill(); for (let i = 0; i < 8; i++) { const a = i / 8 * 7 + m.t; ctx.strokeStyle = '#ff3d6e'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 20, Math.sin(a) * 20); ctx.lineTo(Math.cos(a) * 30, Math.sin(a) * 30); ctx.stroke(); } }
-  else { ctx.fillStyle = '#4a4a6a'; ctx.beginPath(); ctx.ellipse(0, 0, 14, 12, 0, 0, 7); ctx.fill(); ctx.beginPath(); ctx.moveTo(-10, -2); ctx.lineTo(-34, -12 + wob * 3); ctx.lineTo(-26, 6); ctx.closePath(); ctx.moveTo(10, -2); ctx.lineTo(34, -12 + wob * 3); ctx.lineTo(26, 6); ctx.closePath(); ctx.fill(); }
-  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-7, -4, 6, 0, 7); ctx.arc(7, -4, 6, 0, 7); ctx.fill();
-  ctx.fillStyle = '#111'; const lx = U.clamp((pl.x - m.x) / 60, -2, 2); ctx.beginPath(); ctx.arc(-7 + lx, -3, 2.5, 0, 7); ctx.arc(7 + lx, -3, 2.5, 0, 7); ctx.fill();
-  ctx.strokeStyle = '#111'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 6, 6, .2, Math.PI - .2); ctx.stroke();
-  ctx.restore();
-}
-function render() {
-  const th = theme();
-  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, th.bg[0]); g.addColorStop(1, th.bg[1]);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  // hoja cuadriculada que se desplaza con la cámara
-  ctx.strokeStyle = th.line; ctx.lineWidth = 1;
-  const off = ((-camY * .5) % 20 + 20) % 20;
+
+function dibujarPersonaje() {
+  if (!player) return;
+  const per = itemCat('personaje', cosmEquip.personaje) || CATALOGO_DJ.personaje[0];
+  ctx.save();
+  ctx.translate(player.x, player.y);
+
+  const sx = 1 / Math.sqrt(player.squash);
+  const sy = player.squash;
+  ctx.scale(sx, sy);
+
+  // Mochila propulsora si tiene jetpack activo
+  if (player.jetT > 0) {
+    ctx.fillStyle = '#ff6600';
+    D.rr(ctx, -player.dir * 22 - 6, -8, 12, 24, 5);
+    ctx.fill();
+  }
+
+  // Antenas / Orejas
+  ctx.fillStyle = per.ear;
   ctx.beginPath();
-  for (let x = 10; x < W; x += 20) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
-  for (let y = off; y < H; y += 20) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.arc(-11, -22, 5, 0, Math.PI * 2);
+  ctx.arc(11, -22, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cuerpo redondeado con gradiente
+  const g = ctx.createLinearGradient(-20, -22, 20, 22);
+  g.addColorStop(0, per.c1);
+  g.addColorStop(1, per.c2);
+  ctx.fillStyle = g;
+  D.rr(ctx, -21, -20, 42, 40, 19);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 2;
   ctx.stroke();
-  if (maxH >= 7000) for (let i = 0; i < 40; i++) { const sx = (i * 97) % W, sy = ((i * 61 - camY * .2) % H + H) % H; ctx.fillStyle = `rgba(255,255,255,${.3 + (i % 3) * .2})`; ctx.fillRect(sx, sy, 2, 2); }
-  if (!plats) return;
-  ctx.save(); FX.applyShake(ctx);
-  for (const p of plats) drawPlat(p);
-  for (const it of items) { const y = it.y - camY; D.text(ctx, it.type === 'jet' ? '🚀' : '🧢', it.x, y + Math.sin(t * 4) * 3, { size: 22, family: 'body' }); }
-  for (const m of monsters) if (m.alive) drawMonster(m);
-  for (const s of shots) { ctx.fillStyle = th.ink; ctx.beginPath(); ctx.arc(s.x, s.y - camY, 5, 0, 7); ctx.fill(); }
-  ctx.save(); ctx.translate(0, -camY); FX.draw(ctx); ctx.restore();
-  if (state !== 'menu') drawPlayer();
+
+  // Visor y ojos orientados hacia donde salta
+  const lookX = player.dir * 4;
+  ctx.fillStyle = per.visor;
+  D.rr(ctx, -14 + lookX, -10, 28, 14, 7);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(-5 + lookX, -3, 3.2, 0, Math.PI * 2);
+  ctx.arc(6 + lookX, -3, 3.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Patitas inferiores animadas según velocidad vertical
+  const legY = player.vy < 0 ? 22 : 18;
+  ctx.fillStyle = per.c2;
+  ctx.beginPath();
+  ctx.arc(-10, legY, 5, 0, Math.PI * 2);
+  ctx.arc(10, legY, 5, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.restore();
-  // marca del récord
-  const best = BG.getBest();
-  if (best && state === 'play') {
-    const ry = (-best * 10 + H * .42) - camY;   // altura del jugador cuando hizo el récord
-    if (ry > 0 && ry < H) { ctx.strokeStyle = 'rgba(255,61,110,.7)'; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.moveTo(0, ry); ctx.lineTo(W, ry); ctx.stroke(); ctx.setLineDash([]); D.text(ctx, 'RÉCORD', W - 40, ry - 8, { size: 9, color: '#ff3d6e' }); }
-  }
 }
 
-// ── Táctil: mitad izquierda / derecha de la pantalla ──────────────────────
-const tps = new Map();
-const recompute = () => { let d = 0; tps.forEach(v => d += v); touchDir = U.clamp(d, -1, 1); };
-view.canvas.addEventListener('pointerdown', e => { if (state !== 'play') return; const p = view.toLocal(e.clientX, e.clientY); tps.set(e.pointerId, p.x < W / 2 ? -1 : 1); recompute(); });
-view.canvas.addEventListener('pointermove', e => { if (!tps.has(e.pointerId)) return; const p = view.toLocal(e.clientX, e.clientY); tps.set(e.pointerId, p.x < W / 2 ? -1 : 1); recompute(); });
-['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => view.canvas.addEventListener(ev, e => { tps.delete(e.pointerId); recompute(); }));
+function render() {
+  const wm = itemCat('mundo', cosmEquip.mundo) || CATALOGO_DJ.mundo[0];
+  const altK = U.clamp(score / 6000, 0, 1);
+  const topCol = mixHex(wm.low, wm.high, altK);
+  const botCol = mixHex(wm.mid, wm.low, 1 - altK * 0.7);
 
-// ── Arranque ──────────────────────────────────────────────────────────────
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, topCol);
+  g.addColorStop(1, botCol);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // Estrellas visibles a medida que subís a la estratósfera
+  ctx.fillStyle = '#fff';
+  for (const s of stars) {
+    ctx.globalAlpha = (0.2 + altK * 0.65) * (0.5 + 0.5 * Math.sin(t * 2 + s.tw));
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.z * 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Nubes suaves en parallax
+  for (const c of clouds) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+    ctx.arc(c.x + c.r * 0.65, c.y + 4, c.r * 0.75, 0, Math.PI * 2);
+    ctx.arc(c.x - c.r * 0.6, c.y + 6, c.r * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.save();
+  FX.applyShake(ctx);
+  for (const p of plats) dibujarPlataforma(p);
+  dibujarPersonaje();
+  FX.draw(ctx);
+  ctx.restore();
+  FX.drawFlash(ctx, W, H);
+}
+
+const SONG = {
+  bpm: 134,
+  tracks: [
+    { type: 'triangle', vol: 0.24, notes: 'C5 . G4 . E5 . C5 . D5 . A4 . F5 . D5 . E5 . C5 . G5 . E5 . D5 . B4 . G4 . . .' },
+    { type: 'sine',     vol: 0.4,  notes: 'C3 . C3 . G2 . G2 . D3 . D3 . A2 . A2 . E3 . E3 . B2 . B2 . G2 . G2 . C3 . . .' }
+  ]
+};
+
+start();
 if (BG.thumb) {
-  start(); BG.stop(); state = 'thumb'; maxH = 3200;
-  camY = -300; pl.y = -300 + 330; pl.vy = -300; pl.face = 1;
-  plats = [{ x: 60, y: -300 + 520, type: 'normal' }, { x: 230, y: -300 + 440, type: 'move', vx: 0 }, { x: 120, y: -300 + 380, type: 'normal', spring: { x: 20, comp: 0 } }, { x: 280, y: -300 + 300, type: 'break' }, { x: 40, y: -300 + 220, type: 'once' }, { x: 200, y: -300 + 150, type: 'normal' }, { x: 300, y: -300 + 80, type: 'move', vx: 0 }];
-  monsters = [{ x: 310, y: -300 + 190, t: 0, alive: true, kind: 'blob' }]; items = [{ type: 'jet', x: 232, y: -300 + 130 }];
-  update = () => {};
-} else BG.ready.then(showMenu);
+  if (!BG.preview) update = () => {};
+} else {
+  state = 'menu';
+  BG.stop();
+  BG.music.stop();
+  BG.ready.then(showMenu);
+}
+
 BG.loop(dt => update(dt), render);
 </script>
 </body>
