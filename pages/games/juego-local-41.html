@@ -72,6 +72,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:n
   .pballs{grid-row:2;grid-column:1 / -1;gap:2.5px;min-height:11px;justify-content:flex-start}
   .pcard.right .pballs{justify-content:flex-start}
   .mb{width:10.5px;height:10.5px}
+  #toast{max-width:94%;font-size:12px;padding:6px 11px;border-radius:14px}
 }
 
 /* ── Escenario ───────────────────────────────────────── */
@@ -131,9 +132,10 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:n
 .rotbtn{padding:6px 10px;border-radius:11px;background:linear-gradient(180deg,#45dcfb,#139ccc);color:#fff;font-size:11.5px;font-weight:800;white-space:nowrap;flex-shrink:0}
 .rotclose{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.08);color:var(--mut);font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
-#toast{position:absolute;left:50%;top:9%;transform:translate(-50%,-10px);pointer-events:none;z-index:5;opacity:0;
-  background:rgba(12,9,30,.82);border:1.5px solid rgba(255,255,255,.15);backdrop-filter:blur(6px);padding:7px 18px;border-radius:999px;
-  font-size:15px;font-weight:800;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.45);transition:opacity .25s,transform .25s}
+#toast{position:absolute;left:50%;top:8%;transform:translate(-50%,-10px);pointer-events:none;z-index:5;opacity:0;
+  background:rgba(12,9,30,.88);border:1.5px solid rgba(255,255,255,.15);backdrop-filter:blur(6px);padding:7px 14px;border-radius:16px;
+  font-size:clamp(12px,3.2vw,15px);font-weight:800;max-width:min(92%,460px);width:max-content;white-space:normal;text-align:center;line-height:1.25;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);transition:opacity .25s,transform .25s}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #toast.good{border-color:var(--green)} #toast.bad{border-color:var(--red)} #toast.info{border-color:var(--cyan)}
 #waitTag{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);font-size:12px;font-weight:700;color:var(--mut);background:rgba(0,0,0,.4);padding:3px 12px;border-radius:999px;display:none;pointer-events:none}
@@ -226,17 +228,12 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:n
 </head>
 <body>
 <script src="kit/bg-bridge.js"></script>
-<script>BGBridge.init("pool");</script>
-<script>
-(function(){
-  try { if (window.parent && window.parent !== window && window.parent.firebase) { window.firebase = window.parent.firebase; } } catch(e){}
-})();
-</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
 (function(){
+  try { if (!window.firebase && window.parent && window.parent !== window && window.parent.firebase) window.firebase = window.parent.firebase; } catch(e){}
   if (!window.firebase || (window.firebase.apps && window.firebase.apps.length > 0)) return;
   try {
     window.firebase.initializeApp({
@@ -382,7 +379,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:n
       <button data-t="cue" class="on">🎱 Tacos</button><button data-t="table">🟩 Mesas</button><button data-t="balls">⚪ Bolas</button>
     </div>
     <div class="grid" id="shopGrid"></div>
-    <p style="margin-top:12px;font-size:12px;text-align:center">Ganá monedas jugando: cada victoria suma más según la dificultad. Los artículos son cosméticos: tu rival online ve tu taco.</p>
+    <p style="margin-top:12px;font-size:12px;text-align:center">Se compran con tus VicioCoins de AltoVicio (ganá partidas, misiones o el bonus diario). Tu rival online ve el taco que tengas equipado.</p>
   </div>
 </div>
 
@@ -902,39 +899,63 @@ const CATALOG = { cue: CUES, table: TABLES, balls: BALLSETS };
 const RAR_TXT = { comun:'Común', raro:'Raro', epico:'Épico', legendario:'Legendario' };
 const findItem = (type, id) => CATALOG[type].find(i => i.id === id) || CATALOG[type][0];
 
-// ── Perfil local (monedas, artículos, ajustes) ───────────────────────────────
+// ── Vista previa del catálogo (?preview=1) ──────────────────────────────────
+const URL_PARAMS = new URLSearchParams(location.search);
+const ES_PREVIEW = URL_PARAMS.has('preview') || URL_PARAMS.has('thumb');
+
+// ── Conexión con el portal (VicioCoins y cosméticos en usuario.items_juegos['game-055']) ──
+const Portal = {
+  enPortal: (() => { try { return !!(window.parent && window.parent !== window); } catch (e) { return true; } })(),
+  conectado: false, coins: 0, items: [], user: null, pendingBuy: null,
+  send(msg) { try { if (this.enPortal) window.parent.postMessage(msg, '*'); } catch (e) {} },
+};
+
+// ── Perfil local (ajustes, cosméticos equipados y migración única de tacos viejos) ──
 const Profile = {
   key: 'bg_pool_v2', d: null,
+  itemKey(t, id) { return t + '_' + id; },
   load() {
     try { this.d = JSON.parse(localStorage.getItem(this.key) || 'null'); } catch (e) { this.d = null; }
     if (!this.d || typeof this.d !== 'object') {
       let oldWins = 0; try { oldWins = +localStorage.getItem('bg_pool_wins') || 0; } catch (e) {}
-      this.d = { coins: 250 + oldWins * 20, owned: [], eq: {}, wins: oldWins, games: 0, sound: true, guide: true };
+      this.d = { eq: {}, wins: oldWins, games: 0, sound: true, guideLong: false, gifted: [] };
     }
     const d = this.d;
-    d.owned = Array.isArray(d.owned) ? d.owned : [];
+    d.gifted = Array.isArray(d.gifted) ? d.gifted : [];
+    // Migración única: los cosméticos que ya se habían comprado con la billetera vieja se regalan
+    if (Array.isArray(d.owned)) {
+      for (const raw of d.owned) {
+        const k = String(raw || '').replace(':', '_');
+        const [t, id] = k.split('_');
+        if (CATALOG[t]) {
+          const it = findItem(t, id);
+          if (it && it.price > 0 && !d.gifted.includes(k)) d.gifted.push(k);
+        }
+      }
+      delete d.owned;
+    }
+    if ('coins' in d) delete d.coins;
     d.eq = d.eq || {};
     for (const t of ['cue', 'table', 'balls']) {
       const free = CATALOG[t][0].id;
-      if (!d.owned.includes(t + ':' + free)) d.owned.push(t + ':' + free);
       if (!d.eq[t] || !CATALOG[t].some(i => i.id === d.eq[t])) d.eq[t] = free;
     }
     if (typeof d.sound !== 'boolean') d.sound = true;
     if (typeof d.guideLong !== 'boolean') d.guideLong = false;
-    d.coins = Math.max(0, Math.floor(+d.coins || 0));
     this.save();
   },
   save() { try { localStorage.setItem(this.key, JSON.stringify(this.d)); } catch (e) {} },
-  owns(t, id) { const it = findItem(t, id); return it.price === 0 || this.d.owned.includes(t + ':' + id); },
-  buy(t, id) {
-    const it = findItem(t, id);
-    if (this.owns(t, id)) return true;
-    if (this.d.coins < it.price) return false;
-    this.d.coins -= it.price; this.d.owned.push(t + ':' + id); this.d.eq[t] = id; this.save();
-    return true;
+  owns(t, id) {
+    const it = findItem(t, id), key = this.itemKey(t, id);
+    return it.price === 0 || Portal.items.includes(key) || Portal.items.includes(t + ':' + id) || (this.d.gifted && this.d.gifted.includes(key));
+  },
+  validateEquipped() {
+    for (const t of ['cue', 'table', 'balls']) {
+      if (!this.owns(t, this.d.eq[t])) this.d.eq[t] = CATALOG[t][0].id;
+    }
+    this.save();
   },
   equip(t, id) { if (this.owns(t, id)) { this.d.eq[t] = id; this.save(); } },
-  addCoins(n) { this.d.coins = Math.max(0, this.d.coins + Math.round(n)); this.save(); },
   cue() { return findItem('cue', this.d.eq.cue); },
   table() { return findItem('table', this.d.eq.table); },
   balls() { return findItem('balls', this.d.eq.balls); },
@@ -947,6 +968,7 @@ Profile.load();
 const Sfx = {
   ac: null, master: null, noiseBuf: null, budget: 0,
   init() {
+    if (ES_PREVIEW) return;
     if (this.ac) { if (this.ac.state === 'suspended') this.ac.resume(); return; }
     try {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
@@ -956,7 +978,7 @@ const Sfx = {
       this.noiseBuf = b;
     } catch (e) { this.ac = null; }
   },
-  ok() { return this.ac && Profile.d.sound && this.ac.state === 'running'; },
+  ok() { return !ES_PREVIEW && this.ac && Profile.d.sound && this.ac.state === 'running'; },
   tone(f, dur, vol, type, f2, delay) {
     const ac = this.ac, t = ac.currentTime + (delay || 0);
     const o = ac.createOscillator(), g = ac.createGain();
@@ -1441,6 +1463,7 @@ function beginTurn(fresh) {
   G.aim.power = 0; G.aim.sx = 0; G.aim.sy = 0;
   autoAim(); CPU.reset(); updateSpinUI(); updatePowerUI(); updateHUD();
   $('waitTag').style.display = 'none';
+  if (ES_PREVIEW) return;
   if (fresh) toast(G.turn === G.me ? '🎱 ¡Rompé! Ubicá la blanca y tirá' : `🎱 Rompe ${G.names[G.turn]}`, 'info', 2200);
   if (G.turn === G.me && !Profile.d.fineHintShown) {
     const tip = $('fineTip');
@@ -1562,6 +1585,7 @@ function announce(m) {
 function finishGame(winner, code, by) {
   G.phase = 'over'; G.winner = winner; G.endCode = code; G.endBy = by;
   updateHUD();
+  if (ES_PREVIEW) { setTimeout(() => startCPU(1 - G.breaker), 900); return; }
   if (G.mode === 'host') { quantize(); Net.pushState(); }
   setTimeout(() => showResult(winner === G.me, code, by), 1000);
 }
@@ -1719,7 +1743,7 @@ const CPU = {
   st: 'idle', t: 0, plan: null, from: null,
   reset() { this.st = 'idle'; this.t = 0; this.plan = null; },
   update(dt) {
-    if (G.mode !== 'cpu' || G.phase !== 'aim' || G.turn !== 1 || $('ovPause').classList.contains('show')) return;
+    if (G.mode !== 'cpu' || G.phase !== 'aim' || (G.turn !== 1 && !ES_PREVIEW) || $('ovPause').classList.contains('show')) return;
     this.t += dt;
     const cb = G.balls[0], ease = k => k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
     if (this.st === 'idle') { this.st = 'think'; this.t = 0; }
@@ -2062,15 +2086,51 @@ function updateTimer() {
     if (left <= 5 && left !== G.lastTick && left > 0) { G.lastTick = left; Sfx.tick(); }
   }
 }
-function setCoins() { document.querySelectorAll('.coinVal').forEach(e => e.textContent = Profile.d.coins.toLocaleString('es-AR')); $('menuStats').textContent = `${Profile.d.wins} victorias`; }
+function setCoins() { document.querySelectorAll('.coinVal').forEach(e => e.textContent = (Portal.coins || 0).toLocaleString('es-AR')); $('menuStats').textContent = `${Profile.d.wins} victorias`; }
 
-// Portal: nombre y avatar del usuario
-const Portal = { user: null };
+// Portal: nombre, avatar, VicioCoins y cosméticos comprados
 window.addEventListener('message', e => {
-  const d = e.data;
-  if (d && d.type === 'bg-hello-ack' && d.user) { Portal.user = d.user; applyMyIdentity(); }
+  if (!Portal.enPortal || e.source !== window.parent) return;
+  const d = e.data; if (!d || typeof d !== 'object') return;
+  if (d.type === 'bg-hello-ack') {
+    Portal.conectado = true;
+    Portal.user = d.user || null;
+    Portal.coins = Number(d.coins) || 0;
+    Portal.items = Array.isArray(d.items) ? d.items.map(s => String(s).replace(':', '_')) : [];
+    // Si había artículos regalados por migración de la billetera vieja, sincronizarlos a $0 en la cuenta
+    if (Array.isArray(Profile.d.gifted)) {
+      for (const k of Profile.d.gifted) {
+        if (!Portal.items.includes(k)) Portal.send({ type: 'bg-buy', item: k, price: 0 });
+      }
+    }
+    Profile.validateEquipped();
+    applyMyIdentity();
+    applyCosmetics();
+    setCoins();
+    if ($('ovShop').classList.contains('show')) renderShop();
+  } else if (d.type === 'bg-buy-result') {
+    if (typeof d.coins === 'number') Portal.coins = d.coins;
+    if (Array.isArray(d.items)) Portal.items = d.items.map(s => String(s).replace(':', '_'));
+    const pend = Portal.pendingBuy;
+    if (pend && pend.key === d.item) {
+      Portal.pendingBuy = null;
+      if (d.ok) {
+        Sfx.coin();
+        Profile.equip(pend.type, pend.id);
+        applyCosmetics();
+      } else {
+        toastShop(d.error || 'No se pudo completar la compra');
+        Sfx.lose();
+      }
+    }
+    setCoins();
+    if ($('ovShop').classList.contains('show')) renderShop();
+  }
 });
-function myName() { return (Portal.user && Portal.user.nombre) || bgId().nombre || 'Vos'; }
+BGBridge.init('pool');
+Portal.send({ type: 'bg-hello' });
+
+function myName() { return String((Portal.user && Portal.user.nombre) || 'Jugador').slice(0, 24); }
 function applyMyIdentity() {
   const u = Portal.user, av = $('av0');
   if (u && u.fotoPerfil && /^https?:|^data:image/.test(u.fotoPerfil)) {
@@ -2111,6 +2171,7 @@ async function tryLandscapeFullscreen() {
 }
 function updateRotateNotice() {
   const el = $('rotateNotice'); if (!el) return;
+  if (ES_PREVIEW) { el.classList.remove('show'); return; }
   const isVert = window.innerHeight > window.innerWidth * 1.05;
   if (!isVert) rotateDismissed = false;
   el.classList.toggle('show', isVert && !rotateDismissed);
@@ -2149,8 +2210,7 @@ $('btnQuit').onclick = () => {
   showResult(false, 'quit', G.me);
 };
 
-// ── Resultado ──
-const REWARD = { cpu: { easy: 25, normal: 45, hard: 80 }, online: 60 };
+// ── Resultado (las monedas y la XP las premia solo el portal al recibir bg-score) ──
 function showResult(won, code, by) {
   const mineBy = by === G.me;
   const T = {
@@ -2160,19 +2220,21 @@ function showResult(won, code, by) {
     quit: 'Abandonaste la partida.',
     left: 'Tu rival abandonó la partida.',
   };
-  let coins = won ? (G.mode === 'cpu' ? REWARD.cpu[G.level] : REWARD.online) : (code === 'quit' ? 0 : (G.mode === 'cpu' ? 8 : 12));
   Profile.d.games++;
-  if (won) { Profile.d.wins++; try { localStorage.setItem('bg_pool_wins', Profile.d.wins); } catch (e) {} BGBridge.score(Profile.d.wins, { won: true }); }
-  Profile.addCoins(coins);
+  if (won) {
+    Profile.d.wins++;
+    try { localStorage.setItem('bg_pool_wins', Profile.d.wins); } catch (e) {}
+    BGBridge.score(Profile.d.wins, { won: true });
+  }
+  Profile.save();
   $('resIco').textContent = won ? '🏆' : (code === 'quit' ? '🏳️' : '😢');
   $('resTitle').textContent = won ? '¡Ganaste!' : 'Perdiste';
   $('resDesc').textContent = T[code] || '';
-  $('resCoins').textContent = '+' + coins;
-  $('resReward').style.display = coins ? 'inline-flex' : 'none';
+  $('resReward').style.display = 'none';
   $('btnAgain').style.display = G.mode === 'cpu' ? 'flex' : 'none';
   setCoins(); updateHUD();
   show('ovResult');
-  if (won) { Sfx.win(); setTimeout(() => Sfx.coin(), 600); } else Sfx.lose();
+  if (won) Sfx.win(); else Sfx.lose();
   if (isOnline()) setTimeout(() => Net.cleanup(), 1500);
 }
 $('btnAgain').onclick = () => { Sfx.ui(); startCPU(1 - G.breaker); };
@@ -2184,7 +2246,7 @@ function toMenu() {
   setCoins(); updateHUD(); show('ovMenu');
 }
 
-// ── Tienda ──
+// ── Tienda (con VicioCoins del portal mediante bg-buy) ──
 let shopTab = 'cue';
 const PREV = {};
 function previewFor(type, it) {
@@ -2214,25 +2276,33 @@ function renderShop() {
   document.querySelectorAll('#shopTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === shopTab));
   const grid = $('shopGrid'); grid.innerHTML = '';
   for (const it of CATALOG[shopTab]) {
-    const owned = Profile.owns(shopTab, it.id), eq = Profile.d.eq[shopTab] === it.id, afford = Profile.d.coins >= it.price;
+    const owned = Profile.owns(shopTab, it.id), eq = Profile.d.eq[shopTab] === it.id, afford = Portal.coins >= it.price;
+    const key = Profile.itemKey(shopTab, it.id);
+    const buying = Portal.pendingBuy && Portal.pendingBuy.key === key;
     const d = document.createElement('div'); d.className = 'item' + (eq ? ' eq' : '');
     let btn;
     if (eq) btn = `<button class="ib on" disabled>✔ Equipado</button>`;
     else if (owned) btn = `<button class="ib equip" data-a="eq">Equipar</button>`;
+    else if (buying) btn = `<button class="ib buy" disabled>Comprando…</button>`;
     else btn = `<button class="ib buy ${afford ? '' : 'no'}" data-a="buy"><span class="coin" style="width:15px;height:15px;font-size:9px;vertical-align:-2px">$</span> ${it.price}</button>`;
     d.innerHTML = `<span class="rar ${it.rar}">${RAR_TXT[it.rar]}</span><img src="${previewFor(shopTab, it)}" style="width:100%;border-radius:10px;background:rgba(0,0,0,.25)"><div class="nm">${it.name}</div>${btn}`;
     const b = d.querySelector('button[data-a]');
     if (b) b.onclick = () => {
       if (b.dataset.a === 'buy') {
-        if (!Profile.buy(shopTab, it.id)) { toastShop('Te faltan monedas: ¡ganá partidas!'); Sfx.lose(); return; }
-        Sfx.coin();
-      } else { Profile.equip(shopTab, it.id); Sfx.ui(); }
+        if (!Portal.conectado) { toastShop('Abrí 8 Ball Pool desde AltoVicio para comprar con tus VicioCoins.'); Sfx.lose(); return; }
+        if (Portal.coins < it.price) { toastShop('No tenés suficientes VicioCoins: ¡ganá partidas o reclamá el bonus diario!'); Sfx.lose(); return; }
+        Portal.pendingBuy = { type: shopTab, id: it.id, key };
+        renderShop();
+        Portal.send({ type: 'bg-buy', item: key, price: it.price });
+        return;
+      }
+      Profile.equip(shopTab, it.id); Sfx.ui();
       applyCosmetics(); renderShop();
     };
     grid.appendChild(d);
   }
 }
-function toastShop(t) { const p = $('ovShop').querySelector('p'); const o = p.textContent; p.textContent = '⚠️ ' + t; p.style.color = '#ff4d6a'; setTimeout(() => { p.textContent = o; p.style.color = ''; }, 1800); }
+function toastShop(t) { const p = $('ovShop').querySelector('p'); const o = p.textContent; p.textContent = '⚠️ ' + t; p.style.color = '#ff4d6a'; setTimeout(() => { p.textContent = o; p.style.color = ''; }, 2200); }
 document.querySelectorAll('#shopTabs button').forEach(b => b.onclick = () => { shopTab = b.dataset.t; Sfx.ui(); renderShop(); });
 function applyCosmetics() {
   if (G.mode === 'cpu') G.cues[0] = Profile.d.eq.cue;
@@ -2252,26 +2322,17 @@ function showBubble(slot, e) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  ONLINE 1v1 (Firebase RTDB — compatible con el sistema social del portal)
-//  En vez de mandar posiciones a 9 Hz (que se ve cortado), los dos clientes
-//  corren el mismo motor a 600 Hz con el vector de golpe exacto → 60 fps
-//  fluidos en ambos lados, y al frenar las bolas el host confirma el estado.
+//  ONLINE 1v1 (Firebase RTDB: gameRooms/{CODIGO} — requiere identidad Auth)
+//  Cada jugador entra con asegurarIdentidad() (Google o cuenta anónima).
 // ═══════════════════════════════════════════════════════════════════════════
-function bgId() {
-  try {
-    const P = window.parent;
-    if (P && P !== window && P.Storage && P.Storage.auth && P.Storage.auth.currentUser) {
-      const u = P.Storage.auth.currentUser;
-      const el = P.document.getElementById('perfil-nombre');
-      const nombre = el && el.textContent && el.textContent !== '—' ? el.textContent : (u.displayName || 'Jugador');
-      return { uid: u.uid, nombre: nombre.slice(0, 24) };
-    }
-  } catch (e) {}
-  let id = null; try { id = localStorage.getItem('bg_anon_id'); } catch (e) {}
-  if (!id) { id = 'anon_' + Math.random().toString(36).slice(2, 10); try { localStorage.setItem('bg_anon_id', id); } catch (e) {} }
-  let nombre = 'Jugador';
-  try { const g = JSON.parse(localStorage.getItem('bandagamer_usuario_v2') || 'null'); if (g && g.nombre) nombre = String(g.nombre).slice(0, 24); } catch (e) {}
-  return { uid: id, nombre };
+async function asegurarIdentidad() {
+  if (!window.firebase || !window.firebase.auth) throw new Error('Sin servicio de autenticación');
+  const auth = window.firebase.auth();
+  if (!auth.currentUser) {
+    await new Promise(res => { const off = auth.onAuthStateChanged(() => { off(); res(); }); setTimeout(res, 2500); });
+  }
+  if (!auth.currentUser) await auth.signInAnonymously();
+  return auth.currentUser.uid;
 }
 function randCode() {
   const C = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = '';
@@ -2279,7 +2340,7 @@ function randCode() {
   return s;
 }
 const Net = {
-  db: null, ref: null, roomId: null, unsubs: [], appliedSeq: 0, stateSeq: -1, lastAimPush: 0, lastEmoteTs: 0,
+  db: null, ref: null, roomId: null, uid: null, unsubs: [], appliedSeq: 0, stateSeq: -1, lastAimPush: 0, lastEmoteTs: 0,
   getDb() {
     try { if (window.firebase && window.firebase.database) return (this.db = this.db || window.firebase.database()); } catch (e) {}
     return null;
@@ -2288,27 +2349,32 @@ const Net = {
   cleanup() {
     this.unsubs.forEach(f => { try { f(); } catch (e) {} }); this.unsubs = [];
     this.ref = null; this.roomId = null; this.appliedSeq = 0; this.stateSeq = -1;
-    try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'bg-room', code: null }, '*'); } catch (e) {}
+    Portal.send({ type: 'bg-room', code: null });
   },
   cancelRoom() { if (this.ref) this.ref.remove().catch(() => {}); this.cleanup(); },
   leave() {
     if (this.ref && G.phase !== 'over') this.ref.update({ status: 'ended', leftBy: G.me }).catch(() => {});
     this.cleanup();
   },
-  host() {
+  async host() {
     const db = this.getDb();
     if (!db) { alert('Sin conexión a Firebase: el modo online no está disponible.'); return; }
     this.cleanup();
-    const code = randCode(), me = bgId();
+    hide('ovMenu'); $('hostCode').textContent = '······'; $('hostStatus').textContent = 'Creando sala…'; show('ovHost');
+    let uid;
+    try { uid = await asegurarIdentidad(); }
+    catch (e) { console.warn(e); $('hostStatus').textContent = 'No se pudo autenticar la sala.'; return; }
+    this.uid = uid;
+    const code = randCode();
     this.roomId = code; this.ref = db.ref('gameRooms/' + code);
-    try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'bg-room', code }, '*'); } catch (e) {}
+    $('hostCode').textContent = code; $('hostStatus').textContent = 'Esperando rival…';
+    Portal.send({ type: 'bg-room', code });
     this.ref.set({
-      host: me.uid, hostNombre: myName(), hostCue: Profile.d.eq.cue,
+      host: uid, hostNombre: myName(), hostCue: Profile.d.eq.cue,
       joiner: null, status: 'waiting',
       createdAt: window.firebase.database.ServerValue.TIMESTAMP,
       juegoId: 'game-055', juegoNombre: '8 Ball Pool',
     }).catch(e => console.warn(e));
-    hide('ovMenu'); $('hostCode').textContent = code; $('hostStatus').textContent = 'Esperando rival…'; show('ovHost');
     let started = false;
     this.sub(this.ref, 'value', snap => {
       const d = snap.val(); if (!d) return;
@@ -2319,7 +2385,7 @@ const Net = {
         started = true;
         $('hostStatus').textContent = '¡Rival conectado! Empezando…';
         G.mode = 'host'; G.me = 0;
-        G.names = [myName(), (d.joinerNombre || 'Rival').slice(0, 20)];
+        G.names = [myName(), String(d.joinerNombre || 'Rival').slice(0, 20)];
         G.cues = [Profile.d.eq.cue, d.joinerCue || 'clasico'];
         $('av1').textContent = '😎'; $('modeLbl').textContent = 'ONLINE'; $('emoteBar').style.display = 'flex';
         newGame((Math.random() * 1e9) | 0, 0);
@@ -2330,21 +2396,26 @@ const Net = {
       }
     });
   },
-  join(code) {
+  async join(code) {
     const st = $('joinStatus');
     if (!code || code.length < 4) { st.textContent = 'Código inválido'; return; }
     const db = this.getDb(); if (!db) { st.textContent = 'Sin conexión'; return; }
     this.cleanup();
     st.textContent = 'Conectando…';
+    let uid;
+    try { uid = await asegurarIdentidad(); }
+    catch (e) { console.warn(e); st.textContent = 'No se pudo autenticar.'; return; }
+    this.uid = uid;
     this.roomId = code; this.ref = db.ref('gameRooms/' + code);
     this.ref.once('value').then(snap => {
       const d = snap.val();
       if (!d) { st.textContent = 'Sala no encontrada'; this.cleanup(); return; }
       if (d.status !== 'waiting' && d.status !== 'playing') { st.textContent = 'Esa partida ya terminó'; this.cleanup(); return; }
-      if (d.joiner && d.joiner !== bgId().uid) { st.textContent = 'La sala ya está llena'; this.cleanup(); return; }
-      const me = bgId();
-      this.ref.update({ joiner: me.uid, joinerNombre: myName(), joinerCue: Profile.d.eq.cue }).then(() => {
+      if (d.host === uid) { st.textContent = 'Ya sos el anfitrión de esta sala'; this.cleanup(); return; }
+      if (d.joiner && d.joiner !== uid) { st.textContent = 'La sala ya está llena'; this.cleanup(); return; }
+      this.ref.update({ joiner: uid, joinerNombre: myName(), joinerCue: Profile.d.eq.cue }).then(() => {
         st.textContent = 'Conectado. Esperando al host…';
+        Portal.send({ type: 'bg-room', code });
         let started = false;
         this.sub(this.ref, 'value', s => {
           const dd = s.val(); if (!dd) return;
@@ -2354,7 +2425,7 @@ const Net = {
           if (!started && dd.status === 'playing' && dd.state) {
             started = true;
             G.mode = 'client'; G.me = 1;
-            G.names = [(dd.hostNombre || 'Host').slice(0, 20), myName()];
+            G.names = [String(dd.hostNombre || 'Host').slice(0, 20), myName()];
             G.cues = [dd.hostCue || 'clasico', Profile.d.eq.cue];
             $('av1').textContent = '😎'; $('modeLbl').textContent = 'ONLINE'; $('emoteBar').style.display = 'flex';
             G.balls = PE.rack(1);
@@ -2441,8 +2512,7 @@ function applyState(s, first) {
 
 function tryAutoJoin() {
   try {
-    const q = new URLSearchParams(location.search);
-    let code = q.get('room') || (location.hash ? new URLSearchParams(location.hash.slice(1)).get('room') : '');
+    let code = URL_PARAMS.get('room') || (location.hash ? new URLSearchParams(location.hash.slice(1)).get('room') : '');
     if (code) { hide('ovMenu'); show('ovJoin'); $('joinInput').value = code.toUpperCase(); setTimeout(() => Net.join(code.toUpperCase()), 300); }
   } catch (e) {}
 }
@@ -2473,7 +2543,7 @@ function loop(ts) {
         if (G.bih) { cb.x += (t.x - cb.x) * k; cb.y += (t.y - cb.y) * k; }
       }
       CPU.update(dt);
-      const timed = !(G.mode === 'cpu' && G.turn === 1) && !$('ovPause').classList.contains('show');
+      const timed = !(G.mode === 'cpu' && (G.turn === 1 || ES_PREVIEW)) && !$('ovPause').classList.contains('show');
       if (timed && now() - G.turnStart >= TURN_TIME && (G.mode === 'cpu' || G.mode === 'host')) timeoutTurn();
       Net.tickAim();
     }
@@ -2485,7 +2555,9 @@ function loop(ts) {
 
 window.addEventListener('resize', () => { V.cw = 0; layout(); updatePowerUI(); updateRotateNotice(); });
 G.balls = PE.rack(7);
-setCoins(); styleMiniCue(); applyMyIdentity(); updateHUD(); updateRotateNotice(); tryAutoJoin();
+setCoins(); styleMiniCue(); applyMyIdentity(); updateHUD(); updateRotateNotice();
+if (ES_PREVIEW) { hide('ovMenu'); startCPU(0); }
+else tryAutoJoin();
 requestAnimationFrame(loop);
 </script>
 </body>

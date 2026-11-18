@@ -1,5 +1,14 @@
 # AltoVicio — Changelog
 
+## 🎱 V15.1 — 8 Ball Pool: VicioCoins, salas con identidad y carteles en vertical (A1, A2, A3, A9)
+
+- **A1 · Carteles (`#toast`) en vertical**: ahora hacen salto de línea automático y achican la tipografía en pantallas angostas para que avisos largos (*"✋ Falta del rival… ¡Bola en mano!"*) nunca se salgan de la pantalla.
+- **A2 + A9 · Salas online de Pool (`gameRooms`) con identidad**: cada jugador entra con `asegurarIdentidad()` (cuenta de Google o anónima de Firebase Auth) usando su `uid` en lugar de `bg_anon_id`. En `firebase/database.rules.json`, `gameRooms` ahora exige `auth != null` (publicar la regla en la consola de Firebase **después** de aceptar el pull request).
+- **A3 · Tienda de Pool unificada con VicioCoins**: se eliminó la billetera propia del pool (`bg_pool_v2.coins`). Los tacos, mesas y bolas ahora se compran a través del portal con `{type: "bg-buy", item, price}` y se guardan en `usuario.items_juegos["game-055"]`. Los artículos comprados con la billetera vieja se conservan y sincronizan automáticamente al migrar.
+- **Vista previa (`?preview=1`)**: modo demostración automático sin sonido ni menús superpuestos para el catálogo.
+
+---
+
 ## 🛍️ V15 — Tienda ilustrada (estilo Plato)
 
 - **107 ítems nuevos dibujados**, a partir de las láminas de Román: 36 marcos, 13 fondos de perfil, 17 para la cabeza, 6 para los ojos, 7 para la cara, 3 para la boca, 6 para el cuello, 4 para la espalda (alas, espadas) y 15 pins.
