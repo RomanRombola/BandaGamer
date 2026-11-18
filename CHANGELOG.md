@@ -1,5 +1,14 @@
 # AltoVicio — Changelog
 
+## 🚀 V15.3 — Gráficos detallados y nuevos niveles en juegos de acción (A4, A5, A6, A7)
+
+- **A4 · Maze Runner (`juego-local-31.html`)**: se amplió el radio de iluminación de la antorcha y el área revelada, se suavizó la penumbra para que el laberinto nunca quede totalmente negro, se agregaron baldosas de piedra con juntas y muros 3D con bloques, y se dibujaron los objetos (gemas, llaves, relojes de arena, antorchas y mapas) en canvas con destellos visibles aún en zonas oscuras.
+- **A5 · Tower Defense (`juego-local-16.html`)**: se dibujaron en canvas las 5 torres (cañón con retroceso y doble tubo en nivel máximo, aguja criogénica de hielo, emisor láser, búnker de mortero y bobina Tesla con rayos), los 5 tipos de enemigos orientados hacia su dirección de avance (dron de asalto, caza delta rápido, blindado con orugas, mutante regenerador y mecha jefe) y el castillo de la base. En celulares en vertical, el tablero transpone su grilla a `10×16` para aprovechar casi toda la pantalla (`386×617 px` en `390×844`).
+- **A6 · Geometry Dash (`juego-local-17.html`)**: se sumaron 5 niveles nuevos hechos a mano (8 niveles en total: *Primeros Pasos, Neón, Caos, Pulso Eléctrico, Gravedad Cero, Supernova, Hiperespacio* y *Demonio Vicio*) con velocidad, BPM y dificultad crecientes, más selector en grilla de 2 columnas.
+- **A7 · Space Shooter (`juego-local-4.html`) y Asteroids (`juego-local-14.html`)**: se reemplazaron las figuras geométricas simples por ilustraciones detalladas en canvas para las naves del jugador, drones de escolta, los 5 tipos de cazas/acorazados enemigos, el jefe insignia, los platillos voladores y los asteroides facetados con cráteres y vetas minerales (y se quitaron las scanlines de Asteroids).
+
+---
+
 ## 🎨 V15.2 — Limpieza de marca vieja y fuentes Outfit (A8)
 
 - **Retro Racer (`juego-local-44.html`) y Endless Runner (`juego-local-5.html`)**: se quitó la sigla `"BG"` del auto y de la remera del corredor, y se cambió el cartel `"BANDA GAMER"` de la ruta por `"ALTO VICIO"`.

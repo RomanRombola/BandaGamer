@@ -27,10 +27,10 @@ Estado: ✅ hecho · 🔄 en curso · ⬜ pendiente
   - El ejemplo completo está en `pages/games/juego-local-37.html` (ajedrez), en la sección "COSMÉTICOS".
   - Las victorias ya dan monedas por `bg-score`: el juego no debe sumar monedas.
   - Los tacos que la gente ya compró con la billetera vieja se pueden regalar una sola vez al migrar.
-- ⬜ **A4 · Maze Runner** (`juego-local-31.html`): la pantalla es casi toda negra. Hace falta más luz alrededor del jugador, piso con textura y objetos visibles.
-- ⬜ **A5 · Tower Defense** (`juego-local-16.html`): enemigos y torres dibujados (hoy son círculos), y que se vea más grande en el celular.
-- ⬜ **A6 · Geometry Dash** (`juego-local-17.html`): tiene solo 3 niveles. Sumar al menos 5 más, con dificultad creciente.
-- ⬜ **A7 · Space Shooter (`juego-local-4.html`) y Asteroids (`juego-local-14.html`):** naves, enemigos y asteroides dibujados, en lugar de formas geométricas.
+- [x] ✅ **A4 · Maze Runner** (`juego-local-31.html`): la pantalla es casi toda negra. Hace falta más luz alrededor del jugador, piso con textura y objetos visibles.
+- [x] ✅ **A5 · Tower Defense** (`juego-local-16.html`): enemigos y torres dibujados (hoy son círculos), y que se vea más grande en el celular.
+- [x] ✅ **A6 · Geometry Dash** (`juego-local-17.html`): tiene solo 3 niveles. Sumar al menos 5 más, con dificultad creciente.
+- [x] ✅ **A7 · Space Shooter (`juego-local-4.html`) y Asteroids (`juego-local-14.html`):** naves, enemigos y asteroides dibujados, en lugar de formas geométricas.
 - [x] ✅ **A8 · Marca vieja:**
   - Sacar el texto "BG" del auto y "BANDA GAMER" del cartel en Retro Racer (`juego-local-44.html`), y el "BG" de Endless Runner (`juego-local-5.html`).
   - Reemplazar `Orbitron` y `Rajdhani` por `Outfit` en los 15 juegos que todavía los nombran (`grep -l Orbitron pages/games/*.html`).

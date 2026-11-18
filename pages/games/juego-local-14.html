@@ -217,23 +217,82 @@ function drawShip(s) {
   if (s.inv > 0 && Math.floor(s.inv * 10) % 2) return;
   ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.a);
   if (s.thrust) {
-    const fl = 16 + Math.random() * 12, fg = ctx.createLinearGradient(-8, 0, -8 - fl, 0);
-    fg.addColorStop(0, '#fff6c0'); fg.addColorStop(.4, '#ff9a1f'); fg.addColorStop(1, 'rgba(255,60,30,0)');
-    ctx.fillStyle = fg; ctx.beginPath(); ctx.moveTo(-7, -6); ctx.quadraticCurveTo(-8 - fl * .6, -4, -8 - fl, 0); ctx.quadraticCurveTo(-8 - fl * .6, 4, -7, 6); ctx.fill();
+    const fl = 18 + Math.random() * 12;
+    const fg = ctx.createLinearGradient(-9, 0, -9 - fl, 0);
+    fg.addColorStop(0, '#ffffff'); fg.addColorStop(.3, '#2ef2ff'); fg.addColorStop(.65, '#ff9a1f'); fg.addColorStop(1, 'rgba(255,60,30,0)');
+    ctx.fillStyle = fg;
+    ctx.beginPath(); ctx.moveTo(-8, -6.5); ctx.quadraticCurveTo(-9 - fl * .6, -3.5, -9 - fl, 0); ctx.quadraticCurveTo(-9 - fl * .6, 3.5, -8, 6.5); ctx.closePath(); ctx.fill();
   }
   ctx.lineJoin = 'round';
-  // alas
-  ctx.fillStyle = '#3a4a8a'; ctx.beginPath(); ctx.moveTo(2, -4); ctx.lineTo(-12, -13); ctx.lineTo(-9, -3); ctx.closePath(); ctx.moveTo(2, 4); ctx.lineTo(-12, 13); ctx.lineTo(-9, 3); ctx.closePath(); ctx.fill();
-  // casco
-  const hg = ctx.createLinearGradient(0, -8, 0, 8); hg.addColorStop(0, '#ffffff'); hg.addColorStop(.5, '#b8c8ff'); hg.addColorStop(1, '#5a6aa8');
+  // alas principales con cañones en las puntas
+  const wg = ctx.createLinearGradient(-12, -15, 4, 15);
+  wg.addColorStop(0, '#1e3a8a'); wg.addColorStop(.5, '#475569'); wg.addColorStop(1, '#1e293b');
+  ctx.fillStyle = wg;
+  ctx.beginPath();
+  ctx.moveTo(6, -4); ctx.lineTo(-10, -15); ctx.lineTo(-14, -13); ctx.lineTo(-9, -4);
+  ctx.lineTo(-9, 4); ctx.lineTo(-14, 13); ctx.lineTo(-10, 15); ctx.lineTo(6, 4);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 1.2; ctx.stroke();
+  // cañones laterales
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillRect(-6, -13, 10, 2.2); ctx.fillRect(-6, 10.8, 10, 2.2);
+  // toberas traseras
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(-11, -5.5, 4, 4); ctx.fillRect(-11, 1.5, 4, 4);
+  // fuselaje central
+  const hg = ctx.createLinearGradient(0, -9, 0, 9);
+  hg.addColorStop(0, '#ffffff'); hg.addColorStop(.45, '#cbd5e1'); hg.addColorStop(1, '#475569');
   ctx.shadowColor = '#2ef2ff'; ctx.shadowBlur = 14; ctx.fillStyle = hg;
-  ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(-8, -8); ctx.lineTo(-5, 0); ctx.lineTo(-8, 8); ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0;
+  ctx.beginPath();
+  ctx.moveTo(20, 0); ctx.lineTo(4, -7.5); ctx.lineTo(-9, -8.5); ctx.lineTo(-6, 0); ctx.lineTo(-9, 8.5); ctx.lineTo(4, 7.5);
+  ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0;
   ctx.strokeStyle = '#2ef2ff'; ctx.lineWidth = 1.5; ctx.stroke();
-  // cabina
-  ctx.fillStyle = '#2ef2ff'; ctx.beginPath(); ctx.ellipse(5, 0, 4.5, 2.6, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.ellipse(6, -1, 1.8, 1, 0, 0, 7); ctx.fill();
+  // detalles del casco
+  ctx.fillStyle = '#a46bff';
+  ctx.beginPath(); ctx.moveTo(-4, -5.5); ctx.lineTo(3, -3.5); ctx.lineTo(-4, -2); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-4, 5.5); ctx.lineTo(3, 3.5); ctx.lineTo(-4, 2); ctx.closePath(); ctx.fill();
+  // cabina de cristal
+  const cg = ctx.createLinearGradient(2, -3, 10, 3);
+  cg.addColorStop(0, '#a5f3fc'); cg.addColorStop(1, '#0284c7');
+  ctx.fillStyle = cg; ctx.beginPath(); ctx.ellipse(5.5, 0, 5, 2.8, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.beginPath(); ctx.ellipse(6.8, -1, 2, .9, 0, 0, 7); ctx.fill();
   ctx.restore();
-  if (s.shield > 0) { ctx.strokeStyle = `rgba(46,242,255,${.35 + Math.sin(t * 10) * .2})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(s.x, s.y, 22, 0, 7); ctx.stroke(); }
+  if (s.shield > 0) {
+    ctx.strokeStyle = `rgba(46,242,255,${.4 + Math.sin(t * 10) * .2})`; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.arc(s.x, s.y, 23, 0, 7); ctx.stroke();
+  }
+}
+function drawSaucer(u) {
+  const k = u.r / 20, col = u.small ? '#ff3dd0' : '#39ff88';
+  ctx.save(); ctx.translate(u.x, u.y);
+  ctx.shadowColor = col; ctx.shadowBlur = 14;
+  // tractor / propulsor inferior
+  ctx.fillStyle = col;
+  ctx.beginPath(); ctx.ellipse(0, 5 * k, 9 * k, 4 * k, 0, 0, 7); ctx.fill();
+  // cúpula de cristal con silueta alienígena
+  const dg = ctx.createRadialGradient(-2 * k, -8 * k, 1, 0, -5 * k, 11 * k);
+  dg.addColorStop(0, '#e0f2fe'); dg.addColorStop(.55, '#0284c7'); dg.addColorStop(1, '#0f172a');
+  ctx.fillStyle = dg;
+  ctx.beginPath(); ctx.ellipse(0, -4.5 * k, 10.5 * k, 8.5 * k, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#bae6fd'; ctx.lineWidth = 1.2; ctx.stroke();
+  // plato metálico principal
+  const pg = ctx.createLinearGradient(-22 * k, 0, 22 * k, 0);
+  pg.addColorStop(0, '#1e293b'); pg.addColorStop(.5, '#94a3b8'); pg.addColorStop(1, '#1e293b');
+  ctx.fillStyle = pg;
+  ctx.beginPath();
+  ctx.moveTo(-23 * k, 0);
+  ctx.quadraticCurveTo(0, -7 * k, 23 * k, 0);
+  ctx.quadraticCurveTo(0, 8 * k, -23 * k, 0);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.stroke();
+  ctx.shadowBlur = 0;
+  // luces giratorias alrededor del borde
+  for (let i = -2; i <= 2; i++) {
+    const pulse = (Math.floor(t * 8) + i + 2) % 5 === 0;
+    ctx.fillStyle = pulse ? '#ffffff' : col;
+    ctx.beginPath(); ctx.arc(i * 7.2 * k, .5 * k, (pulse ? 2.4 : 1.7) * k, 0, 7); ctx.fill();
+  }
+  ctx.restore();
 }
 function render() {
   ctx.fillStyle = '#03030c'; ctx.fillRect(0, 0, W, H);
@@ -252,33 +311,38 @@ function render() {
   }
   ctx.globalAlpha = 1;
   ctx.save(); FX.applyShake(ctx);
-  // asteroides (con copias en los bordes para que el "wrap" se vea continuo)
+  // asteroides facetados con cráteres y vetas minerales
   ctx.lineWidth = 2; ctx.lineJoin = 'round';
   for (const r of rocks || []) {
     const pal = r.pal || ['#b8a8e8', '#2a2350', r.hue];
     ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.rot);
     ctx.beginPath(); r.pts.forEach(([cx, cy, k], i) => { const x = cx * r.r * k, y = cy * r.r * k; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath();
     ctx.rotate(-r.rot);                                   // la luz no gira con la roca
-    const g = ctx.createRadialGradient(-r.r * .4, -r.r * .45, r.r * .1, 0, 0, r.r * 1.15); g.addColorStop(0, pal[0]); g.addColorStop(1, pal[1]);
+    const g = ctx.createRadialGradient(-r.r * .38, -r.r * .42, r.r * .08, 0, 0, r.r * 1.15);
+    g.addColorStop(0, pal[0]); g.addColorStop(.55, '#473d68'); g.addColorStop(1, pal[1]);
     ctx.shadowColor = pal[2]; ctx.shadowBlur = 14; ctx.fillStyle = g; ctx.fill(); ctx.shadowBlur = 0;
     ctx.save(); ctx.clip(); ctx.rotate(r.rot);
+    // aristas internas de roca facetada y vetas minerales brillantes
+    ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 1.2;
+    const px0 = r.r * .12, py0 = -r.r * .08;
+    for (let i = 0; i < r.pts.length; i += 2) {
+      const [cx, cy, k] = r.pts[i];
+      ctx.beginPath(); ctx.moveTo(px0, py0); ctx.lineTo(cx * r.r * k, cy * r.r * k); ctx.stroke();
+    }
+    ctx.strokeStyle = pal[2]; ctx.globalAlpha = .45; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(-r.r * .35, -r.r * .1); ctx.lineTo(0, r.r * .15); ctx.lineTo(r.r * .3, -r.r * .2); ctx.stroke();
+    ctx.globalAlpha = 1;
+    // cráteres con sombra interior y borde iluminado
     for (const [cx, cy, cr] of r.craters || []) {
-      ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.arc(cx * r.r, cy * r.r, cr * r.r, 0, 7); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx * r.r + 1, cy * r.r + 1, cr * r.r, Math.PI * .1, Math.PI * .9); ctx.stroke();
+      ctx.fillStyle = 'rgba(10,8,24,.45)'; ctx.beginPath(); ctx.arc(cx * r.r, cy * r.r, cr * r.r, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx * r.r + 1, cy * r.r + 1, cr * r.r, Math.PI * .1, Math.PI * .9); ctx.stroke();
     }
     ctx.restore();
-    ctx.strokeStyle = pal[2]; ctx.globalAlpha = .7; ctx.lineWidth = 1.6; ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = pal[2]; ctx.globalAlpha = .82; ctx.lineWidth = 1.8; ctx.stroke(); ctx.globalAlpha = 1;
     ctx.restore();
   }
-  // platillos
-  for (const u of saucers || []) {
-    ctx.save(); ctx.translate(u.x, u.y); ctx.strokeStyle = '#39ff88'; ctx.shadowColor = '#39ff88'; ctx.shadowBlur = 14; ctx.lineWidth = 2;
-    const k = u.r / 20;
-    ctx.beginPath(); ctx.ellipse(0, 0, 22 * k, 8 * k, 0, 0, 7); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(0, -6 * k, 10 * k, 8 * k, 0, Math.PI, 0); ctx.stroke();
-    ctx.fillStyle = '#39ff88'; for (let i = -1; i <= 1; i++) ctx.fillRect(i * 9 * k - 1.5, -1.5, 3, 3);
-    ctx.restore();
-  }
+  // platillos voladores
+  for (const u of saucers || []) drawSaucer(u);
   // balas
   ctx.lineCap = 'round';
   for (const b of bullets || []) {
@@ -287,13 +351,18 @@ function render() {
     ctx.beginPath(); ctx.moveTo(b.x - vx * k, b.y - vy * k); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.shadowBlur = 0;
     D.glowCircle(ctx, b.x, b.y, 2.2, '#ffffff', 8);
   }
-  for (const b of eBullets || []) D.glowCircle(ctx, b.x, b.y, 3, '#39ff88', 12);
-  // power-ups
+  for (const b of eBullets || []) D.glowCircle(ctx, b.x, b.y, 3.2, '#ff3dd0', 12);
+  // cápsulas de power-up
   for (const p of pups || []) {
     if (p.t < 3 && Math.floor(p.t * 6) % 2) continue;
-    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(t * 2); ctx.strokeStyle = p.c; ctx.shadowColor = p.c; ctx.shadowBlur = 14; ctx.lineWidth = 2;
-    ctx.strokeRect(-9, -9, 18, 18); ctx.restore();
-    D.text(ctx, p.id === 'triple' ? '3' : p.id === 'shield' ? 'S' : 'R', p.x, p.y + 1, { size: 11, color: p.c });
+    ctx.save(); ctx.translate(p.x, p.y);
+    D.glowCircle(ctx, 0, 0, 13, p.c + '44', 16);
+    ctx.rotate(t * 2); ctx.fillStyle = '#0f172a'; ctx.strokeStyle = p.c; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; i ? ctx.lineTo(Math.cos(a) * 11, Math.sin(a) * 11) : ctx.moveTo(Math.cos(a) * 11, Math.sin(a) * 11); }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    D.text(ctx, p.id === 'triple' ? '3' : p.id === 'shield' ? 'S' : 'R', p.x, p.y + 1, { size: 11, color: '#fff', glow: p.c });
   }
   drawShip(ship);
   FX.draw(ctx);
