@@ -362,6 +362,7 @@ function subRoom(){
 }
 
 function handleRoom(room){
+  revisarAnfitrion(room);
   const players=room.players||{};
   const pcount=Object.keys(players).length;
   const status=room.status;
@@ -737,10 +738,32 @@ async function nuevaPartida(){
   toast("¡Nueva partida!","🔄");
 }
 
+const RONDA_HOST_IDS=[["reveal-host","reveal-guest"]];
+// Si el anfitrión se va, el rol pasa al jugador que entró primero (antes se borraba la
+// sala entera y echaba a todos). Cada pantalla detecta si ahora es la anfitriona.
+async function traspasarAnfitrion(path){
+  const snap=await db.ref(`${path}/players`).once("value");
+  const pls=snap.val()||{}; delete pls[myId];
+  const resto=Object.values(pls).filter(p=>p&&p.id).sort((a,b)=>(a.joinedAt||0)-(b.joinedAt||0));
+  if(!resto.length){ await db.ref(path).remove(); return; }
+  const nh=resto[0].id;
+  await db.ref(path).update({[`players/${myId}`]:null,[`players/${nh}/isHost`]:true,host:nh});
+}
+function revisarAnfitrion(room){
+  if(!room||!room.host||!myId) return;
+  const soy=room.host===myId;
+  if(soy===isHost) return;
+  isHost=soy;
+  const v=(id,m)=>{const el=document.getElementById(id);if(el)el.style.display=m?"block":"none";};
+  v("cfg-card",isHost);v("host-btns",isHost);v("guest-btns",!isHost);
+  RONDA_HOST_IDS.forEach(([h,g])=>{const eh=document.getElementById(h);if(eh&&(eh.style.display!=="none"||document.getElementById(g)?.style.display!=="none")){v(h,isHost);v(g,!isHost);}});
+  if(isHost) toast("Ahora sos el anfitrión de la sala","👑");
+}
+
 async function leaveRoom(){
   clearInterval(timerInt);
   db.ref(`gor2phone/${code}`).off();
-  if(isHost) await rref(`gor2phone/${code}`).remove();
+  if(isHost) await traspasarAnfitrion(`gor2phone/${code}`);
   else await rref(`gor2phone/${code}/players/${myId}`).remove();
   backHome();
 }

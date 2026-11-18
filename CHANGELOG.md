@@ -1,5 +1,31 @@
 # AltoVicio — Changelog
 
+## 🔒 V14.1 — Seguridad y salas online
+
+### Seguridad
+- **Inyección de código en las salas online (crítico)**: en Impostor, Dibujá y Adiviná y Gartic Phone los nombres, el chat y las cadenas se insertaban como HTML. Como las salas se pueden escribir sin cuenta, cualquiera podía ejecutar código en el navegador de los demás jugadores (en el mismo dominio que el portal, con acceso a la sesión de Google). Ahora todo se escapa.
+- **Impostor: la palabra ya no llega al impostor.** Cada carta va a `impost/{CODIGO}__sec/{jugador}` y cada uno lee solo la suya; la palabra y el impostor se revelan en el resultado.
+- Reglas de Firestore: límite de tamaño en perfil público y ranking global (nombre ≤ 60, foto ≤ 120 KB).
+
+### Salas online
+- **Chat de sala en Impostor** (pantallas de juego y votación).
+- **Traspaso de anfitrión real** en Impostor, Dibujá y Adiviná y Gartic Phone: antes, si el anfitrión se iba, en Impostor la sala quedaba trabada (el nuevo anfitrión no veía los botones) y en los juegos de dibujo se borraba la sala entera.
+- Impostor: cancelar una votación o empatar ya no vuelve a mostrar la carta a todos.
+
+### Social y marca
+- Social: header con VicioCoins y nivel; amigos con su avatar real (también en la pestaña Amigos del juego).
+- Fuentes Outfit / Plus Jakarta Sans en las salas online y Social (quedaba Orbitron/Rajdhani).
+- Logo, `favicon.ico` e `icon-192.png` de AltoVicio (seguían siendo el logo "BG").
+
+### Limpieza
+- 61 miniaturas viejas sin uso (2,2 MB). Sitemap con los 48 juegos. "Destacados" muestra los juegos online.
+- `AGENTS.md`: reglas para que Claude, Antigravity y Gemini trabajen sin pisarse.
+
+### Cómo se probó
+Emuladores de Firebase (Auth, Firestore y Realtime Database) con las reglas del repo: partidas de 3 jugadores en Impostor, traspaso de anfitrión en los juegos de dibujo, y cuentas de Google de prueba para amistad, chat, grupos, rankings y migración de invitado.
+
+---
+
 ## 🛠️ V14 — Auditoría completa: economía, seguridad, móvil
 
 ### Economía (VicioCoins / XP)

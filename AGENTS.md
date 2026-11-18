@@ -50,3 +50,15 @@ Si necesitás tocar un archivo del área de otro agente, hacé el cambio mínimo
   Los juegos **no** deben sumar monedas/XP por su cuenta: solo mandan `bg-score`.
 - Topes diarios en `LIMITES_DIARIOS`; misiones en `MISIONES`; progreso del día en `usuario.diario`.
 - XP y monedas por tiempo solo con actividad real (sin tocar nada 60 s, se pausa).
+
+## 6. Cómo probar sin tocar la base real
+Con los emuladores de Firebase (`npx firebase-tools emulators:start --only auth,firestore,database`
+usando `firebase/firestore.rules` y `firebase/database.rules.json`) se pueden jugar salas con varios
+navegadores y crear cuentas de Google de prueba. En la página, antes de usar la base, se llama a
+`useEmulator()` en `firebase.auth()`, `firebase.firestore()` y `firebase.database()`.
+Para iniciar sesión en el emulador de Auth sirve una credencial falsa:
+`firebase.auth.GoogleAuthProvider.credential(JSON.stringify({sub:"ana1", email:"ana1@test.com", email_verified:true}))`.
+
+## 7. Seguridad (obligatorio)
+- **Nunca insertes con `innerHTML` texto que venga de otro jugador** (nombres, chat, palabras, salas):
+  pasalo por `esc()` / `escHtml()` o usá `textContent`. Las salas se pueden escribir sin cuenta.
