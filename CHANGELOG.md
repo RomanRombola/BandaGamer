@@ -1,5 +1,15 @@
 # AltoVicio — Changelog
 
+## 🎱 V14.3 — Mejoras de UX y controles en 8 Ball Pool
+
+- **Mesa horizontal como vista principal**: en celular vertical aparece el aviso animado *"Girá el celular para jugar mejor"* (con botón rápido a horizontal) y al tocar *Jugar* / entrar a una sala online se intenta pasar a pantalla completa y bloquear la orientación horizontal (`requestFullscreen()` + `screen.orientation.lock('landscape')`). La vista vertical queda como respaldo.
+- **HUD superior en vertical rediseñado**: las tarjetas de jugador ahora usan dos filas en pantallas angostas/verticales (avatar + nombre arriba y las 7 bolitas abajo dentro de cada tarjeta), evitando que los nombres se corten a una letra o que las filas de bolas se pisen en el centro.
+- **Taco real en la barra de fuerza (`#ptrack`)**: `#pcue` ahora dibuja en canvas un taco completo con punta de tiza redondeada, suela, virola blanca, flecha de madera cónica, rosca, antebrazo con el diseño del taco equipado en la tienda, grip y culata de goma, retrocediendo al cargar fuerza y golpeando la bola de referencia al soltar.
+- **Línea de puntería corta con desvanecimiento**: la guía (`drawGuide`) se acortó a ~1/4 de la mesa con degradado hacia la punta en todas las dificultades, mostrando la bola fantasma y las líneas cortas de desvío solo cuando toca una bola dentro de ese alcance. La opción *"Guía larga"* queda apagada por defecto en pausa y deshabilitada en partidas online.
+- **Rueda de ajuste fino (`#fwheel`)**: rediseñada más fina y compacta con leyenda *"AJUSTE FINO ↕"*, sensibilidad reducida a `dy * 0.00025` por píxel para correcciones milimétricas y cartel explicativo la primera vez que se juega.
+
+---
+
 ## 🔐 V14.2 — Salas online cerradas (login anónimo)
 
 - Impostor, Dibujá y Adiviná y Gartic Phone identifican a cada jugador antes de entrar a una sala: con su cuenta de Google o, si es invitado, con una **cuenta anónima** invisible (no se le pide nada). Su id en la sala es el de esa cuenta.
