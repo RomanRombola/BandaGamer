@@ -860,7 +860,8 @@ function abrirInvitarGrupo() {
 
 async function init() {
   // Esperar a que Firebase Auth esté listo
-  firebase.auth().onAuthStateChanged(async user => {
+  // Storage.auth ignora las cuentas anónimas de las salas: lo social es solo con Google
+  Storage.auth.onAuthStateChanged(async user => {
     if (!user) {
       // No autenticado — mostrar aviso
       document.querySelector('.layout').innerHTML = `

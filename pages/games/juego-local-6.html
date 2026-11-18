@@ -260,7 +260,9 @@ new ResizeObserver(() => { if (tiles) layout(); }).observe(BG.stage);
 // ── Arranque ──────────────────────────────────────────────────────────────
 tiles = []; grid = [];
 if (BG.thumb) {
-  N = 4; tiles = []; grid = Array.from({ length: 4 }, () => Array(4).fill(null)); layout();
+  // Vista previa: el piloto automático mueve fichas, así que el estado tiene que estar completo
+  // (antes faltaba history y cada movimiento automático tiraba un error)
+  N = 4; tiles = []; grid = Array.from({ length: 4 }, () => Array(4).fill(null)); history = []; score = 0; undoLeft = 0; over = false; layout();
   [[2, 4, 8, 16], [32, 64, 128, 256], [512, 1024, 2048, 4], [2, 8, 0, 2]].forEach((row, r) => row.forEach((v, c) => v && makeTile(r, c, v)));
   document.getElementById('bar').style.display = 'none';
 } else {

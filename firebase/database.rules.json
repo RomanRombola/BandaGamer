@@ -12,8 +12,17 @@
 
     "gameRooms":  { "$room": { ".read": true, ".write": true } },
     "chessRooms": { "$room": { ".read": true, ".write": true } },
-    "impost":     { "$room": { ".read": true, ".write": true } },
-    "gor2phone":  { "$room": { ".read": true, ".write": true } },
-    "gartic":     { "$room": { ".read": true, ".write": true } }
+
+    "impost": {
+      "$room": {
+        ".read": "auth != null && !$room.endsWith('__sec')",
+        ".write": "auth != null",
+        "$pid": {
+          ".read": "auth != null && $room.endsWith('__sec') && (auth.uid == $pid || ($pid == '_host' && root.child('impost').child($room.replace('__sec', '')).child('host').val() == auth.uid))"
+        }
+      }
+    },
+    "gor2phone": { "$room": { ".read": "auth != null", ".write": "auth != null" } },
+    "gartic":    { "$room": { ".read": "auth != null", ".write": "auth != null" } }
   }
 }

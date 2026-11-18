@@ -6,6 +6,7 @@
 <title>Gartic Phone — AltoVicio</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 :root{--bg:#08080f;--sur:#111120;--sur2:#1a1a2e;--pr:#ff6600;--se:#00aaff;--ac:#ffe600;--da:#ff3366;--ok:#39ff14;--tx:#f0f0f0;--mu:#666688;--r:12px;}
@@ -313,13 +314,30 @@ function avisarSala(c){try{if(window.parent!==window)window.parent.postMessage({
 // Si se entra desde una invitación (?room=ABCD) se completa el código de la sala
 document.addEventListener("DOMContentLoaded",()=>{try{const r=new URLSearchParams(location.search).get("room");const i=document.getElementById("inp-code");if(r&&i&&/^[A-Za-z0-9]{4}$/.test(r))i.value=r.toUpperCase();}catch(e){}});
 
+// ── Identidad del jugador en la sala ─────────────────────────────────────
+// Las reglas de la base solo dejan entrar a las salas a jugadores identificados. Si el
+// jugador no entró con Google, se le crea una cuenta anónima (invisible, sin pedirle nada).
+// Su id en la sala es el de esa cuenta: así Firebase puede darle a cada uno solo lo suyo.
+let _identidad=null;
+async function asegurarIdentidad(){
+  if(typeof firebase==="undefined"||!firebase.auth) return null;
+  if(_identidad) return _identidad;
+  const auth=firebase.auth();
+  await new Promise(r=>{const un=auth.onAuthStateChanged(()=>{un();r();});});
+  if(!auth.currentUser){ try{ await auth.signInAnonymously(); }catch(e){ console.warn("[Sala] sin identidad:",e.code||e.message); } }
+  _identidad=auth.currentUser;
+  return _identidad;
+}
+function idJugador(){ return (_identidad&&_identidad.uid)||genId(); }
+
 async function createRoom(){
   const name=document.getElementById("inp-name").value.trim();
   if(!name||name.length<2){toast("Ingresá tu nombre","⚠️");return;}
   const btn=document.querySelector("#s-home .bp");
   if(btn){btn.disabled=true;btn.textContent="Creando...";}
   try{
-    myName=name;myId=genId();isHost=true;code=genCode();
+    await asegurarIdentidad();
+    myName=name;myId=idJugador();isHost=true;code=genCode();
     await rref(`gor2phone/${code}`).set({
       host:myId,status:"lobby",config:{time:90},
       players:{[myId]:{name:myName,id:myId,isHost:true,joinedAt:Date.now()}},
@@ -336,6 +354,7 @@ async function joinRoom(){
   const c=document.getElementById("inp-code").value.trim().toUpperCase();
   if(!name||name.length<2){toast("Ingresá tu nombre","⚠️");return;}
   if(c.length!==4){toast("Código de 4 letras","⚠️");return;}
+  await asegurarIdentidad();
   const snap=await rref(`gor2phone/${c}`).once("value");
   if(!snap.exists()){toast("Sala no encontrada","❌");return;}
   const room=snap.val();
@@ -343,7 +362,8 @@ async function joinRoom(){
   const players=room.players||{};
   if(Object.keys(players).length>=8){toast("Sala llena","⚠️");return;}
   if(Object.values(players).some(p=>p.name.toLowerCase()===name.toLowerCase())){toast("Nombre en uso","⚠️");return;}
-  myName=name;myId=genId();isHost=false;code=c;
+  if(players[idJugador()]){toast("Ya estás en esta sala (¿otra pestaña abierta?)","⚠️");return;}
+  myName=name;myId=idJugador();isHost=false;code=c;
   await rref(`gor2phone/${code}/players/${myId}`).set({name:myName,id:myId,isHost:false,joinedAt:Date.now()});
   setupLobbyUI();show("s-lobby");subRoom();toast(`Unido a ${code}`,"🚪");avisarSala(code);
 }
