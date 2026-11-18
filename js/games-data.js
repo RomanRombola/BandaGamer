@@ -1,7 +1,7 @@
 // games-data.js — Catálogo AltoVicio
 //
 // Campos de cada juego:
-//   id, nombre, categoria, tags, thumbnail, embed_url, descripcion, tipo ("local" | "iframe" | "emulador")
+//   id, nombre, categoria, tags, thumbnail, embed_url, descripcion, tipo ("local" | "emulador"). Solo juegos propios de AltoVicio: los externos (iframe) se sacaron en V15.
 //   multi: true      → tiene modo online (badge 🌐)
 //   movil: true      → se juega bien con pantalla táctil (badge 📱)
 //   nuevo: true      → renovado / nuevo (badge ✨)
@@ -70,15 +70,6 @@ const juegos = [
   { id:"game-057", nombre:"Salta Rana",          categoria:"arcade",   tags:["frogger","rana","cruzar","clasico"],         thumbnail:"assets/thumbs/hd-game-057.svg?v=11", embed_url:"games/juego-local-43.html", descripcion:"Cruzá la ruta y el río hasta los 5 nidos: troncos, tortugas que se sumergen, cocodrilos y mosca de bonus. Estilo Frogger.", tipo:"local", nuevo:true, movil:true },
   { id:"game-058", nombre:"Retro Racer",         categoria:"carreras", tags:["autos","carreras","contrarreloj","retro"],   thumbnail:"assets/thumbs/hd-game-058.svg?v=11", embed_url:"games/juego-local-44.html", descripcion:"Carreras pseudo-3D como los arcades de los 90: curvas, lomas, tráfico, nitro y checkpoints por Costa, Desierto y Ciudad Neón.", tipo:"local", nuevo:true, movil:true },
   { id:"game-059", nombre:"8-Bit Quest",         categoria:"aventura", tags:["plataformas","espada","retro","niveles"],    thumbnail:"assets/thumbs/hd-game-059.svg?v=11", embed_url:"games/juego-local-45.html", descripcion:"Plataformas de 8 bits con espada: 6 niveles con bloques sorpresa, monedas, monstruos, plataformas móviles y bandera final.", tipo:"local", nuevo:true, movil:true },
-
-  // ── IFRAME (pueden fallar dependiendo del sitio) ─────────────────────────
-  { id:"game-004", nombre:"Krunker.io",      categoria:"accion",     tags:["fps","shooter","multi"],  thumbnail:"assets/thumbs/hd-game-004.svg?v=11", embed_url:"https://krunker.io/",                         descripcion:"FPS multijugador en el navegador.",                              tipo:"iframe" },
-  { id:"game-005", nombre:"HexGL Racing",    categoria:"carreras",   tags:["naves","3d","webgl"],     thumbnail:"assets/thumbs/hd-game-005.svg?v=11", embed_url:"https://hexgl.bkcore.com/play/",              descripcion:"Carreras de naves futuristas en WebGL.",                         tipo:"iframe" },
-  { id:"game-006", nombre:"Diep.io",         categoria:"accion",     tags:["tanques","io","multi"],   thumbnail:"assets/thumbs/hd-game-006.svg?v=11", embed_url:"https://diep.io/",                            descripcion:"Tanques multijugador. Evolucioná y destruí a todos.",            tipo:"iframe" },
-  { id:"game-010", nombre:"1v1.lol",          categoria:"accion",     tags:["construccion","shooter","multi"],  thumbnail:"assets/thumbs/hd-game-010.svg?v=11", embed_url:"https://1v1.lol/",               descripcion:"Shooter con construcción de estructuras. El original del navegador.",    tipo:"iframe" },
-  { id:"game-007", nombre:"Smash Karts",      categoria:"carreras",   tags:["karts","multi","armas","3d"],     thumbnail:"assets/thumbs/hd-game-007.svg?v=11", embed_url:"https://smashkarts.io/",          descripcion:"Carreras de karts con armas. Multijugador online.",                       tipo:"iframe" },
-  { id:"game-008", nombre:"Narrow One",       categoria:"accion",     tags:["arco","flecha","multi","estrategia"],thumbnail:"assets/thumbs/hd-game-008.svg?v=11", embed_url:"https://narrow.one/",          descripcion:"Defensa del castillo con arco y flecha. Multijugador en tiempo real.",   tipo:"iframe" },
-  { id:"game-002", nombre:"Shell Shockers",   categoria:"accion",     tags:["huevos","fps","multi","shooter"],  thumbnail:"assets/thumbs/hd-game-002.svg?v=11", embed_url:"https://shellshock.io/",         descripcion:"FPS donde todos son huevos con armas. Multijugador online.",              tipo:"iframe" },
 ];
 
 if (typeof module !== "undefined") module.exports = { juegos };
